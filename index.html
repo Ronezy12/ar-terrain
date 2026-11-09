@@ -875,6 +875,49 @@ html,body{overscroll-behavior:none}
 .rec-time{font-size:34px;font-weight:800;letter-spacing:-.02em}
 .rec-wave{width:100%;height:56px}
 .cmt audio{width:100%;height:38px;margin-top:6px}
+/* ---------- V17 : planifier un RDV ---------- */
+.sheet.pf{height:90%;max-height:90%;overflow:hidden;padding:10px 0 0;gap:0}
+.sheet.pf .grab{margin-bottom:6px}
+.pf-head{display:flex;align-items:center;gap:10px;padding:0 18px 8px}
+.pf-head h3{flex:1;font-size:20px}
+.pf-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 18px 18px;display:flex;flex-direction:column;gap:22px}
+.pf-sec{display:flex;flex-direction:column;gap:10px;transition:opacity .2s}
+.pf-sec.dim{opacity:.45}
+.pf-t{display:flex;align-items:center;gap:10px}
+.pf-t b{font-size:16px}
+.pf-hint{font-size:12.5px;font-weight:600;margin-top:-2px}
+.pf-clist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surface)}
+.pf-crow{display:flex;align-items:center;gap:12px;padding:11px 14px;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);min-height:56px}
+.pf-crow:first-child{border-top:0}
+.pf-crow:active{background:var(--fill)}
+.pf-cli{display:flex;align-items:center;gap:12px;background:var(--tint);border:1.5px solid var(--primary);border-radius:18px;padding:12px 14px}
+.pf-days .day{flex:1 0 50px}
+.pf-dur button{font-size:13px}
+.pf-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.slot{min-height:46px;border-radius:14px;border:1.5px solid var(--success);background:var(--success-bg);color:var(--success);font-weight:700;font-size:14.5px;font-variant-numeric:tabular-nums}
+.slot.busy{border-color:var(--line);background:var(--fill-2);color:var(--muted);text-decoration:line-through}
+.slot.off{border-color:transparent;background:transparent;color:var(--line-strong)}
+.slot.on{border-color:var(--primary);background:var(--primary);color:#fff;box-shadow:0 6px 16px rgba(29,63,191,.3)}
+.pf-legend{display:flex;gap:14px;font-size:12px;color:var(--muted);font-weight:600}
+.pf-legend span{display:flex;align-items:center;gap:6px}
+.pf-legend i{width:12px;height:12px;border-radius:4px;display:block}
+.lg-free{background:var(--success-bg);border:1.5px solid var(--success)} .lg-busy{background:var(--fill-2);border:1.5px solid var(--line)} .lg-on{background:var(--primary)}
+.pf-techs{display:flex;flex-direction:column;gap:8px}
+.pf-tech{display:flex;align-items:center;gap:12px;background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:11px 14px;color:var(--ink);min-height:60px}
+.pf-tech.on{border-color:var(--primary);background:var(--tint)}
+.pf-tech.busy:not(.on){opacity:.7}
+.pf-tech .radio{width:24px;height:24px;border-radius:50%;border:2px solid var(--line-strong);display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+.pf-tech.on .radio{background:var(--primary);border-color:var(--primary)}
+.pf-tech .radio svg{width:14px;height:14px}
+.pf-fold{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--fill-2);border-radius:16px;padding:12px 14px;color:var(--ink-2);font-size:14px}
+.pf-fold svg{width:18px;height:18px;flex:none;color:var(--muted)}
+.pf-foot{flex:none;display:flex;align-items:center;gap:12px;padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface);box-shadow:0 -8px 20px rgba(0,0,0,.05)}
+.pf-sum{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:14px}
+.pf-sum .muted{font-size:12.5px}
+.pf-warn{display:flex;align-items:center;gap:5px;color:var(--danger);font-size:12.5px;font-weight:700}
+.pf-warn svg{width:14px;height:14px}
+.pf-foot .btn{flex:none;padding:0 20px}
+.pf-foot .btn:disabled{opacity:.4}
 </style>
 
 </head>
@@ -2213,7 +2256,7 @@ function openSearch(){
   }
   q.oninput=fill; fill(); setTimeout(function(){ q.focus(); },60);
 }
-function hl(t,v){ var i=t.toLowerCase().indexOf(v); if(i<0) return esc(t); return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+v.length))+'</mark>'+esc(t.slice(i+v.length)); }
+function hl(t,v){ if(!v) return esc(t); var i=t.toLowerCase().indexOf(v); if(i<0) return esc(t); return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+v.length))+'</mark>'+esc(t.slice(i+v.length)); }
 
 /* ---------- 6. Retard intelligent ---------- */
 function retardSheet(){
@@ -2921,7 +2964,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.14 · 9 nov. 2026';
+var APP_VERSION='1.0.15 · 9 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3297,10 +3340,11 @@ function attachZoom(box){
 function enableSheetDrag(sh){
   if(!sh || sh._drag) return; sh._drag=true;
   var scrim=sh.parentNode, y0=0, x0=0, t0=0, dy=0, dragging=false, tracking=false;
-  function start(y,x){ y0=y; x0=x; t0=Date.now(); dy=0; dragging=false; tracking=true; }
+  var scroller=sh;
+  function start(y,x,tg){ y0=y; x0=x; t0=Date.now(); dy=0; dragging=false; tracking=true; scroller=(tg&&tg.closest&&tg.closest('.pf-body'))||sh; }
   function move(y,x,ev){
     if(!tracking) return; var d=y-y0, dx=x-x0;
-    if(!dragging){ if(d>8 && sh.scrollTop<=0 && Math.abs(d)>Math.abs(dx)){ dragging=true; sh.style.transition='none'; } else if(Math.abs(d)>8||Math.abs(dx)>8){ if(!(d>0&&sh.scrollTop<=0)) tracking=false; return; } else return; }
+    if(!dragging){ if(d>8 && scroller.scrollTop<=0 && Math.abs(d)>Math.abs(dx)){ dragging=true; sh.style.transition='none'; } else if(Math.abs(d)>8||Math.abs(dx)>8){ if(!(d>0&&scroller.scrollTop<=0)) tracking=false; return; } else return; }
     if(ev && ev.cancelable) ev.preventDefault();
     dy=Math.max(0,d); sh.style.transform='translateY('+dy+'px)'; scrim.style.background='rgba(0,0,0,'+(0.38*Math.max(0,1-dy/420))+')';
   }
@@ -3311,7 +3355,7 @@ function enableSheetDrag(sh){
     if(dy>110 || v>.55){ sh.style.transform='translateY(110%)'; scrim.style.background='rgba(0,0,0,0)'; setTimeout(closeSheet,200); sh._justDragged=true; }
     else { sh.style.transform=''; scrim.style.background=''; }
   }
-  sh.addEventListener('touchstart',function(e){ if(e.touches.length===1) start(e.touches[0].clientY, e.touches[0].clientX); },{passive:true});
+  sh.addEventListener('touchstart',function(e){ if(e.touches.length===1) start(e.touches[0].clientY, e.touches[0].clientX, e.target); },{passive:true});
   sh.addEventListener('touchmove',function(e){ if(e.touches.length===1) move(e.touches[0].clientY, e.touches[0].clientX, e); },{passive:false});
   sh.addEventListener('touchend',end); sh.addEventListener('touchcancel',end);
   /* souris : depuis la barre grise */
@@ -3461,6 +3505,93 @@ function recordVoice(onDone){
       (function draw(){ if(!document.body.contains(cv)) return; an.getByteTimeDomainData(buf); var m=0; for(var i=0;i<buf.length;i++){ m=Math.max(m,Math.abs(buf[i]-128)); } hist.push(m/128); if(hist.length>70) hist.shift(); g.clearRect(0,0,560,90); var col=getComputedStyle(document.documentElement).getPropertyValue('--danger').trim()||'#C5221F'; g.fillStyle=col; hist.forEach(function(v,k){ var hh=Math.max(4,v*84); g.fillRect(k*8, 45-hh/2, 5, hh); }); raf=requestAnimationFrame(draw); })(); }catch(e){}
   }).catch(function(){ cleanup(); p2.querySelector('#recH').textContent='Micro refusé'; p2.querySelector('#recHint').textContent='Autorisez le micro dans les Réglages du téléphone, rubrique AR Terrain.'; p2.querySelector('#recBtns').innerHTML='<button class="btn primary block" data-close>Fermer</button>'; p2.querySelector('[data-close]').onclick=vclose; });
 }
+
+/* =========================================================
+   V17 — « Planifier un RDV » plus ergonomique
+   Recherche client · jours avec charge · créneaux libres/occupés · technicien recommandé · résumé fixe
+   ========================================================= */
+function dist2(a,b){ if(!a||!b) return 999; var dx=a[0]-b[0], dy=a[1]-b[1]; return Math.sqrt(dx*dx+dy*dy); }
+function techBusy(tid, d, start, dur, exceptId){ var s=start, e=start+dur; return RDVS.filter(function(r){ return r.id!==exceptId && r.tech===tid && r.d===d && r.st!=='termine' && hm2min(r.h)<e && hm2min(r.h)+r.dur>s; }); }
+function techSpot(tid, d, start){ /* dernière position connue avant le créneau : RDV précédent, sinon départ */
+  var prev=RDVS.filter(function(r){ return r.tech===tid && r.d===d && hm2min(r.h)<=start; }).sort(function(a,b){ return hm2min(b.h)-hm2min(a.h); })[0];
+  return prev ? GEO[prev.cid] : (TPOS[tid]||[160,140]);
+}
+planForm = function(){
+  var f={cid:null, tech:null, d:1, start:null, dur:60, rap:30, q:'', showRap:false, techAuto:true};
+  var NOW=10*60+15, active=TECHS.filter(function(t){return t.etat!=='off';});
+  var s=sheet('<div class="pf-head"><h3>Planifier un RDV</h3><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div><div class="pf-body" id="pfb"></div><div class="pf-foot" id="pff"></div>');
+  s.classList.add('pf');
+  s.querySelector('[data-close]').onclick=closeSheet;
+  function dayLabel(i,long){ var d=new Date(TODAY); d.setDate(d.getDate()+i); return i===0?'Aujourd\'hui':i===1?'Demain':d.toLocaleDateString('fr-FR',long?{weekday:'long',day:'numeric',month:'short'}:{weekday:'short'}).replace('.',''); }
+  function bestTech(){
+    if(f.start==null) return null; var c=f.cid&&client(f.cid), best=null, bd=1e9;
+    active.forEach(function(t){ if(techBusy(t.id,f.d,f.start,f.dur).length) return; var dd=dist2(techSpot(t.id,f.d,f.start), c?GEO[c.id]:null); if(dd<bd){ bd=dd; best=t.id; } });
+    return best;
+  }
+  function slots(){ var out=[]; for(var m=8*60;m<=17*60+30;m+=30) out.push(m); return out; }
+  function draw(){
+    var c=f.cid&&client(f.cid), h='';
+    /* 1. Client */
+    h+='<section class="pf-sec"><div class="pf-t"><span class="sn">1</span><b>Client</b></div>';
+    if(c){ h+='<div class="pf-cli"><span class="av">'+initials(c.nom)+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(c.nom)+'</b><span class="muted ell" style="display:block;font-size:13px">'+esc(c.adr)+', '+esc(c.ville.replace(/^\d+\s/,''))+' · '+esc(c.type)+'</span></div><button class="link" id="pfChg">Changer</button></div>'; }
+    else {
+      var q=f.q.toLowerCase(), list=CLIENTS.filter(function(x){ return !q || (x.nom+' '+x.ville+' '+x.tel+' '+x.ref).toLowerCase().indexOf(q)>=0; });
+      var sugg=q?list.slice(0,6):CLIENTS.filter(function(x){ return !RDVS.some(function(r){return r.cid===x.id && r.st!=='termine';}); }).concat(CLIENTS).filter(function(x,i,a){ return a.indexOf(x)===i; }).slice(0,3);
+      h+='<div class="search">'+ic('search')+'<input id="pfq" type="search" placeholder="Nom, ville ou téléphone du client" value="'+esc(f.q)+'" autocomplete="off" aria-label="Rechercher un client"></div>';
+      h+='<div class="muted pf-hint">'+(q?(list.length?list.length+' résultat'+(list.length>1?'s':''):'Aucun client trouvé'):'Suggestions : clients sans RDV')+'</div><div class="pf-clist">'+sugg.map(function(x){ return '<button class="pf-crow" data-pc="'+x.id+'"><span class="av xs">'+initials(x.nom)+'</span><span class="grow" style="min-width:0;text-align:left"><b class="ell" style="display:block;font-size:14.5px">'+hl(x.nom,q)+'</b><span class="muted ell" style="display:block;font-size:12.5px">'+esc(x.ville.replace(/^\d+\s/,''))+' · '+esc(x.type)+'</span></span>'+ic('chev').replace('<svg','<svg class="chev" style="width:16px;height:16px;color:var(--muted)"')+'</button>'; }).join('')+'</div>';
+      h+='<button class="link" id="pfNew" style="align-self:flex-start">+ Nouveau client</button>';
+    }
+    h+='</section>';
+    /* 2. Jour et heure */
+    var tShow=f.tech||active[0].id;
+    h+='<section class="pf-sec'+(c?'':' dim')+'"><div class="pf-t"><span class="sn">2</span><b>Quand</b><span class="muted" style="margin-left:auto;font-size:12.5px">'+(f.tech?'Disponibilités de '+esc(tech(f.tech).nom.split(' ')[0]):'Toute l\'équipe')+'</span></div>';
+    h+='<div class="days pf-days">'+[0,1,2,3,4,5].map(function(i){ var d=new Date(TODAY); d.setDate(d.getDate()+i); var load=RDVS.filter(function(r){return r.d===i;}).length; return '<button class="day'+(i===f.d?' on':'')+(i===0?' today':'')+'" data-pd="'+i+'"><span>'+d.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','')+'</span><b>'+d.getDate()+'</b><i>'+(load?Array(Math.min(load,4)+1).join('<em></em>'):'')+'</i></button>'; }).join('')+'</div>';
+    h+='<div class="seg pf-dur">'+[[60,'1 h'],[90,'1 h 30'],[120,'2 h'],[180,'3 h'],[240,'4 h']].map(function(x){return '<button data-pdu="'+x[0]+'" class="'+(f.dur===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>';
+    h+='<div class="pf-slots">'+slots().map(function(m){ var past=f.d===0 && m<NOW, busy=!f.tech ? active.every(function(t){ return techBusy(t.id,f.d,m,f.dur).length; }) : techBusy(f.tech,f.d,m,f.dur).length>0, late=m+f.dur>19*60, on=f.start===m;
+      var cls=on?'on':(past||late)?'off':busy?'busy':'';
+      return '<button class="slot '+cls+'" data-ps="'+m+'"'+((past||late)?' disabled':'')+'>'+min2hm(m)+'</button>'; }).join('')+'</div>';
+    h+='<div class="pf-legend"><span><i class="lg-free"></i>Libre</span><span><i class="lg-busy"></i>Occupé</span><span><i class="lg-on"></i>Choisi</span></div></section>';
+    /* 3. Technicien */
+    var best=bestTech();
+    if(f.techAuto && best && !f.tech) f.techPick=best;
+    var chosen=f.tech||f.techPick;
+    h+='<section class="pf-sec'+(f.start==null?' dim':'')+'"><div class="pf-t"><span class="sn">3</span><b>Technicien</b></div><div class="pf-techs">'+active.map(function(t){
+      var b=f.start!=null?techBusy(t.id,f.d,f.start,f.dur):[], free=!b.length, on=chosen===t.id, rec=best===t.id;
+      var sub=f.start==null?'Choisissez d\'abord un créneau':free?'Libre'+(rec?' · le plus proche':''):'Occupé '+b.map(function(r){return r.h+'–'+fin(r);}).join(', ');
+      return '<button class="pf-tech'+(on?' on':'')+(free?'':' busy')+'" data-pt="'+t.id+'">'+avatar(t,'xs')+'<span class="grow" style="min-width:0;text-align:left"><b style="display:block;font-size:14.5px">'+esc(t.nom)+'</b><span class="ell" style="display:block;font-size:12.5px;color:'+(free?'var(--success)':'var(--danger)')+'">'+esc(sub)+'</span></span>'+(rec&&f.start!=null?'<span class="pill" style="background:var(--accent-soft);color:var(--warning)">'+ic('star')+'Conseillé</span>':'')+'<span class="radio">'+(on?ic('check'):'')+'</span></button>'; }).join('')+'</div></section>';
+    /* 4. Rappel (replié) */
+    var RAPS=[[0,'Aucun'],[15,'15 min avant'],[30,'30 min avant'],[60,'1 h avant'],[1440,'La veille']];
+    h+='<section class="pf-sec"><button class="pf-fold" id="pfRap">'+ic('bell')+'<span class="grow" style="text-align:left">Rappel au technicien : <b>'+(RAPS.filter(function(x){return x[0]===f.rap;})[0][1]).toLowerCase()+'</b></span>'+ic(f.showRap?'up':'down')+'</button>'+(f.showRap?'<div class="opts">'+RAPS.map(function(x){return '<button class="opt sm'+(f.rap===x[0]?' on':'')+'" data-pr="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>':'')+'</section>';
+    var y=s.querySelector('#pfb').scrollTop;
+    s.querySelector('#pfb').innerHTML=h; s.querySelector('#pfb').scrollTop=y;
+    /* Résumé fixe */
+    var conflict = f.start!=null && chosen && techBusy(chosen,f.d,f.start,f.dur).length;
+    var ready = c && f.start!=null && chosen && !conflict;
+    s.querySelector('#pff').innerHTML='<div class="pf-sum">'+(c||f.start!=null?'<b class="ell">'+(c?esc(c.nom):'Client à choisir')+'</b><span class="muted num ell" style="text-transform:capitalize">'+dayLabel(f.d,true)+(f.start!=null?' · '+min2hm(f.start)+'–'+min2hm(f.start+f.dur):' · heure à choisir')+(chosen&&f.start!=null?' · '+esc(tech(chosen).nom.split(' ')[0]):'')+'</span>':'<span class="muted">Choisissez un client, un créneau et un technicien.</span>')+(conflict?'<span class="pf-warn">'+ic('late')+'Ce créneau chevauche un autre RDV</span>':'')+'</div><button class="btn primary" id="pfOk"'+(ready?'':' disabled')+'>'+ic('check')+'Planifier</button>';
+    bind();
+  }
+  function bind(){
+    function on(sel,fn){ [].forEach.call(s.querySelectorAll(sel),function(b){ b.onclick=function(){ fn(b); draw(); }; }); }
+    var q=s.querySelector('#pfq'); if(q){ q.oninput=function(){ f.q=q.value; var pos=q.selectionStart; draw(); var n=s.querySelector('#pfq'); if(n){ n.focus(); n.setSelectionRange(pos,pos); } }; }
+    on('[data-pc]',function(b){ f.cid=b.dataset.pc; f.q=''; });
+    var chg=s.querySelector('#pfChg'); if(chg) chg.onclick=function(){ f.cid=null; draw(); setTimeout(function(){ var n=s.querySelector('#pfq'); if(n) n.focus(); },50); };
+    var nw=s.querySelector('#pfNew'); if(nw) nw.onclick=function(){ closeSheet(); newClientForm(); };
+    on('[data-pd]',function(b){ f.d=+b.dataset.pd; f.start=null; if(f.techAuto) f.tech=null; });
+    on('[data-pdu]',function(b){ f.dur=+b.dataset.pdu; });
+    on('[data-ps]',function(b){ f.start=+b.dataset.ps; if(f.techAuto) f.tech=null; });
+    on('[data-pt]',function(b){ f.tech=b.dataset.pt; f.techAuto=false; });
+    on('[data-pr]',function(b){ f.rap=+b.dataset.pr; });
+    s.querySelector('#pfRap').onclick=function(){ f.showRap=!f.showRap; draw(); };
+    var ok=s.querySelector('#pfOk'); if(ok) ok.onclick=function(){
+      var tid=f.tech||f.techPick, c=client(f.cid), id='r'+Date.now();
+      RDVS.push({id:id, cid:f.cid, tech:tid, d:f.d, h:min2hm(f.start), dur:f.dur, st:'aconf', rap:f.rap, note:''}); S.pday=f.d; closeSheet(); render();
+      done('RDV planifié pour '+tech(tid).nom+' : '+dayLabel(f.d).toLowerCase()+' à '+min2hm(f.start),'Planification');
+      setTimeout(function(){ push('planning','Nouveau RDV · '+dayLabel(f.d).toLowerCase()+' '+min2hm(f.start), c.nom+' · notification reçue par '+tech(tid).nom.split(' ')[0], ['planning'], {ic:'mail'}); },1200);
+    };
+  }
+  draw();
+  setTimeout(function(){ var n=s.querySelector('#pfq'); if(n) n.focus(); },120);
+};
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
