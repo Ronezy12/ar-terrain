@@ -955,33 +955,33 @@ function initials(n){ return n.replace(/^(M\.|Mme|SCI|SARL)\s+/,'').split(/\s+/)
    ========================================================= */
 var TODAY = new Date(2026,10,9);
 var TECHS = [
-  {id:'t1', nom:'Karim Benali', role:'Électricien poseur', etat:'road', lieu:'En route vers Asnières-sur-Seine', tel:'06 00 00 10 01', mail:'karim.b@entreprise-ar.example', vehicule:'AB-123-CD', hab:['B1V','B2V','BR'], zone:['Asnières-sur-Seine','Neuilly-sur-Seine','Paris'], jour:4, fait:1},
-  {id:'t2', nom:'Julien Martin', role:'Électricien dépanneur', etat:'site', lieu:'Chez Mme Lefèvre, Paris 17e', tel:'06 00 00 10 02', mail:'julien.m@entreprise-ar.example', vehicule:'EF-456-GH', hab:['B2V','BR'], zone:['Paris','Clichy'], jour:3, fait:1},
-  {id:'t3', nom:'Sofia Lemaire', role:'Technicienne visite technique', etat:'ok', lieu:'Disponible · Boulogne', tel:'06 00 00 10 03', mail:'sofia.l@entreprise-ar.example', vehicule:'', hab:['B1V','BR'], zone:['Boulogne-Billancourt','Paris'], jour:2, fait:1},
-  {id:'t4', nom:'Thomas Roy', role:'Apprenti électricien', etat:'off', lieu:'Congé jusqu\'au 12/11', tel:'06 00 00 10 04', jour:0, fait:0}
+  {id:'t1', nom:'Karim Benali', role:'Électricien poseur', etat:'road', lieu:'En route vers Asnières-sur-Seine', tel:'06 39 98 10 01', mail:'karim.b@entreprise-ar.example', vehicule:'AB-123-CD', hab:['B1V','B2V','BR'], zone:['Asnières-sur-Seine','Neuilly-sur-Seine','Paris'], jour:4, fait:1},
+  {id:'t2', nom:'Julien Martin', role:'Électricien dépanneur', etat:'site', lieu:'Chez Mme Lefèvre, Paris 17e', tel:'06 39 98 10 02', mail:'julien.m@entreprise-ar.example', vehicule:'EF-456-GH', hab:['B2V','BR'], zone:['Paris','Clichy'], jour:3, fait:1},
+  {id:'t3', nom:'Sofia Lemaire', role:'Technicienne visite technique', etat:'ok', lieu:'Disponible · Boulogne', tel:'06 39 98 10 03', mail:'sofia.l@entreprise-ar.example', vehicule:'', hab:['B1V','BR'], zone:['Boulogne-Billancourt','Paris'], jour:2, fait:1},
+  {id:'t4', nom:'Thomas Roy', role:'Apprenti électricien', etat:'off', lieu:'Congé jusqu\'au 12/11', tel:'06 39 98 10 04', jour:0, fait:0}
 ];
 var ETAT = {road:['En route','p-warn','dot-road'], site:['Sur chantier','p-blue','dot-site'], ok:['Disponible','p-ok','dot-ok'], off:['Absent','p-gray','dot-off']};
 var STATUTS = {new:['Nouveau','st-new','spark'], contact:['À rappeler','st-contact','phone'], interv:['RDV pris','st-interv','wrench'], devis:['Devis envoyé','st-devis','doc'], close:['Clôturé','st-close','archive']};
 var CLIENTS = [
-  {id:'c1', nom:'Mme Garnier Hélène', tel:'06 00 00 00 01', mail:'h.garnier@example.com', adr:'12 rue Voltaire', ville:'92600 Asnières-sur-Seine', type:'Rénovation tableau', statut:'interv', tech:'t1', rdv:'09:00', duree:'2 h', ref:'AR-2611-014',
+  {id:'c1', nom:'Mme Garnier Hélène', tel:'06 39 98 00 01', mail:'h.garnier@example.com', adr:'12 rue Voltaire', ville:'92600 Asnières-sur-Seine', type:'Rénovation tableau', statut:'interv', tech:'t1', rdv:'09:00', duree:'2 h', ref:'AR-2611-014',
     devis:[{ref:'DV-0142', titre:'Remplacement tableau 2 rangées', ttc:1573, st:'devis'}],
     hist:[['mail','Devis DV-0142 envoyé par e-mail','Hier · 17:42'],['wa','« Je suis en route » envoyé','Aujourd\'hui · 08:31'],['ok','RDV confirmé par la cliente','Ven. 6 nov. · 10:15']]},
-  {id:'c2', nom:'M. Rousseau Pierre', tel:'06 00 00 00 02', mail:'p.rousseau@example.com', adr:'5 avenue de Wagram', ville:'75017 Paris', type:'Mise en conformité', statut:'interv', tech:'t1', rdv:'11:30', duree:'1 h 30', ref:'AR-2611-015',
+  {id:'c2', nom:'M. Rousseau Pierre', tel:'06 39 98 00 02', mail:'p.rousseau@example.com', adr:'5 avenue de Wagram', ville:'75017 Paris', type:'Mise en conformité', statut:'interv', tech:'t1', rdv:'11:30', duree:'1 h 30', ref:'AR-2611-015',
     devis:[{ref:'DV-0139', titre:'Mise en conformité NF C 15-100', ttc:2840.5, st:'devis'},{ref:'DV-0140', titre:'Option : ajout parafoudre', ttc:396, st:'new'}],
     hist:[['miss','Appel manqué','Aujourd\'hui · 08:05'],['mail','2 devis envoyés (option A / option B)','Jeu. 5 nov. · 18:02']]},
-  {id:'c3', nom:'SCI Les Tilleuls', tel:'06 00 00 00 03', mail:'gestion@tilleuls.example', adr:'3 impasse des Tilleuls', ville:'92100 Boulogne-Billancourt', type:'Installation complète maison', statut:'devis', tech:'t1', rdv:'14:00', duree:'3 h', ref:'AR-2611-016',
+  {id:'c3', nom:'SCI Les Tilleuls', tel:'06 39 98 00 03', mail:'gestion@tilleuls.example', adr:'3 impasse des Tilleuls', ville:'92100 Boulogne-Billancourt', type:'Installation complète maison', statut:'devis', tech:'t1', rdv:'14:00', duree:'3 h', ref:'AR-2611-016',
     devis:[{ref:'DV-0137', titre:'Installation complète T4', ttc:9870, st:'devis'}],
     hist:[['wa','Relance devis envoyée','Lun. 2 nov. · 09:10']]},
-  {id:'c4', nom:'M. Faure Antoine', tel:'06 00 00 00 04', mail:'a.faure@example.com', adr:'8 allée des Acacias', ville:'92200 Neuilly-sur-Seine', type:'Dépannage', statut:'new', tech:'t1', rdv:'16:30', duree:'1 h', ref:'AR-2611-017',
+  {id:'c4', nom:'M. Faure Antoine', tel:'06 39 98 00 04', mail:'a.faure@example.com', adr:'8 allée des Acacias', ville:'92200 Neuilly-sur-Seine', type:'Dépannage', statut:'new', tech:'t1', rdv:'16:30', duree:'1 h', ref:'AR-2611-017',
     devis:[], hist:[['ok','Fiche créée depuis un appel entrant','Aujourd\'hui · 07:58']]},
-  {id:'c5', nom:'Mme Petit Claire', tel:'06 00 00 00 05', mail:'c.petit@example.com', adr:'27 rue de Courcelles', ville:'75008 Paris', type:'Borne de recharge 7 kW', statut:'contact', tech:'t3', rdv:'', duree:'', ref:'AR-2611-011',
+  {id:'c5', nom:'Mme Petit Claire', tel:'06 39 98 00 05', mail:'c.petit@example.com', adr:'27 rue de Courcelles', ville:'75008 Paris', type:'Borne de recharge 7 kW', statut:'contact', tech:'t3', rdv:'', duree:'', ref:'AR-2611-011',
     devis:[{ref:'DV-0131', titre:'Borne de recharge 7 kW', ttc:1690, st:'devis'}], hist:[['miss','Appel manqué','Ven. 6 nov. · 16:20']]},
-  {id:'c6', nom:'M. Durand Louis', tel:'06 00 00 00 06', mail:'l.durand@example.com', adr:'40 boulevard Bineau', ville:'92200 Neuilly-sur-Seine', type:'Rénovation tableau', statut:'close', tech:'t2', rdv:'', duree:'', ref:'AR-2610-098',
+  {id:'c6', nom:'M. Durand Louis', tel:'06 39 98 00 06', mail:'l.durand@example.com', adr:'40 boulevard Bineau', ville:'92200 Neuilly-sur-Seine', type:'Rénovation tableau', statut:'close', tech:'t2', rdv:'', duree:'', ref:'AR-2610-098',
     devis:[{ref:'DV-0120', titre:'Remplacement tableau 3 rangées', ttc:2105, st:'close'}], hist:[['ok','Intervention terminée, attestation envoyée','28 oct. · 15:40']]},
-  {id:'c7', nom:'Mme Lefèvre Anne', tel:'06 00 00 00 07', mail:'a.lefevre@example.com', adr:'18 rue Legendre', ville:'75017 Paris', type:'Recherche de panne', statut:'interv', tech:'t2', rdv:'', duree:'', ref:'AR-2611-018', devis:[], hist:[['ok','RDV confirmé par téléphone','Ven. 6 nov. · 11:20']]},
-  {id:'c9', nom:'M. Moreau Julien', tel:'06 00 00 00 09', mail:'j.moreau@example.com', adr:'22 rue de Bezons', ville:'92400 Courbevoie', type:'Dépannage', statut:'new', tech:'t1', rdv:'', duree:'', ref:'AR-2611-021', devis:[], hist:[['ok','Fiche créée dans le CRM par le bureau','À l\'instant']]},
-  {id:'c10', nom:'Mme Lambert Sophie', tel:'06 00 00 00 10', mail:'s.lambert@example.com', adr:'4 allée des Peupliers', ville:'92600 Asnières-sur-Seine', type:'Remplacement tableau', statut:'new', tech:'t1', rdv:'', duree:'', ref:'AR-2611-022', devis:[], hist:[['ok','Fiche créée dans le CRM par le bureau','À l\'instant']]},
-  {id:'c8', nom:'M. Bernard Hugo', tel:'06 00 00 00 08', mail:'h.bernard@example.com', adr:'7 rue Martre', ville:'92110 Clichy', type:'Ajout de prises', statut:'interv', tech:'t2', rdv:'', duree:'', ref:'AR-2611-019', devis:[{ref:'DV-0145', titre:'Ajout de 6 prises cuisine', ttc:642, st:'devis'}], hist:[]}
+  {id:'c7', nom:'Mme Lefèvre Anne', tel:'06 39 98 00 07', mail:'a.lefevre@example.com', adr:'18 rue Legendre', ville:'75017 Paris', type:'Recherche de panne', statut:'interv', tech:'t2', rdv:'', duree:'', ref:'AR-2611-018', devis:[], hist:[['ok','RDV confirmé par téléphone','Ven. 6 nov. · 11:20']]},
+  {id:'c9', nom:'M. Moreau Julien', tel:'06 39 98 00 09', mail:'j.moreau@example.com', adr:'22 rue de Bezons', ville:'92400 Courbevoie', type:'Dépannage', statut:'new', tech:'t1', rdv:'', duree:'', ref:'AR-2611-021', devis:[], hist:[['ok','Fiche créée dans le CRM par le bureau','À l\'instant']]},
+  {id:'c10', nom:'Mme Lambert Sophie', tel:'06 39 98 00 10', mail:'s.lambert@example.com', adr:'4 allée des Peupliers', ville:'92600 Asnières-sur-Seine', type:'Remplacement tableau', statut:'new', tech:'t1', rdv:'', duree:'', ref:'AR-2611-022', devis:[], hist:[['ok','Fiche créée dans le CRM par le bureau','À l\'instant']]},
+  {id:'c8', nom:'M. Bernard Hugo', tel:'06 39 98 00 08', mail:'h.bernard@example.com', adr:'7 rue Martre', ville:'92110 Clichy', type:'Ajout de prises', statut:'interv', tech:'t2', rdv:'', duree:'', ref:'AR-2611-019', devis:[{ref:'DV-0145', titre:'Ajout de 6 prises cuisine', ttc:642, st:'devis'}], hist:[]}
 ];
 function client(id){ return CLIENTS.filter(function(c){return c.id===id;})[0]; }
 function tech(id){ return TECHS.filter(function(t){return t.id===id;})[0]; }
@@ -1363,12 +1363,12 @@ var MODELES = {
 };
 /* ---------------- Appels ---------------- */
 var APPELS = [
-  {h:'08:05', num:'06 00 00 00 02', cid:'c2', st:'miss', dur:0, cti:'CLIENT', agent:''},
-  {h:'08:22', num:'01 00 00 00 77', cid:null, st:'miss', dur:0, cti:'PROSPECT', agent:''},
-  {h:'08:40', num:'06 00 00 00 01', cid:'c1', st:'ok', dur:184, cti:'CLIENT', agent:'Bureau'},
-  {h:'09:12', num:'06 00 00 00 88', cid:null, st:'ok', dur:95, cti:'PROSPECT', agent:'Bureau'},
-  {h:'09:47', num:'06 00 00 00 05', cid:'c5', st:'ok', dur:312, cti:'CLIENT', agent:'Sofia L.'},
-  {h:'10:15', num:'06 00 00 00 03', cid:'c3', st:'out', dur:141, cti:'CLIENT', agent:'Karim B.'}
+  {h:'08:05', num:'06 39 98 00 02', cid:'c2', st:'miss', dur:0, cti:'CLIENT', agent:''},
+  {h:'08:22', num:'01 99 00 00 77', cid:null, st:'miss', dur:0, cti:'PROSPECT', agent:''},
+  {h:'08:40', num:'06 39 98 00 01', cid:'c1', st:'ok', dur:184, cti:'CLIENT', agent:'Bureau'},
+  {h:'09:12', num:'06 39 98 00 88', cid:null, st:'ok', dur:95, cti:'PROSPECT', agent:'Bureau'},
+  {h:'09:47', num:'06 39 98 00 05', cid:'c5', st:'ok', dur:312, cti:'CLIENT', agent:'Sofia L.'},
+  {h:'10:15', num:'06 39 98 00 03', cid:'c3', st:'out', dur:141, cti:'CLIENT', agent:'Karim B.'}
 ];
 function dur(s){ return s? Math.floor(s/60)+' min '+String(s%60).padStart(2,'0'):'—'; }
 SCREENS.appels = function(){
@@ -1388,7 +1388,7 @@ SCREENS.appels = function(){
 function bindAppels(){
   each('[data-af]',function(b){ b.onclick=function(){ S.af=b.dataset.af; render(); }; });
   var k=$('kmiss'); if(k) k.onclick=function(){ S.af='miss'; render(); };
-  each('[data-cb]',function(b){ b.onclick=function(){ APPELS[+b.dataset.cb].cb=true; MODULES.appels.badge=APPELS.filter(function(a){return a.st==='miss'&&!a.cb;}).length||0; render(); toast('Rappel simulé : '+APPELS[+b.dataset.cb].num); }; });
+  each('[data-cb]',function(b){ b.onclick=function(){ APPELS[+b.dataset.cb].cb=true; MODULES.appels.badge=APPELS.filter(function(a){return a.st==='miss'&&!a.cb;}).length||0; render(); callNum(APPELS[+b.dataset.cb].num); }; });
   each('[data-csms]',function(b){ b.onclick=function(){ toast('SMS « Suite à votre appel » envoyé (démo)'); }; });
   each('[data-cnew]',function(b){ b.onclick=function(){ toast('Fiche prospect créée avec le numéro pré-rempli (démo)'); }; });
 }
@@ -1664,7 +1664,7 @@ function bindPlanning(){
 
 /* ---------- Profil technicien (modifiable) ---------- */
 SCREENS.profil = function(id){
-  var t = (S.role==='admin' && id) ? tech(id) : (S.role==='admin' ? {nom:'Ahmed', role:'Gérant', tel:'06 00 00 10 00', mail:'gerant@entreprise-ar.example', vehicule:'', hab:[], zone:[], admin:true} : tech(ME));
+  var t = (S.role==='admin' && id) ? tech(id) : (S.role==='admin' ? {nom:'Ahmed', role:'Gérant', tel:'06 39 98 10 00', mail:'gerant@entreprise-ar.example', vehicule:'', hab:[], zone:[], admin:true} : tech(ME));
   TITLES.profil = (S.role==='admin' && id) ? 'Modifier le technicien' : 'Mon profil';
   var e=S.pe && S.pe.id===(t.id||'admin') ? S.pe : (S.pe={id:t.id||'admin', nom:t.nom, tel:t.tel, mail:t.mail||'', role:t.role, vehicule:t.vehicule||'', hab:(t.hab||[]).slice(), zone:(t.zone||[]).slice(), photo:t.photo||null, actif:t.etat!=='off'});
   var h='<div class="pad"><div class="head"><label class="avedit">'+(e.photo?'<img src="'+e.photo+'" alt="">':'<span>'+initials(e.nom||'?')+'</span>')+'<i>'+ic('cam')+'</i><input type="file" accept="image/*" id="pPhoto" hidden></label><span class="muted" style="font-size:13px">Touchez la photo pour la changer</span></div>';
@@ -2151,7 +2151,7 @@ function openSearch(){
   var q=s.querySelector('#uq');
   function fill(){
     var v=q.value.trim().toLowerCase(), dv=v.replace(/\D/g,''), mine=onlyMine()?myClientIds():null, out='';
-    if(!v){ out='<div class="sec"><h2>Recherches fréquentes</h2></div><div class="opts">'+['Garnier','06 00 00 00 02','DV-0142','Asnières','Tableau'].map(function(x){return '<button class="opt sm" data-sq="'+x+'">'+x+'</button>';}).join('')+'</div>'; s.querySelector('#ur').innerHTML=out; bindQ(); return; }
+    if(!v){ out='<div class="sec"><h2>Recherches fréquentes</h2></div><div class="opts">'+['Garnier','06 39 98 00 02','DV-0142','Asnières','Tableau'].map(function(x){return '<button class="opt sm" data-sq="'+x+'">'+x+'</button>';}).join('')+'</div>'; s.querySelector('#ur').innerHTML=out; bindQ(); return; }
     var cl=CLIENTS.filter(function(c){ if(mine&&!mine[c.id]) return false; return (c.nom+' '+c.ville+' '+c.ref+' '+c.adr+' '+c.type).toLowerCase().indexOf(v)>=0 || (dv.length>=4 && c.tel.replace(/\D/g,'').indexOf(dv)>=0); });
     var dvs=[]; CLIENTS.forEach(function(c){ if(mine&&!mine[c.id]) return; c.devis.forEach(function(d){ if((d.ref+' '+d.titre).toLowerCase().indexOf(v)>=0) dvs.push([c,d]); }); });
     var rs=RDVS.filter(function(r){ if(S.role!=='admin'&&r.tech!==ME) return false; var c=client(r.cid); return (c.nom+' '+r.h+' '+(r.type||c.type)).toLowerCase().indexOf(v)>=0; }).slice(0,4);
@@ -2226,7 +2226,7 @@ function bindChantier(){
   $('sitePh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Sur chantier', src:rd.result, who:'Vous', w:'À l\'instant'}); rerender(); done('Photo ajoutée au chantier','Photo'); }; rd.readAsDataURL(f); };
   each('[data-st]',function(b){ b.onclick=function(){ go('tableau', c.id); }; });
   each('[data-sd]',function(b){ b.onclick=function(){ S.dv=newDraft(); S.dv.client=c.id; go('devis'); }; });
-  each('[data-scall]',function(b){ b.onclick=function(){ toast('Appel simulé : '+c.tel); }; });
+  each('[data-scall]',function(b){ b.onclick=function(){ callNum(c.tel, c.nom); }; });
   each('[data-spay]',function(b){ b.onclick=function(){ var d=c.devis[0]; payFlow(d?r2(d.ttc*0.3):150, c, function(){ rerender(); }); }; });
   each('[data-sc]',function(b){ b.onclick=function(){ var s=sheet('<h3>Commentaire pour le bureau</h3><div class="opts">'+['Accès difficile','Matériel manquant','Prévoir 2e passage','Client absent'].map(function(x){return '<button class="opt sm" data-q="'+x+'">'+x+'</button>';}).join('')+'</div><div class="row" style="align-items:flex-end"><textarea id="siteCmt" rows="4" placeholder="Écrivez ou dictez…" style="flex:1;min-width:0;border:1.5px solid var(--line-strong);border-radius:20px;padding:12px;background:var(--surface);font-size:15px;resize:none"></textarea>'+micBtn('siteCmt')+'</div><button class="btn primary block" id="scOk">Publier</button>');
     [].forEach.call(s.querySelectorAll('[data-q]'),function(x){ x.onclick=function(){ var t=s.querySelector('#siteCmt'); t.value=(t.value?t.value+' ':'')+x.dataset.q+'.'; }; });
@@ -2876,7 +2876,23 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.12 · 9 nov. 2026';
+var APP_VERSION='1.0.13 · 9 nov. 2026';
+/* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
+var BUREAU_TEL='01 99 00 00 10';
+function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
+function callNum(t, who){
+  if(!t){ toast('Pas de numéro pour ce contact'); return; }
+  if(IN_PREVIEW){ toast('Appel vers '+(who?who+' · ':'')+t+' : sur le téléphone, le clavier d\'appel s\'ouvre'); return; }
+  var a=document.createElement('a'); a.href=telHref(t); document.body.appendChild(a); try{ a.click(); }catch(e){ location.href=a.href; } a.remove();
+}
+function ctxContact(){
+  if(S.screen==='client'){ var c=client(S.arg); if(c) return [c.tel, c.nom]; }
+  if(S.screen==='techdetail'||S.screen==='suivi'){ var t=tech(S.arg||'t1'); if(t) return [t.tel, t.nom]; }
+  if(S.screen==='chantier'&&S.site){ var c2=client(rdv(S.site.rid).cid); return [c2.tel, c2.nom]; }
+  var nx=techRdv().filter(function(r){return r.st!=='termine';})[0]; if(nx){ var c3=client(nx.id); return [c3.tel, c3.nom]; }
+  return [null,null];
+}
+
 var NAV_APPS={plans:'Plans', gmaps:'Google Maps', waze:'Waze'};
 function navUrl(k,c){ var q=encodeURIComponent(c.adr+', '+c.ville); return k==='plans'?'https://maps.apple.com/?daddr='+q : k==='gmaps'?'https://www.google.com/maps/dir/?api=1&destination='+q : 'https://waze.com/ul?q='+q+'&navigate=yes'; }
 function navOpen(k,c){
@@ -3157,7 +3173,7 @@ function newClientForm(){
   formSheet('Nouveau client', [
     {k:'civ', l:'Civilité', opts:['M.','Mme','Société'], v:'M.'},
     {k:'nom', l:'Nom et prénom', req:true, ph:'Ex. Lambert Sophie'},
-    {k:'tel', l:'Téléphone', req:true, type:'tel', ph:'06 00 00 00 00'},
+    {k:'tel', l:'Téléphone', req:true, type:'tel', ph:'06 39 98 00 00'},
     {k:'mail', l:'E-mail', type:'email', ph:'nom@exemple.fr'},
     {k:'adr', l:'Adresse', req:true, ph:'N° et rue'},
     {k:'ville', l:'Code postal et ville', req:true, ph:'92600 Asnières-sur-Seine'},
@@ -3171,7 +3187,7 @@ function newClientForm(){
 function newTechForm(){
   formSheet('Ajouter un technicien', [
     {k:'nom', l:'Nom et prénom', req:true, ph:'Ex. Nadia Kaci'},
-    {k:'tel', l:'Téléphone', req:true, type:'tel', ph:'06 00 00 00 00'},
+    {k:'tel', l:'Téléphone', req:true, type:'tel', ph:'06 39 98 00 00'},
     {k:'mail', l:'E-mail', type:'email', ph:'prenom@entreprise-ar.fr'},
     {k:'role', l:'Métier', opts:['Électricien poseur','Électricien dépanneur','Technicien visite technique','Apprenti électricien'], v:'Électricien poseur'}
   ], 'Ajouter et envoyer l\'invitation', function(v){
@@ -3239,17 +3255,17 @@ SCREENS.soon = function(){
 var ACT_MSG = {
   enroute:'Message « Je suis en route » envoyé à Mme Garnier (démo)',
   retard:'Retard de 15 min signalé à la cliente et au bureau (démo)',
-  appeler:'Appel simulé : 06 00 00 00 01',
   whatsapp:'Ouverture de la discussion WhatsApp (démo)',
   itineraire:'Itinéraire vers 12 rue Voltaire, Asnières-sur-Seine (démo)',
   photo:'Photo ajoutée au chantier AR-2611-014 (démo)',
   signature:'Écran de signature : arrive dans la prochaine version',
   fin:'Intervention clôturée, rapport envoyé au bureau (démo)',
   materiel:'Liste du matériel du chantier (démo)',
-  bureau:'Appel simulé : bureau Entreprise AR',
   mail:'E-mail : choix du modèle (démo)'
 };
 function doAct(id){
+  if(id==='appeler'){ var cc=ctxContact(); return callNum(cc[0], cc[1]); }
+  if(id==='bureau') return callNum(BUREAU_TEL, 'le bureau');
   if(id==='retard') return retardSheet();
   if(id==='arrive'){ var nx=techRdv().filter(function(r){return r.st!=='termine';})[0]; if(!nx){ toast('Aucun RDV en cours'); return; } return arrive(nx.rid); }
   if(id==='fin'||id==='signature'){ if(S.site) return go('chantier', S.site.rid); toast('Indiquez d\'abord « Je suis arrivé » sur le chantier'); return; }
@@ -3259,7 +3275,7 @@ function doAct(id){
   if(id==='mail') return sendFlow(S.screen==='client'?S.arg:'c1', false);
   if(id==='whatsapp') { var ci=CONVS.map(function(c){return c.cid;}).indexOf(S.screen==='client'?S.arg:'c1'); if(ci>=0) return go('chat', String(ci)); }
   if(id==='enroute'){
-    var s=sheet('<h3>Prévenir la cliente</h3><p class="hint">Message envoyé à Mme Garnier Hélène · 06 00 00 00 01</p>'+
+    var s=sheet('<h3>Prévenir la cliente</h3><p class="hint">Message envoyé à Mme Garnier Hélène · 06 39 98 00 01</p>'+
       '<div class="seg" id="canal"><button class="on">WhatsApp</button><button>SMS</button></div>'+
       '<textarea id="msgtxt" rows="4" style="width:100%;border:1.5px solid var(--line-strong);border-radius:16px;padding:12px;background:var(--surface);font-size:15px;resize:none">Bonjour Madame Garnier, votre électricien Karim de l\'Entreprise AR est en route. Arrivée prévue vers 09:00. À tout à l\'heure.</textarea>'+
       '<div class="chips"><button class="chip">Arrivée 15 min</button><button class="chip on">Arrivée 09:00</button><button class="chip">Arrivée 30 min</button></div>'+
