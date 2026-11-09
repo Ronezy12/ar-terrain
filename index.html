@@ -834,6 +834,47 @@ html,body{overscroll-behavior:none}
 .map{touch-action:none}
 .map > svg{cursor:grab} .map > svg:active{cursor:grabbing}
 .trk-map > svg{cursor:grab}
+/* ---------- V15 : glisser pour fermer, mode simple, étapes, visite guidée ---------- */
+.sheet .grab{width:46px;height:6px;cursor:grab;position:relative;flex:none}
+.sheet .grab::before{content:"";position:absolute;left:-40px;right:-40px;top:-14px;bottom:-14px}
+.sheet{touch-action:pan-y;will-change:transform}
+.next.simple{gap:10px}
+.next .stepbtn{min-height:60px;font-size:17px;width:100%;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.next .stepbtn svg{width:22px;height:22px}
+.rsteps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:2px 0 2px}
+.rsteps span{display:flex;flex-direction:column;gap:5px}
+.rsteps i{height:6px;border-radius:3px;background:rgba(255,255,255,.22)}
+.rsteps span.done i{background:#fff}
+.rsteps span.cur i{background:var(--accent);box-shadow:0 0 10px rgba(255,201,60,.8)}
+.rsteps small{font-size:11px;font-weight:700;color:rgba(255,255,255,.7)}
+.rsteps span.cur small{color:#fff}
+.next .mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.next .mini button{border:0;border-radius:18px;background:rgba(255,255,255,.14);color:#fff;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:700}
+.next .mini button svg{width:21px;height:21px}
+.next .mini button:active{background:rgba(255,255,255,.26)}
+.dayit{width:100%;text-align:left;padding:12px 14px}
+.dayit .dh{width:50px;flex:none;font-size:16px}
+.dayit.fini{opacity:.6}
+.tour{position:absolute;inset:0;z-index:85;animation:fade .2s ease-out}
+.tour.out{animation:lift .25s ease-in forwards}
+.tour-hole{position:absolute;box-shadow:0 0 0 9999px rgba(5,10,30,.66);border:2px solid var(--accent);transition:all .32s cubic-bezier(.3,1.2,.5,1);pointer-events:none}
+.tour-tip{position:absolute;left:14px;right:14px;background:var(--surface);color:var(--ink);border-radius:22px;padding:14px 16px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:8px;animation:up .25s ease-out}
+.tour-tip b{font-size:17px}
+.tour-tip p{margin:0;font-size:14.5px;line-height:1.45;color:var(--ink-2)}
+.tdots{display:flex;gap:5px} .tdots i{width:7px;height:7px;border-radius:50%;background:var(--line-strong)} .tdots i.on{background:var(--primary);width:18px;border-radius:4px}
+.tour-ok{width:56px;height:56px;border-radius:999px;background:var(--success);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.tour-ok svg{width:28px;height:28px}
+/* ---------- V16 : voix réelle ---------- */
+.vlayer{z-index:75}
+.mic-ring.off{background:var(--fill);color:var(--muted);animation:none}
+.mic-live{min-height:48px;margin:0;font-size:15px;line-height:1.45;color:var(--muted);text-align:center}
+.mic-live.on{color:var(--ink);font-weight:600}
+.vnote{width:48px;height:48px;background:var(--danger-bg);color:var(--danger)}
+.rec-dot{width:22px;height:22px;border-radius:50%;background:var(--danger);margin:0 auto;animation:micp 1.2s ease-out infinite}
+.rec-dot.done{background:var(--success);animation:none}
+.rec-time{font-size:34px;font-weight:800;letter-spacing:-.02em}
+.rec-wave{width:100%;height:56px}
+.cmt audio{width:100%;height:38px;margin-top:6px}
 </style>
 
 </head>
@@ -942,6 +983,7 @@ var P = {
   card:'<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/>',
   trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>',
   lock:'<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  wavei:'<path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4"/>',
   box:'<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'
 };
 function ic(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[n]||'')+'</svg>'; }
@@ -1219,7 +1261,7 @@ SCREENS.plus = function(){
   var h='<div class="pad"><div class="card li" data-go="profil" style="cursor:pointer">'+(S.role==='admin'?'<span class="av y">AH</span>':avatar(tech(ME),'y'))+'<div class="grow"><b>'+(S.role==='admin'?'Ahmed (gérant)':esc(tech(ME).nom))+'</b><div class="muted" style="font-size:13px">'+(S.role==='admin'?'Administrateur':esc(tech(ME).role))+' · Modifier mes informations</div></div>'+ic('chev').replace('<svg','<svg class="chev"')+'</div>';
   h+='<div class="card"><div class="rounds">'+rest.map(function(m){var M=MODULES[m]; return '<button class="rb'+(m==='reglages'?' y':'')+'" data-go="'+m+'"><span class="c">'+ic(M.icon)+'</span>'+esc(M.label)+'</button>';}).join('')+'</div></div>';
   h+='<div class="card cfg"><div class="cfg-it"><span class="ico">'+ic('sun')+'</span><b class="grow">Thème</b><div class="seg" id="theme" style="width:190px">'+[['auto','Auto'],['light','Clair'],['dark','Sombre']].map(function(x){return '<button data-v="'+x[0]+'" class="'+(CFG.theme===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>'+
-     '<div class="cfg-it" data-go="perms" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Autorisations</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div>'+(TROPHY.found&&S.role!=='admin'?'<div class="cfg-it" data-go="trophees" style="cursor:pointer"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><b class="grow">Mes trophées</b><span class="pill p-gray num">'+TROPHY.count+'</span></div>':'')+'<div class="cfg-it" id="plusNav" style="cursor:pointer"><span class="ico">'+ic('route')+'</span><b class="grow">Application d\'itinéraire</b><span class="muted" style="font-size:13px">'+(CFG.navApp?({plans:'Plans',gmaps:'Google Maps',waze:'Waze'})[CFG.navApp]:'Demander')+'</span></div>'+'<div class="cfg-it" id="plusIntro" style="cursor:pointer"><span class="ico">'+ic('bolt')+'</span><b class="grow">Rejouer l\'intro</b></div><div class="cfg-it" data-go="notifs" style="cursor:pointer"><span class="ico">'+ic('bell')+'</span><b class="grow">Notifications</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it" id="logout" style="cursor:pointer"><span class="ico" style="background:var(--danger-bg);color:var(--danger)">'+ic('logout')+'</span><b class="grow">Se déconnecter</b></div></div><p class="hint" style="text-align:center">AR Terrain · version '+APP_VERSION+'</p>';
+     '<div class="cfg-it" data-go="perms" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Autorisations</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div>'+(TROPHY.found&&S.role!=='admin'?'<div class="cfg-it" data-go="trophees" style="cursor:pointer"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><b class="grow">Mes trophées</b><span class="pill p-gray num">'+TROPHY.count+'</span></div>':'')+(S.role!=='admin'?'<div class="cfg-it"><span class="ico">'+ic('spark')+'</span><div class="grow"><b style="display:block">Mode simple</b><span class="muted" style="font-size:12.5px">Accueil épuré avec un seul bouton à suivre</span></div><label class="tog"><input type="checkbox" id="simpleTog"'+(CFG.simple!==false?' checked':'')+'><span></span></label></div><div class="cfg-it" id="helpTour" style="cursor:pointer"><span class="ico">'+ic('bell')+'</span><b class="grow">Aide · revoir la visite guidée</b></div>':'')+'<div class="cfg-it" id="plusNav" style="cursor:pointer"><span class="ico">'+ic('route')+'</span><b class="grow">Application d\'itinéraire</b><span class="muted" style="font-size:13px">'+(CFG.navApp?({plans:'Plans',gmaps:'Google Maps',waze:'Waze'})[CFG.navApp]:'Demander')+'</span></div>'+'<div class="cfg-it" id="plusIntro" style="cursor:pointer"><span class="ico">'+ic('bolt')+'</span><b class="grow">Rejouer l\'intro</b></div><div class="cfg-it" data-go="notifs" style="cursor:pointer"><span class="ico">'+ic('bell')+'</span><b class="grow">Notifications</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it" id="logout" style="cursor:pointer"><span class="ico" style="background:var(--danger-bg);color:var(--danger)">'+ic('logout')+'</span><b class="grow">Se déconnecter</b></div></div><p class="hint" style="text-align:center">AR Terrain · version '+APP_VERSION+'</p>';
   return h+'</div>';
 };
 
@@ -1244,6 +1286,7 @@ SCREENS.reglages = function(){
   h+='<div class="sec"><h2>Accès des techniciens</h2></div><div class="card cfg">'+[['planning','Planning'],['clients','Fiches clients'],['tousClients','Voir tous les clients (sinon seulement les siens)'],['devis','Créer et envoyer des devis'],['montants','Voir le montant des devis'],['prix','Voir les prix unitaires'],['appels','Journal d\'appels'],['messages','Messages et WhatsApp'],['etiquetage','Étiquetage des tableaux'],['ca','Chiffre d\'affaires']].map(function(x){
      var on=CFG.techAccess[x[0]]!==false; return '<div class="cfg-it'+(on?'':' off')+'"><b class="grow">'+esc(x[1])+'</b><label class="tog"><input type="checkbox" data-acc="'+x[0]+'"'+(on?' checked':'')+' aria-label="'+esc(x[1])+'"><span></span></label></div>'; }).join('')+'</div>';
 
+  h+='<div class="sec"><h2>Simplicité</h2></div><div class="card cfg"><div class="cfg-it"><span class="ico">'+ic('spark')+'</span><div class="grow"><b style="display:block">Mode simple pour les techniciens</b><span class="muted" style="font-size:12.5px">Accueil épuré, un seul bouton guide la journée (recommandé)</span></div><label class="tog"><input type="checkbox" id="admSimple"'+(CFG.simple!==false?' checked':'')+'><span></span></label></div><div class="cfg-it"><span class="ico">'+ic('bell')+'</span><div class="grow"><b style="display:block">Visite guidée au premier lancement</b><span class="muted" style="font-size:12.5px">Pour les nouveaux agents terrain</span></div><label class="tog"><input type="checkbox" id="admTour"'+(CFG.tour!==false?' checked':'')+'><span></span></label></div></div>';
   h+='<div class="sec"><h2>Motivation</h2></div><div class="card cfg"><div class="cfg-it"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><div class="grow"><b style="display:block">Trophées et badges cachés</b><span class="muted" style="font-size:12.5px">5 touches sur le logo · badge débloqué à 100, 250, 500 interventions</span></div><label class="tog"><input type="checkbox" id="trOn"'+(CFG.trophees!==false?' checked':'')+'><span></span></label></div></div>';
   h+='<div class="sec"><h2>Autorisations des téléphones</h2></div><div class="card cfg">'+[['Localisation','Karim B.','Toujours','p-ok'],['Localisation','Julien M.','App active','p-warn'],['Notifications','Sofia L.','Refusé','p-bad']].map(function(x){return '<div class="cfg-it"><div class="grow"><b style="display:block;font-size:14px">'+x[1]+'</b><span class="muted" style="font-size:12.5px">'+x[0]+'</span></div><span class="pill '+x[3]+'">'+x[2]+'</span></div>';}).join('')+'</div><p class="hint">Apple et Google interdisent d\'obliger un utilisateur à accepter. Vous êtes prévenu ici quand un technicien refuse, et l\'appli lui rappelle pourquoi c\'est utile.</p>';
   h+='<div class="sec" id="avisSec"><h2>Avis Google</h2></div><div class="card" style="display:flex;flex-direction:column;gap:12px"><div class="row"><b class="grow">Demander un avis après chaque intervention</b><label class="tog"><input type="checkbox" id="avOn"'+(CFG.avis.on?' checked':'')+'><span></span></label></div><div class="muted" style="font-size:13px;font-weight:700">Envoi du SMS</div><div class="opts">'+[['now','Tout de suite'],['2h','2 h après'],['j1','Le lendemain 10:00']].map(function(x){return '<button class="opt sm'+(CFG.avis.delai===x[0]?' on':'')+'" data-avd="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div><label class="field"><span>Lien de votre fiche Google</span><input id="avL" value="'+esc(CFG.avis.lien)+'"></label><p class="hint">Pas de demande si le client a mis moins de 4 étoiles à la signature : le bureau le rappelle à la place.</p></div>';
@@ -1739,9 +1782,9 @@ function clientExtras(c){
   }
   h+='<div class="sec"><h2>Photos du chantier</h2><span class="muted num" style="font-size:12.5px">'+c.photos.length+'</span></div><div class="phs">'+c.photos.map(photoTile).join('')+'<label class="ph add">'+ic('plus')+'<span>Ajouter</span><input type="file" accept="image/*,video/*" capture="environment" id="addPh" hidden></label></div>';
   h+='<div class="sec"><h2>Commentaires du poseur</h2><span class="muted num" style="font-size:12.5px">'+c.notes.length+'</span></div><div class="card" style="display:flex;flex-direction:column;gap:12px">'+
-    (c.notes.length?c.notes.map(function(n){ return '<div class="cmt"><span class="av xs'+(n.role==='Admin'?' y':'')+'">'+initials(n.who)+'</span><div class="grow"><div class="row" style="gap:6px"><b style="font-size:13.5px">'+esc(n.who)+'</b><span class="muted" style="font-size:12px">'+esc(n.role)+' · '+esc(n.w)+'</span></div><div style="font-size:14px;line-height:1.45;margin-top:2px">'+esc(n.txt)+'</div></div></div>'; }).join(''):'<span class="muted" style="font-size:13.5px">Aucun commentaire pour l\'instant.</span>')+
+    (c.notes.length?c.notes.map(function(n){ return '<div class="cmt"><span class="av xs'+(n.role==='Admin'?' y':'')+'">'+initials(n.who)+'</span><div class="grow"><div class="row" style="gap:6px"><b style="font-size:13.5px">'+esc(n.who)+'</b><span class="muted" style="font-size:12px">'+esc(n.role)+' · '+esc(n.w)+'</span></div>'+(n.txt?'<div style="font-size:14px;line-height:1.45;margin-top:2px">'+esc(n.txt)+'</div>':'')+(n.audio?'<audio controls preload="metadata" src="'+n.audio+'"></audio><span class="muted num" style="font-size:12px">Note vocale · '+fmtDur(n.dur||0)+'</span>':'')+'</div></div>'; }).join(''):'<span class="muted" style="font-size:13.5px">Aucun commentaire pour l\'instant.</span>')+
     '<div class="opts">'+['Accès difficile','Client absent','Matériel manquant','Prévoir 2e passage','Travaux conformes'].map(function(x){return '<button class="opt sm" data-qc="'+x+'">'+x+'</button>';}).join('')+'</div>'+
-    '<div class="row" style="align-items:flex-end"><textarea id="cmt" rows="2" placeholder="Ajouter un commentaire (visible par le bureau)" aria-label="Commentaire" style="flex:1;min-width:0;border:1.5px solid var(--line-strong);border-radius:20px;padding:12px 14px;background:var(--surface);font-size:15px;resize:none"></textarea>'+micBtn('cmt')+'<button class="ibtn" id="cmtOk" style="width:48px;height:48px;background:var(--primary);color:#fff" aria-label="Publier">'+ic('send')+'</button></div></div>';
+    '<div class="row" style="align-items:flex-end"><textarea id="cmt" rows="2" placeholder="Ajouter un commentaire (visible par le bureau)" aria-label="Commentaire" style="flex:1;min-width:0;border:1.5px solid var(--line-strong);border-radius:20px;padding:12px 14px;background:var(--surface);font-size:15px;resize:none"></textarea>'+micBtn('cmt')+voiceBtn('cmt')+'<button class="ibtn" id="cmtOk" style="width:48px;height:48px;background:var(--primary);color:#fff" aria-label="Publier">'+ic('send')+'</button></div></div>';
   return h;
 }
 function bindClient(){
@@ -1750,6 +1793,7 @@ function bindClient(){
   each('[data-valid]',function(b){ b.onclick=function(){ validRdv(b.dataset.valid); }; });
   each('[data-rdv]',function(b){ b.onclick=function(){ rdvSheet(b.dataset.rdv); }; });
   each('[data-qc]',function(b){ b.onclick=function(){ var t=$('cmt'); t.value=(t.value?t.value+' ':'')+b.dataset.qc+'.'; t.focus(); }; });
+  each('[data-vnote]',function(b){ b.onclick=function(){ recordVoice(function(url,dur){ c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:'', audio:url, dur:dur, w:'À l\'instant'}); rr(); done('Note vocale jointe à la fiche, le bureau peut l\'écouter','Note vocale'); }); }; });
   $('cmtOk').onclick=function(){ var v=$('cmt').value.trim(); if(!v){ toast('Écrivez un commentaire'); return; } c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:v, w:'À l\'instant'}); rr(); done('Commentaire publié, le bureau est prévenu', 'Commentaire'); };
   $('addPh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Photo du '+new Date().toLocaleDateString('fr-FR'), src:rd.result, who:'Vous', w:'À l\'instant'}); rr(); done('Photo ajoutée à la fiche', 'Photo'); }; rd.readAsDataURL(f); };
   each('[data-ph]',function(b){ b.onclick=function(){ var i=+b.dataset.ph, p=c.photos[i];
@@ -2165,7 +2209,7 @@ function openSearch(){
     [].forEach.call(s.querySelectorAll('[data-sq]'),function(b){ b.onclick=function(){ q.value=b.dataset.sq; fill(); }; });
     [].forEach.call(s.querySelectorAll('[data-uc]'),function(b){ b.onclick=function(){ closeSheet(); go('client', b.dataset.uc); }; });
     [].forEach.call(s.querySelectorAll('[data-ur]'),function(b){ b.onclick=function(){ rdvSheet(b.dataset.ur); }; });
-    [].forEach.call(s.querySelectorAll('[data-mic]'),function(b){ b.onclick=function(){ var keep=q.value; closeSheet(); openSearch(); setTimeout(function(){ var n=$('uq'); n.value='Garnier'; n.dispatchEvent(new Event('input')); toast('Recherche dictée : « Garnier »'); },300); }; });
+    [].forEach.call(s.querySelectorAll('[data-mic]'),function(b){ b.onclick=function(){ dictate('uq'); }; });
   }
   q.oninput=fill; fill(); setTimeout(function(){ q.focus(); },60);
 }
@@ -2228,9 +2272,10 @@ function bindChantier(){
   each('[data-sd]',function(b){ b.onclick=function(){ S.dv=newDraft(); S.dv.client=c.id; go('devis'); }; });
   each('[data-scall]',function(b){ b.onclick=function(){ callNum(c.tel, c.nom); }; });
   each('[data-spay]',function(b){ b.onclick=function(){ var d=c.devis[0]; payFlow(d?r2(d.ttc*0.3):150, c, function(){ rerender(); }); }; });
-  each('[data-sc]',function(b){ b.onclick=function(){ var s=sheet('<h3>Commentaire pour le bureau</h3><div class="opts">'+['Accès difficile','Matériel manquant','Prévoir 2e passage','Client absent'].map(function(x){return '<button class="opt sm" data-q="'+x+'">'+x+'</button>';}).join('')+'</div><div class="row" style="align-items:flex-end"><textarea id="siteCmt" rows="4" placeholder="Écrivez ou dictez…" style="flex:1;min-width:0;border:1.5px solid var(--line-strong);border-radius:20px;padding:12px;background:var(--surface);font-size:15px;resize:none"></textarea>'+micBtn('siteCmt')+'</div><button class="btn primary block" id="scOk">Publier</button>');
+  each('[data-sc]',function(b){ b.onclick=function(){ var s=sheet('<h3>Commentaire pour le bureau</h3><div class="opts">'+['Accès difficile','Matériel manquant','Prévoir 2e passage','Client absent'].map(function(x){return '<button class="opt sm" data-q="'+x+'">'+x+'</button>';}).join('')+'</div><div class="row" style="align-items:flex-end"><textarea id="siteCmt" rows="4" placeholder="Écrivez ou dictez…" style="flex:1;min-width:0;border:1.5px solid var(--line-strong);border-radius:20px;padding:12px;background:var(--surface);font-size:15px;resize:none"></textarea>'+micBtn('siteCmt')+voiceBtn('siteCmt')+'</div><button class="btn primary block" id="scOk">Publier</button>');
     [].forEach.call(s.querySelectorAll('[data-q]'),function(x){ x.onclick=function(){ var t=s.querySelector('#siteCmt'); t.value=(t.value?t.value+' ':'')+x.dataset.q+'.'; }; });
     [].forEach.call(s.querySelectorAll('[data-mic]'),function(x){ x.onclick=function(){ dictate('siteCmt'); }; });
+    [].forEach.call(s.querySelectorAll('[data-vnote]'),function(x){ x.onclick=function(){ recordVoice(function(url,dur){ c.notes.unshift({who:'Karim B.', role:'Poseur', txt:'', audio:url, dur:dur, w:'À l\'instant'}); closeSheet(); rerender(); done('Note vocale jointe au chantier','Note vocale'); }); }; });
     s.querySelector('#scOk').onclick=function(){ var v=s.querySelector('#siteCmt').value.trim(); if(!v){ toast('Écrivez ou dictez un commentaire'); return; } c.notes.unshift({who:'Karim B.', role:'Poseur', txt:v, w:'À l\'instant'}); closeSheet(); rerender(); done('Commentaire publié','Commentaire'); }; }; });
   $('goFin').onclick=function(){ S.fin={rid:r.id, step:1, travaux:{}, reserve:'Aucune réserve', note:'', sig:null, nom:c.nom, stars:0, ok:false, pay:null, avis:CFG.avis.on, rapport:true}; go('fin', r.id); };
 }
@@ -2876,7 +2921,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.13 · 9 nov. 2026';
+var APP_VERSION='1.0.14 · 9 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3244,6 +3289,179 @@ function attachZoom(box){
   box._follow=function(x,y){ if(vb[2]<vb0[2]*.98){ /* garde l'utilitaire visible quand on a zoomé */ var mx=vb[2]*.18, my=vb[3]*.18; if(x<vb[0]+mx) vb[0]=x-mx; if(x>vb[0]+vb[2]-mx) vb[0]=x-vb[2]+mx; if(y<vb[1]+my) vb[1]=y-my; if(y>vb[1]+vb[3]-my) vb[1]=y-vb[3]+my; clampVb(); apply(true); } };
 }
 
+/* =========================================================
+   V15 — Fenêtres à glisser vers le bas · Mode simple technicien · Étapes du RDV · Visite guidée
+   ========================================================= */
+
+/* ---------- Glisser vers le bas pour fermer une fenêtre ---------- */
+function enableSheetDrag(sh){
+  if(!sh || sh._drag) return; sh._drag=true;
+  var scrim=sh.parentNode, y0=0, x0=0, t0=0, dy=0, dragging=false, tracking=false;
+  function start(y,x){ y0=y; x0=x; t0=Date.now(); dy=0; dragging=false; tracking=true; }
+  function move(y,x,ev){
+    if(!tracking) return; var d=y-y0, dx=x-x0;
+    if(!dragging){ if(d>8 && sh.scrollTop<=0 && Math.abs(d)>Math.abs(dx)){ dragging=true; sh.style.transition='none'; } else if(Math.abs(d)>8||Math.abs(dx)>8){ if(!(d>0&&sh.scrollTop<=0)) tracking=false; return; } else return; }
+    if(ev && ev.cancelable) ev.preventDefault();
+    dy=Math.max(0,d); sh.style.transform='translateY('+dy+'px)'; scrim.style.background='rgba(0,0,0,'+(0.38*Math.max(0,1-dy/420))+')';
+  }
+  function end(){
+    if(!tracking) return; tracking=false; if(!dragging) return; dragging=false;
+    var v=dy/Math.max(1,Date.now()-t0);
+    sh.style.transition='transform .22s ease-out'; scrim.style.transition='background .22s ease-out';
+    if(dy>110 || v>.55){ sh.style.transform='translateY(110%)'; scrim.style.background='rgba(0,0,0,0)'; setTimeout(closeSheet,200); sh._justDragged=true; }
+    else { sh.style.transform=''; scrim.style.background=''; }
+  }
+  sh.addEventListener('touchstart',function(e){ if(e.touches.length===1) start(e.touches[0].clientY, e.touches[0].clientX); },{passive:true});
+  sh.addEventListener('touchmove',function(e){ if(e.touches.length===1) move(e.touches[0].clientY, e.touches[0].clientX, e); },{passive:false});
+  sh.addEventListener('touchend',end); sh.addEventListener('touchcancel',end);
+  /* souris : depuis la barre grise */
+  var grab=sh.querySelector('.grab');
+  if(grab){
+    grab.setAttribute('role','button'); grab.setAttribute('aria-label','Fermer'); grab.tabIndex=0;
+    grab.addEventListener('pointerdown',function(e){ if(e.pointerType!=='mouse') return; start(e.clientY,e.clientX); try{ grab.setPointerCapture(e.pointerId); }catch(er){} });
+    grab.addEventListener('pointermove',function(e){ if(e.pointerType==='mouse') move(e.clientY,e.clientX,null); });
+    grab.addEventListener('pointerup',function(e){ if(e.pointerType!=='mouse') return; var was=dragging; end(); if(!was) closeSheet(); });
+    grab.addEventListener('click',function(e){ if(e.pointerType==='mouse') return; if(!sh._justDragged) closeSheet(); });
+    grab.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); closeSheet(); } });
+  }
+}
+var _sheet=sheet;
+sheet=function(html){ var s=_sheet(html); enableSheetDrag(s); return s; };
+document.addEventListener('keydown',function(e){ if(e.key==='Escape' && $('scrim') && !document.body.classList.contains('video')) closeSheet(); });
+
+/* ---------- Étapes d'un RDV ---------- */
+var RSTEP={aconf:0, confirme:1, enroute:1, surplace:2, termine:4};
+var STEP_NAMES=['Confirmé','En route','Sur place','Terminé'];
+function stepDots(st){ var k=RSTEP[st]||0; return '<div class="rsteps" aria-label="Étape '+Math.min(4,Math.max(1,k))+' sur 4">'+STEP_NAMES.map(function(n,i){ var cls=i<k?'done':i===k?'cur':''; return '<span class="'+cls+'"><i></i><small>'+n+'</small></span>'; }).join('')+'</div>'; }
+function stepButton(r){
+  if(r.st==='aconf') return '<button class="btn stepbtn" data-valid="'+r.rid+'" style="background:var(--success);color:#fff">'+ic('check')+'Valider le RDV</button>';
+  if(r.st==='confirme') return '<button class="btn accent stepbtn" data-act="enroute">'+ic('nav')+'Je suis en route</button>';
+  if(r.st==='enroute') return '<button class="btn stepbtn" data-arr="'+r.rid+'" style="background:var(--success);color:#fff">'+ic('pin')+'Je suis arrivé</button>';
+  if(r.st==='surplace') return '<button class="btn accent stepbtn" data-gosite="'+r.rid+'">'+ic('wrench')+'Ouvrir le chantier</button>';
+  return '';
+}
+function simpleOn(){ return S.role!=='admin' && CFG.simple!==false; }
+
+/* ---------- Accueil en mode simple ---------- */
+function techHomeSimple(){
+  var rdvs=techRdv(), left=rdvs.filter(function(r){return r.st!=='termine';}), next=left[0];
+  var h='<div class="pad">';
+  if(S.site){ var sr=rdv(S.site.rid), sc=client(sr.cid); h+='<button class="chantier-bar" data-gosite="'+sr.id+'">'+ic('wrench')+'<span class="grow"><b style="display:block">Chantier en cours · '+esc(sc.nom)+'</b><span style="font-size:13px;opacity:.9">Sur place depuis <span class="num" data-timer>'+elapsed()+'</span></span></span>'+ic('chev')+'</button>'; }
+  h+='<div class="hello"><div><small>'+esc(TODAY.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))+'</small><h1>Bonjour Karim</h1></div><span class="pill p-blue">'+left.length+' RDV restant'+(left.length>1?'s':'')+'</span></div>';
+  if(!next){ h+='<div class="card empty-st">'+ic('check')+'<b>Journée terminée</b><span class="muted">Tous vos RDV du jour sont clôturés. Bravo !</span></div>'; }
+  else {
+    h+='<div class="next simple"><div class="k">'+(next.st==='surplace'?'En cours':'Prochain RDV')+' · '+esc(next.rdv)+' · '+esc(next.duree)+'</div><h3>'+esc(next.nom)+'</h3>'+
+      '<div class="meta">'+ic('pin')+'<span>'+esc(next.adr)+', '+esc(next.ville)+'</span></div>'+
+      '<div class="meta">'+ic('wrench')+'<span>'+esc(next.type)+'</span></div>'+stepDots(next.st)+
+      stepButton(next)+
+      '<div class="mini"><button data-act="appeler">'+ic('phone')+'<span>Appeler</span></button><button data-act="itineraire">'+ic('route')+'<span>Itinéraire</span></button><button data-act="retard">'+ic('late')+'<span>Retard</span></button><button data-open="'+next.id+'">'+ic('user')+'<span>Fiche</span></button></div></div>';
+  }
+  h+='<div class="sec"><h2>Ma journée</h2></div><div class="list daylist">'+rdvs.map(function(r){ var s=RST[r.st]; return '<button class="card li dayit'+(r.st==='termine'?' fini':'')+'" data-open="'+r.id+'"><b class="num dh">'+esc(r.rdv)+'</b><div class="grow" style="min-width:0;text-align:left"><b class="ell" style="display:block">'+esc(r.nom)+'</b><span class="muted ell" style="display:block;font-size:13px">'+esc(r.type)+'</span></div><span class="pill '+s[1]+'">'+s[0]+'</span></button>'; }).join('')+'</div>';
+  h+='<button class="link" id="net" style="align-self:center;margin:4px 0 8px">'+(S.forceOff?'Arrêter la simulation hors ligne':'Simuler une perte de réseau')+'</button>';
+  return h+'</div>';
+}
+var _techHome=techHome;
+techHome=function(){ return simpleOn() ? techHomeSimple() : _techHome(); };
+/* étapes aussi en mode complet, sous le prochain RDV */
+var _tabsFor=tabsFor;
+tabsFor=function(){ if(simpleOn()) return ['accueil','planning','clients','messages'].filter(allowed).slice(0,4); return _tabsFor(); };
+
+/* ---------- Visite guidée (nouveaux agents) ---------- */
+var TOUR=[
+  {sel:'.next', t:'Votre prochain RDV', d:'Le client, l\'heure et l\'adresse. Tout ce qu\'il faut savoir avant de partir.'},
+  {sel:'.next .stepbtn', t:'Un seul bouton à suivre', d:'Il vous dit quoi faire maintenant : valider, partir, arriver, puis ouvrir le chantier. Le bureau est prévenu à chaque étape.'},
+  {sel:'.next .rsteps', t:'Où vous en êtes', d:'Les 4 étapes du RDV : Confirmé, En route, Sur place, Terminé.'},
+  {sel:'.next .mini', t:'Les raccourcis', d:'Appeler le client, lancer l\'itinéraire, prévenir d\'un retard ou ouvrir sa fiche.'},
+  {sel:'.daylist', t:'Toute votre journée', d:'Vos RDV dans l\'ordre. Touchez-en un pour voir la fiche du client.'},
+  {sel:'#tabs', t:'La barre du bas', d:'Planning, clients et WhatsApp. Le bouton « Plus » regroupe le reste, dont l\'aide.'},
+  {sel:'#bell', t:'Les nouveautés', d:'Les nouvelles interventions du bureau et vos rappels arrivent ici, et en notification sur le téléphone.'}
+];
+function runTour(then){
+  if(S.screen!=='accueil'){ goTab('accueil'); }
+  var ph=$('phone'), i=0, el=document.createElement('div'); el.className='tour'; el.innerHTML='<div class="tour-hole"></div><div class="tour-tip" role="dialog" aria-live="polite"></div>'; ph.appendChild(el);
+  var hole=el.querySelector('.tour-hole'), tip=el.querySelector('.tour-tip');
+  function end(){ el.classList.add('out'); setTimeout(function(){ el.remove(); },250); try{ localStorage.setItem('ar_tour_done','1'); }catch(e){} then&&then(); }
+  function show(){
+    var st=TOUR[i], tg=document.querySelector(st.sel);
+    if(!tg){ i++; if(i>=TOUR.length) return finale(); return show(); }
+    var pr=ph.getBoundingClientRect(), sc=pr.width/ph.offsetWidth||1;
+    if(tg.closest('main')){ var vr=V.getBoundingClientRect(), r0=tg.getBoundingClientRect(); if(r0.bottom>vr.bottom-10||r0.top<vr.top){ V.scrollTop+= (r0.top-vr.top)/sc-60; } }
+    var r=tg.getBoundingClientRect(), x=(r.left-pr.left)/sc-6, y=(r.top-pr.top)/sc-6, w=r.width/sc+12, hh=r.height/sc+12;
+    hole.style.cssText='left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+hh+'px;border-radius:'+(st.sel==='#bell'?'999px':'22px');
+    tip.innerHTML='<div class="row"><span class="muted num" style="font-size:12px;font-weight:800">'+(i+1)+' / '+TOUR.length+'</span><button class="link" id="tSkip" style="margin-left:auto">Passer</button></div><b>'+esc(st.t)+'</b><p>'+esc(st.d)+'</p><div class="row"><div class="tdots">'+TOUR.map(function(_,k){return '<i class="'+(k===i?'on':'')+'"></i>';}).join('')+'</div>'+(i>0?'<button class="btn soft sm" id="tPrev" style="margin-left:auto">Retour</button>':'')+'<button class="btn primary sm" id="tNext"'+(i===0?' style="margin-left:auto"':'')+'>'+(i===TOUR.length-1?'Terminer':'Suivant')+'</button></div>';
+    var below = (y+hh+190) < ph.offsetHeight;
+    tip.style.top = below ? (y+hh+12)+'px' : 'auto'; tip.style.bottom = below ? 'auto' : (ph.offsetHeight-y+12)+'px';
+    tip.querySelector('#tNext').onclick=function(){ i++; if(i>=TOUR.length) return finale(); show(); };
+    var pv=tip.querySelector('#tPrev'); if(pv) pv.onclick=function(){ i--; show(); };
+    tip.querySelector('#tSkip').onclick=end;
+  }
+  function finale(){ hole.style.cssText='left:50%;top:50%;width:0;height:0'; tip.style.top='auto'; tip.style.bottom='120px';
+    tip.innerHTML='<div class="tour-ok">'+ic('check')+'</div><b style="text-align:center">C\'est parti !</b><p style="text-align:center">Vous pouvez revoir cette visite à tout moment dans Plus &gt; Aide.</p><button class="btn primary block" id="tEnd">Commencer ma journée</button>';
+    tip.querySelector('#tEnd').onclick=end; }
+  setTimeout(show, 80);
+}
+var _afterOnboarding=afterOnboarding;
+afterOnboarding=function(){
+  var seen=false; try{ seen=localStorage.getItem('ar_tour_done')==='1'; }catch(e){}
+  if(S.role==='tech' && CFG.tour!==false && !seen){ S.stack=[]; S.screen='accueil'; render(); setTimeout(function(){ runTour(_afterOnboarding); }, 450); }
+  else _afterOnboarding();
+};
+
+/* =========================================================
+   V16 — Voix réelle uniquement : dictée sans texte inventé + notes vocales (vraie voix enregistrée)
+   ========================================================= */
+function vpop(html){ vclose(); var d=document.createElement('div'); d.className='scrim center vlayer'; d.id='vlayer'; d.innerHTML='<div class="pop" role="dialog" aria-modal="true">'+html+'</div>'; $('phone').appendChild(d); d.onclick=function(e){ if(e.target===d) vclose(); }; [].forEach.call(d.querySelectorAll('[data-close]'),function(b){ b.onclick=vclose; }); return d.querySelector('.pop'); }
+function vclose(){ var d=document.getElementById('vlayer'); if(d) d.remove(); }
+dictate = function(target){
+  var el=document.getElementById(target); if(!el) return;
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR || IN_PREVIEW){
+    var p=vpop('<div class="mic-ring off">'+ic('mic')+'</div><h3>Dictée indisponible ici</h3><p class="hint">'+(IN_PREVIEW?'L\'aperçu ne donne pas accès au micro. Ouvrez l\'appli installée sur votre téléphone.':'Ce navigateur ne propose pas la dictée. Touchez le champ, puis le micro de votre clavier : la dictée du téléphone écrira ce que vous dites.')+'</p><button class="btn primary block" id="kbMic">'+(IN_PREVIEW?'Compris':'Utiliser le micro du clavier')+'</button>');
+    p.querySelector('#kbMic').onclick=function(){ vclose(); if(!IN_PREVIEW) setTimeout(function(){ el.focus(); },120); };
+    return;
+  }
+  var base=el.value?el.value.replace(/\s*$/,' '):'', finalTxt='', rec=new SR(), stopped=false, gotAny=false;
+  rec.lang='fr-FR'; rec.interimResults=true; rec.continuous=true; rec.maxAlternatives=1;
+  var p2=vpop('<div class="mic-ring">'+ic('mic')+'</div><h3 id="micH">Je vous écoute…</h3><div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><p class="mic-live" id="micTxt">Parlez : le texte s\'écrit au fur et à mesure.</p><div class="btns"><button class="btn soft" id="micCancel">Annuler</button><button class="btn primary" id="micStop">'+ic('check')+'Terminer</button></div>');
+  var live=p2.querySelector('#micTxt');
+  rec.onresult=function(e){ gotAny=true; var inter=''; for(var i=e.resultIndex;i<e.results.length;i++){ var t=e.results[i][0].transcript; if(e.results[i].isFinal) finalTxt+=t+' '; else inter+=t; } live.textContent=(finalTxt+inter).trim()||'…'; live.classList.add('on'); };
+  rec.onerror=function(e){ if(stopped) return; stopped=true; var m={ 'not-allowed':'Le micro est refusé. Autorisez-le dans les Réglages du téléphone, rubrique AR Terrain.', 'service-not-allowed':'Le micro est refusé. Autorisez-le dans les Réglages du téléphone.', 'no-speech':'Je n\'ai rien entendu. Rapprochez le téléphone et réessayez.', 'audio-capture':'Aucun micro détecté.', 'network':'La dictée a besoin du réseau sur ce téléphone. Réessayez avec du réseau ou utilisez le micro du clavier.' }[e.error]||'La dictée s\'est arrêtée. Réessayez ou utilisez le micro du clavier.';
+    p2.querySelector('#micH').textContent='Dictée interrompue'; live.textContent=m; live.classList.remove('on'); p2.querySelector('.wave').style.visibility='hidden'; p2.querySelector('#micStop').textContent='Fermer'; p2.querySelector('#micStop').onclick=vclose; };
+  rec.onend=function(){ if(!stopped && !p2.isConnected) return; };
+  function apply(){ var t=finalTxt.trim()||(live.classList.contains('on')?live.textContent.trim():''); if(t){ el.value=base+t; el.dispatchEvent(new Event('input')); toast('Texte dicté ajouté'); } else toast('Rien n\'a été dicté'); }
+  p2.querySelector('#micStop').onclick=function(){ if(stopped) return vclose(); stopped=true; try{ rec.stop(); }catch(e){} setTimeout(function(){ vclose(); apply(); el.focus(); },350); };
+  p2.querySelector('#micCancel').onclick=function(){ stopped=true; try{ rec.abort(); }catch(e){} vclose(); };
+  try{ rec.start(); }catch(e){ rec.onerror({error:'start'}); }
+};
+
+/* ---------- Note vocale : la vraie voix est enregistrée et réécoutable ---------- */
+function voiceBtn(target){ return '<button class="ibtn vnote" data-vnote="'+target+'" aria-label="Note vocale">'+ic('wavei')+'</button>'; }
+function fmtDur(s){ s=Math.round(s); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function recordVoice(onDone){
+  var ok = !IN_PREVIEW && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder;
+  if(!ok){ var p=vpop('<div class="mic-ring off">'+ic('wavei')+'</div><h3>Note vocale indisponible ici</h3><p class="hint">'+(IN_PREVIEW?'L\'aperçu ne donne pas accès au micro. Sur l\'appli installée, votre voix est enregistrée et jointe à la fiche.':'Ce téléphone ne permet pas l\'enregistrement depuis l\'appli.')+'</p><button class="btn primary block" data-close>Compris</button>'); return; }
+  var p2=vpop('<div class="rec-dot"></div><h3 id="recH">Préparation du micro…</h3><div class="rec-time num" id="recT">0:00</div><canvas class="rec-wave" id="recW" width="560" height="90" aria-hidden="true"></canvas><p class="hint" id="recHint">Votre voix est enregistrée telle quelle.</p><div class="btns" id="recBtns"><button class="btn soft" id="recCancel">Annuler</button><button class="btn" id="recStop" style="background:var(--danger);color:#fff" disabled>'+ic('check')+'Arrêter</button></div>');
+  var stream=null, mr=null, chunks=[], t0=0, tm=null, ac=null, an=null, raf=null, cancelled=false;
+  function cleanup(){ clearInterval(tm); cancelAnimationFrame(raf); try{ stream&&stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} try{ ac&&ac.close(); }catch(e){} }
+  p2.querySelector('#recCancel').onclick=function(){ cancelled=true; try{ mr&&mr.state!=='inactive'&&mr.stop(); }catch(e){} cleanup(); vclose(); };
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}).then(function(st){
+    stream=st; var mime=['audio/mp4','audio/webm;codecs=opus','audio/webm',''].filter(function(m){ return !m || (MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m)); })[0];
+    mr=new MediaRecorder(st, mime?{mimeType:mime}:undefined);
+    mr.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+    mr.onstop=function(){ cleanup(); if(cancelled) return; var dur=(Date.now()-t0)/1000; var blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'}); var url=URL.createObjectURL(blob);
+      p2.querySelector('#recH').textContent='Note vocale · '+fmtDur(dur); p2.querySelector('.rec-dot').classList.add('done'); p2.querySelector('#recW').style.display='none'; p2.querySelector('#recT').style.display='none';
+      p2.querySelector('#recHint').innerHTML='<audio controls src="'+url+'" style="width:100%"></audio>';
+      p2.querySelector('#recBtns').innerHTML='<button class="btn soft" id="recDel">Supprimer</button><button class="btn primary" id="recOk">'+ic('send')+'Joindre</button>';
+      p2.querySelector('#recDel').onclick=function(){ URL.revokeObjectURL(url); vclose(); };
+      p2.querySelector('#recOk').onclick=function(){ vclose(); onDone(url, dur, blob); };
+    };
+    mr.start(250); t0=Date.now(); p2.querySelector('#recH').textContent='Enregistrement…'; var sb=p2.querySelector('#recStop'); sb.disabled=false; sb.onclick=function(){ if(mr.state!=='inactive') mr.stop(); };
+    tm=setInterval(function(){ var s=(Date.now()-t0)/1000; var e=document.getElementById('recT'); if(e) e.textContent=fmtDur(s); if(s>=180 && mr.state!=='inactive') mr.stop(); },250);
+    try{ ac=new (window.AudioContext||window.webkitAudioContext)(); var src=ac.createMediaStreamSource(st); an=ac.createAnalyser(); an.fftSize=256; src.connect(an); var buf=new Uint8Array(an.frequencyBinCount), cv=document.getElementById('recW'), g=cv.getContext('2d'), hist=[];
+      (function draw(){ if(!document.body.contains(cv)) return; an.getByteTimeDomainData(buf); var m=0; for(var i=0;i<buf.length;i++){ m=Math.max(m,Math.abs(buf[i]-128)); } hist.push(m/128); if(hist.length>70) hist.shift(); g.clearRect(0,0,560,90); var col=getComputedStyle(document.documentElement).getPropertyValue('--danger').trim()||'#C5221F'; g.fillStyle=col; hist.forEach(function(v,k){ var hh=Math.max(4,v*84); g.fillRect(k*8, 45-hh/2, 5, hh); }); raf=requestAnimationFrame(draw); })(); }catch(e){}
+  }).catch(function(){ cleanup(); p2.querySelector('#recH').textContent='Micro refusé'; p2.querySelector('#recHint').textContent='Autorisez le micro dans les Réglages du téléphone, rubrique AR Terrain.'; p2.querySelector('#recBtns').innerHTML='<button class="btn primary block" data-close>Fermer</button>'; p2.querySelector('[data-close]').onclick=vclose; });
+}
+
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
@@ -3321,6 +3539,9 @@ function bind(){
   if(S.screen==='notifs') bindNotifs();
   var pi=$('plusIntro'); if(pi) pi.onclick=function(){ introBest(null); };
   var pn=$('plusNav'); if(pn) pn.onclick=navChooser;
+  var stg=$('simpleTog'); if(stg) stg.onchange=function(){ CFG.simple=this.checked; save(); tabKey=''; rerender(); toast(this.checked?'Mode simple activé':'Mode complet activé'); };
+  var ht=$('helpTour'); if(ht) ht.onclick=function(){ try{ localStorage.removeItem('ar_tour_done'); }catch(e){} S.stack=[]; S.screen='accueil'; render(); setTimeout(function(){ runTour(null); },350); };
+  if(S.screen==='accueil') each('[data-valid]',function(b){ b.onclick=function(e){ e.stopPropagation(); validRdv(b.dataset.valid); }; });
   each('[data-hf]',function(b){ b.onclick=function(){ S.hf=b.dataset.hf; rerender(); }; });
   each('[data-prev]',function(b){ b.onclick=function(){ toast('Aperçu du bouton '+b.dataset.prev+' : forme « '+({pill:'Ronde',soft:'Arrondie',square:'Carrée'})[CFG.shape]+' », taille '+(CFG.size==='gants'?'grande':'normale')); }; });
   var wq=$('waq'); if(wq) wq.oninput=function(){ S.waq=wq.value; rerender(); };
@@ -3344,6 +3565,8 @@ function bind(){
     seg('cfgRole',function(v){ S.cfgRole=v; render(); });
     seg('shape',function(v){ CFG.shape=v; save(); render(); });
     seg('size',function(v){ CFG.size=v; save(); render(); });
+    var as=$('admSimple'); if(as) as.onchange=function(){ CFG.simple=this.checked; save(); toast(this.checked?'Mode simple activé pour les techniciens':'Mode complet pour les techniciens'); };
+    var at2=$('admTour'); if(at2) at2.onchange=function(){ CFG.tour=this.checked; save(); };
     var trOn=$('trOn'); if(trOn) trOn.onchange=function(){ CFG.trophees=this.checked; save(); };
     var avOn=$('avOn'); if(avOn) avOn.onchange=function(){ CFG.avis.on=this.checked; save(); };
     each('[data-avd]',function(b){ b.onclick=function(){ CFG.avis.delai=b.dataset.avd; save(); rerender(); }; });
@@ -3359,9 +3582,9 @@ function mv(arr,i,d){ var j=i+d; if(j<0||j>=arr.length) return; var t=arr[i]; ar
 function setRole(r){ S.role=r; S.stack=[]; S.screen='accueil'; S.arg=null; render(); toast(r==='admin'?'Vous voyez l\'appli en tant qu\'admin':'Vous voyez l\'appli en tant que technicien'); }
 $('rolePill').onclick=function(){ setRole(S.role==='admin'?'tech':'admin'); };
 [].forEach.call(document.querySelectorAll('#sideRole button'),function(b){ b.onclick=function(){ setRole(b.dataset.r); }; });
-var JUMP=[['Accueil','accueil'],['Fiche client','client','c1'],['Clients','clients'],['Planning','planning'],['Nouveau devis','devis'],['Appels','appels'],['Messages','messages'],['Étiquetage','etiquetage'],['Chiffre d\'affaires (admin)','ca','',true],['Équipe (admin)','equipe','',true],['Personnaliser (admin)','reglages','',true],['Mode chantier','chantier','r1'],['Fin d\'intervention','fin','r1'],['Tableau électrique','tableau','c1'],['Tableau de bord (admin)','stats','',true],['Aperçu étiquettes','apercu','c1'],['Suivi en direct (admin)','suivi','t1',true],['Autorisations','perms'],['Trophées (caché)','trophees'],['Notifications','notifs'],['Mon profil','profil'],['Plus','plus']];
+var JUMP=[['Accueil','accueil'],['Fiche client','client','c1'],['Clients','clients'],['Planning','planning'],['Nouveau devis','devis'],['Appels','appels'],['Messages','messages'],['Étiquetage','etiquetage'],['Chiffre d\'affaires (admin)','ca','',true],['Équipe (admin)','equipe','',true],['Personnaliser (admin)','reglages','',true],['Mode chantier','chantier','r1'],['Fin d\'intervention','fin','r1'],['Tableau électrique','tableau','c1'],['Tableau de bord (admin)','stats','',true],['Aperçu étiquettes','apercu','c1'],['Suivi en direct (admin)','suivi','t1',true],['Visite guidée','__tour'],['Autorisations','perms'],['Trophées (caché)','trophees'],['Notifications','notifs'],['Mon profil','profil'],['Plus','plus']];
 $('jump').innerHTML=JUMP.map(function(j,i){return '<button data-j="'+i+'">'+esc(j[0])+'</button>';}).join('');
-[].forEach.call(document.querySelectorAll('#jump button'),function(b){ b.onclick=function(){ var j=JUMP[+b.dataset.j]; if(j[3]&&S.role!=='admin'){S.role='admin';} S.stack=[]; go(j[1], j[2]||null, false); }; });
+[].forEach.call(document.querySelectorAll('#jump button'),function(b){ b.onclick=function(){ var j=JUMP[+b.dataset.j]; if(j[1]==='__tour'){ S.role='tech'; S.stack=[]; S.screen='accueil'; render(); setTimeout(function(){ runTour(null); },350); return; } if(j[3]&&S.role!=='admin'){S.role='admin';} S.stack=[]; go(j[1], j[2]||null, false); }; });
 
 $('simCrm').onclick=function(){ if(S.role==='admin'){ S.role='tech'; S.stack=[]; S.screen='accueil'; render(); } setTimeout(crmAssign,300); };
 applyLook();
