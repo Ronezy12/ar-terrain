@@ -855,6 +855,7 @@ html,body{overscroll-behavior:none}
     <button class="btn soft sm" id="replayIntro" style="align-self:flex-start">Rejouer l'intro animée</button>
     <button class="btn soft sm" id="replayOnb" style="align-self:flex-start">Revoir le premier lancement (autorisations)</button>
     <div class="crm-box" id="crmBox"><div class="row"><span class="lbl grow">Vue bureau · CRM</span><span class="live-dot">EN DIRECT</span></div><div id="crmFeed"></div></div>
+    <p class="note" id="verNote"></p>
     <p class="note">Astuce : en admin, ouvrez « Personnaliser l'appli » pour choisir les boutons de l'accueil et les onglets de la barre du bas. Les changements s'appliquent tout de suite.</p>
   </aside>
 
@@ -1218,7 +1219,7 @@ SCREENS.plus = function(){
   var h='<div class="pad"><div class="card li" data-go="profil" style="cursor:pointer">'+(S.role==='admin'?'<span class="av y">AH</span>':avatar(tech(ME),'y'))+'<div class="grow"><b>'+(S.role==='admin'?'Ahmed (gérant)':esc(tech(ME).nom))+'</b><div class="muted" style="font-size:13px">'+(S.role==='admin'?'Administrateur':esc(tech(ME).role))+' · Modifier mes informations</div></div>'+ic('chev').replace('<svg','<svg class="chev"')+'</div>';
   h+='<div class="card"><div class="rounds">'+rest.map(function(m){var M=MODULES[m]; return '<button class="rb'+(m==='reglages'?' y':'')+'" data-go="'+m+'"><span class="c">'+ic(M.icon)+'</span>'+esc(M.label)+'</button>';}).join('')+'</div></div>';
   h+='<div class="card cfg"><div class="cfg-it"><span class="ico">'+ic('sun')+'</span><b class="grow">Thème</b><div class="seg" id="theme" style="width:190px">'+[['auto','Auto'],['light','Clair'],['dark','Sombre']].map(function(x){return '<button data-v="'+x[0]+'" class="'+(CFG.theme===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>'+
-     '<div class="cfg-it" data-go="perms" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Autorisations</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div>'+(TROPHY.found&&S.role!=='admin'?'<div class="cfg-it" data-go="trophees" style="cursor:pointer"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><b class="grow">Mes trophées</b><span class="pill p-gray num">'+TROPHY.count+'</span></div>':'')+'<div class="cfg-it" id="plusNav" style="cursor:pointer"><span class="ico">'+ic('route')+'</span><b class="grow">Application d\'itinéraire</b><span class="muted" style="font-size:13px">'+(CFG.navApp?({plans:'Plans',gmaps:'Google Maps',waze:'Waze'})[CFG.navApp]:'Demander')+'</span></div>'+'<div class="cfg-it" id="plusIntro" style="cursor:pointer"><span class="ico">'+ic('bolt')+'</span><b class="grow">Rejouer l\'intro</b></div><div class="cfg-it" data-go="notifs" style="cursor:pointer"><span class="ico">'+ic('bell')+'</span><b class="grow">Notifications</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it" id="logout" style="cursor:pointer"><span class="ico" style="background:var(--danger-bg);color:var(--danger)">'+ic('logout')+'</span><b class="grow">Se déconnecter</b></div></div>';
+     '<div class="cfg-it" data-go="perms" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Autorisations</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div>'+(TROPHY.found&&S.role!=='admin'?'<div class="cfg-it" data-go="trophees" style="cursor:pointer"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><b class="grow">Mes trophées</b><span class="pill p-gray num">'+TROPHY.count+'</span></div>':'')+'<div class="cfg-it" id="plusNav" style="cursor:pointer"><span class="ico">'+ic('route')+'</span><b class="grow">Application d\'itinéraire</b><span class="muted" style="font-size:13px">'+(CFG.navApp?({plans:'Plans',gmaps:'Google Maps',waze:'Waze'})[CFG.navApp]:'Demander')+'</span></div>'+'<div class="cfg-it" id="plusIntro" style="cursor:pointer"><span class="ico">'+ic('bolt')+'</span><b class="grow">Rejouer l\'intro</b></div><div class="cfg-it" data-go="notifs" style="cursor:pointer"><span class="ico">'+ic('bell')+'</span><b class="grow">Notifications</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it" id="logout" style="cursor:pointer"><span class="ico" style="background:var(--danger-bg);color:var(--danger)">'+ic('logout')+'</span><b class="grow">Se déconnecter</b></div></div><p class="hint" style="text-align:center">AR Terrain · version '+APP_VERSION+'</p>';
   return h+'</div>';
 };
 
@@ -2875,6 +2876,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
+var APP_VERSION='1.0.12 · 9 nov. 2026';
 var NAV_APPS={plans:'Plans', gmaps:'Google Maps', waze:'Waze'};
 function navUrl(k,c){ var q=encodeURIComponent(c.adr+', '+c.ville); return k==='plans'?'https://maps.apple.com/?daddr='+q : k==='gmaps'?'https://www.google.com/maps/dir/?api=1&destination='+q : 'https://waze.com/ul?q='+q+'&navigate=yes'; }
 function navOpen(k,c){
@@ -3205,7 +3207,7 @@ function attachZoom(box){
   box.insertAdjacentHTML('beforeend','<div class="zctl"><button data-z="in" aria-label="Zoomer">'+ic('plus')+'</button><button data-z="out" aria-label="Dézoomer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button data-z="fit" aria-label="Recentrer">'+ic('nav')+'</button></div>');
   function apply(anim){ svg.style.transition=anim?'none':''; svg.setAttribute('viewBox', vb.map(function(v){return v.toFixed(2);}).join(' ')); }
   function clampVb(){ var w=Math.min(vb0[2], Math.max(MINW, vb[2])), k=w/vb[2]; if(k!==1){ var cx=vb[0]+vb[2]/2, cy=vb[1]+vb[3]/2; vb[2]=w; vb[3]*=k; vb[0]=cx-w/2; vb[1]=cy-vb[3]/2; }
-    vb[0]=Math.min(vb0[0]+vb0[2]-vb[2], Math.max(vb0[0], vb[0])); vb[1]=Math.min(vb0[1]+vb0[3]-vb[3], Math.max(vb0[1], vb[1])); }
+    var mx=vb0[2]*.35, my=vb0[3]*.35; vb[0]=Math.min(vb0[0]+vb0[2]-vb[2]+mx, Math.max(vb0[0]-mx, vb[0])); vb[1]=Math.min(vb0[1]+vb0[3]-vb[3]+my, Math.max(vb0[1]-my, vb[1])); }
   function toSvg(cx,cy){ var r=svg.getBoundingClientRect(); var m=svg.getScreenCTM(); if(m){ var pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy; var q=pt.matrixTransform(m.inverse()); return [q.x,q.y]; } return [vb[0]+(cx-r.left)/r.width*vb[2], vb[1]+(cy-r.top)/r.height*vb[3]]; }
   function zoomAt(f, cx, cy){ var p=toSvg(cx,cy); var nw=Math.min(vb0[2],Math.max(MINW, vb[2]/f)); var k=nw/vb[2]; vb[0]=p[0]-(p[0]-vb[0])*k; vb[1]=p[1]-(p[1]-vb[1])*k; vb[2]=nw; vb[3]*=k; clampVb(); apply(); }
   function center(){ var van=svg.querySelector('#trkVan'); if(van){ var q=van.getBoundingClientRect(); return [q.left+q.width/2, q.top+q.height/2]; } var r=svg.getBoundingClientRect(); return [r.left+r.width/2, r.top+r.height/2]; }
@@ -3364,6 +3366,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape' && document
 window.addEventListener('resize', fitDev);
 (function(){ var d='iphone'; try{ d=localStorage.getItem('ar_dev')||'iphone'; }catch(e){} setDev(d); })();
 crmFeed(false);
+$('verNote').textContent='Version '+APP_VERSION;
 $('replayOnb').onclick=function(){ PERMS=null; try{ localStorage.removeItem(PKEY); }catch(e){} if(S.role!=='tech'){ S.role='tech'; } S.stack=[]; S.screen='accueil'; render(); var o=document.querySelector('.onb'); if(o) o.remove(); introBest(onboarding); };
 $('replayIntro').onclick=function(){ introBest(null); };
 (function(){ var go2=function(){ if(!PERMS) onboarding(); else afterOnboarding(); }, today=new Date().toDateString(), seen=null; try{ seen=localStorage.getItem('ar_intro_day'); localStorage.setItem('ar_intro_day', today); }catch(e){}
@@ -3372,7 +3375,16 @@ $('replayIntro').onclick=function(){ introBest(null); };
 </script>
 
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+/* Mise à jour automatique : dès qu'une nouvelle version est en ligne, l'appli se recharge toute seule */
+if('serviceWorker' in navigator){ window.addEventListener('load',function(){
+  var reloading=false, hadCtrl=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){ if(!hadCtrl||reloading) return; reloading=true; var t=document.createElement('div'); t.className='toast'; t.textContent='Nouvelle version installée, mise à jour…'; var o=document.getElementById('overlay'); if(o) o.appendChild(t); setTimeout(function(){ location.reload(); },900); });
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
+    function check(){ reg.update().catch(function(){}); }
+    document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') check(); });
+    setInterval(check, 5*60*1000);
+  }).catch(function(){});
+}); }
 </script>
 </body>
 </html>
