@@ -888,7 +888,7 @@ function initials(n){ return n.replace(/^(M\.|Mme|SCI|SARL)\s+/,'').split(/\s+/)
    ========================================================= */
 var TODAY = new Date(2026,10,9);
 var TECHS = [
-  {id:'t1', nom:'Karim Benali', role:'Électricien poseur', etat:'road', lieu:'En route vers Levallois-Perret', tel:'06 00 00 10 01', mail:'karim.b@entreprise-ar.example', vehicule:'AB-123-CD', hab:['B1V','B2V','BR'], zone:['Levallois-Perret','Neuilly-sur-Seine','Paris'], jour:4, fait:1},
+  {id:'t1', nom:'Karim Benali', role:'Électricien poseur', etat:'road', lieu:'En route vers Asnières-sur-Seine', tel:'06 00 00 10 01', mail:'karim.b@entreprise-ar.example', vehicule:'AB-123-CD', hab:['B1V','B2V','BR'], zone:['Asnières-sur-Seine','Neuilly-sur-Seine','Paris'], jour:4, fait:1},
   {id:'t2', nom:'Julien Martin', role:'Électricien dépanneur', etat:'site', lieu:'Chez Mme Lefèvre, Paris 17e', tel:'06 00 00 10 02', mail:'julien.m@entreprise-ar.example', vehicule:'EF-456-GH', hab:['B2V','BR'], zone:['Paris','Clichy'], jour:3, fait:1},
   {id:'t3', nom:'Sofia Lemaire', role:'Technicienne visite technique', etat:'ok', lieu:'Disponible · Boulogne', tel:'06 00 00 10 03', mail:'sofia.l@entreprise-ar.example', vehicule:'', hab:['B1V','BR'], zone:['Boulogne-Billancourt','Paris'], jour:2, fait:1},
   {id:'t4', nom:'Thomas Roy', role:'Apprenti électricien', etat:'off', lieu:'Congé jusqu\'au 12/11', tel:'06 00 00 10 04', jour:0, fait:0}
@@ -896,7 +896,7 @@ var TECHS = [
 var ETAT = {road:['En route','p-warn','dot-road'], site:['Sur chantier','p-blue','dot-site'], ok:['Disponible','p-ok','dot-ok'], off:['Absent','p-gray','dot-off']};
 var STATUTS = {new:['Nouveau','st-new','spark'], contact:['À rappeler','st-contact','phone'], interv:['RDV pris','st-interv','wrench'], devis:['Devis envoyé','st-devis','doc'], close:['Clôturé','st-close','archive']};
 var CLIENTS = [
-  {id:'c1', nom:'Mme Garnier Hélène', tel:'06 00 00 00 01', mail:'h.garnier@example.com', adr:'12 rue Voltaire', ville:'92300 Levallois-Perret', type:'Rénovation tableau', statut:'interv', tech:'t1', rdv:'09:00', duree:'2 h', ref:'AR-2611-014',
+  {id:'c1', nom:'Mme Garnier Hélène', tel:'06 00 00 00 01', mail:'h.garnier@example.com', adr:'12 rue Voltaire', ville:'92600 Asnières-sur-Seine', type:'Rénovation tableau', statut:'interv', tech:'t1', rdv:'09:00', duree:'2 h', ref:'AR-2611-014',
     devis:[{ref:'DV-0142', titre:'Remplacement tableau 2 rangées', ttc:1573, st:'devis'}],
     hist:[['mail','Devis DV-0142 envoyé par e-mail','Hier · 17:42'],['wa','« Je suis en route » envoyé','Aujourd\'hui · 08:31'],['ok','RDV confirmé par la cliente','Ven. 6 nov. · 10:15']]},
   {id:'c2', nom:'M. Rousseau Pierre', tel:'06 00 00 00 02', mail:'p.rousseau@example.com', adr:'5 avenue de Wagram', ville:'75017 Paris', type:'Mise en conformité', statut:'interv', tech:'t1', rdv:'11:30', duree:'1 h 30', ref:'AR-2611-015',
@@ -913,7 +913,7 @@ var CLIENTS = [
     devis:[{ref:'DV-0120', titre:'Remplacement tableau 3 rangées', ttc:2105, st:'close'}], hist:[['ok','Intervention terminée, attestation envoyée','28 oct. · 15:40']]},
   {id:'c7', nom:'Mme Lefèvre Anne', tel:'06 00 00 00 07', mail:'a.lefevre@example.com', adr:'18 rue Legendre', ville:'75017 Paris', type:'Recherche de panne', statut:'interv', tech:'t2', rdv:'', duree:'', ref:'AR-2611-018', devis:[], hist:[['ok','RDV confirmé par téléphone','Ven. 6 nov. · 11:20']]},
   {id:'c9', nom:'M. Moreau Julien', tel:'06 00 00 00 09', mail:'j.moreau@example.com', adr:'22 rue de Bezons', ville:'92400 Courbevoie', type:'Dépannage', statut:'new', tech:'t1', rdv:'', duree:'', ref:'AR-2611-021', devis:[], hist:[['ok','Fiche créée dans le CRM par le bureau','À l\'instant']]},
-  {id:'c10', nom:'Mme Lambert Sophie', tel:'06 00 00 00 10', mail:'s.lambert@example.com', adr:'4 allée des Peupliers', ville:'92300 Levallois-Perret', type:'Remplacement tableau', statut:'new', tech:'t1', rdv:'', duree:'', ref:'AR-2611-022', devis:[], hist:[['ok','Fiche créée dans le CRM par le bureau','À l\'instant']]},
+  {id:'c10', nom:'Mme Lambert Sophie', tel:'06 00 00 00 10', mail:'s.lambert@example.com', adr:'4 allée des Peupliers', ville:'92600 Asnières-sur-Seine', type:'Remplacement tableau', statut:'new', tech:'t1', rdv:'', duree:'', ref:'AR-2611-022', devis:[], hist:[['ok','Fiche créée dans le CRM par le bureau','À l\'instant']]},
   {id:'c8', nom:'M. Bernard Hugo', tel:'06 00 00 00 08', mail:'h.bernard@example.com', adr:'7 rue Martre', ville:'92110 Clichy', type:'Ajout de prises', statut:'interv', tech:'t2', rdv:'', duree:'', ref:'AR-2611-019', devis:[{ref:'DV-0145', titre:'Ajout de 6 prises cuisine', ttc:642, st:'devis'}], hist:[]}
 ];
 function client(id){ return CLIENTS.filter(function(c){return c.id===id;})[0]; }
@@ -1281,7 +1281,7 @@ function bindDevis(){
     [].forEach.call(s.querySelectorAll('[data-pc]'),function(b){ b.onclick=function(){ d.client=b.dataset.pc; closeSheet(); rr(); }; });
   };
   $('apercu').onclick=function(){ var t=totals(d), c=client(d.client);
-    sheet('<h3>Aperçu du devis</h3><div class="card" style="background:#fff;color:#1D1D1F;font-size:12px;display:flex;flex-direction:column;gap:8px"><div class="row"><img src="logo.png" alt="" style="width:40px;height:40px"><div class="grow"><b class="wordmark" style="font-size:14px">ENTREPRISE A<span class="r">R</span></b><div style="color:#6E6E73">Électricité générale · Levallois-Perret</div></div><b>DEVIS</b></div><div><b>'+esc(c.nom)+'</b><br>'+esc(c.adr)+', '+esc(c.ville)+'</div>'+
+    sheet('<h3>Aperçu du devis</h3><div class="card" style="background:#fff;color:#1D1D1F;font-size:12px;display:flex;flex-direction:column;gap:8px"><div class="row"><img src="logo.png" alt="" style="width:40px;height:40px"><div class="grow"><b class="wordmark" style="font-size:14px">ENTREPRISE A<span class="r">R</span></b><div style="color:#6E6E73">Électricité générale</div></div><b>DEVIS</b></div><div><b>'+esc(c.nom)+'</b><br>'+esc(c.adr)+', '+esc(c.ville)+'</div>'+
       d.lignes.map(function(l){return '<div class="row" style="justify-content:space-between;border-top:1px solid #E5E5EA;padding-top:6px"><span class="grow">'+esc(l.des)+' × '+pct(l.qty)+'</span><span class="num">'+money(r2(l.qty*l.pu))+'</span></div>';}).join('')+
       '<div class="row" style="justify-content:space-between;font-weight:800;border-top:2px solid #1D1D1F;padding-top:6px"><span>Total TTC</span><span class="num">'+money(t.ttc)+'</span></div><div style="border:1.5px dashed #D2D2D7;border-radius:10px;padding:14px;color:#6E6E73">Bon pour accord, date et signature</div></div><button class="btn soft block" data-close>Fermer</button>'); };
   $('sendDv').onclick=function(){ sendFlow(d.client, true); };
@@ -1774,7 +1774,7 @@ function animateView(){
    V4 — Étiquetage des tableaux (moteur repris de l'appli actuelle) + hors ligne automatique
    ========================================================= */
 var DATA = window.EAR_DATA, EICONS = window.EAR_ICONS, EPDF = window.EAR_PDF;
-var TKEY = 'ar_terrain_tableaux_v1';
+var TKEY = 'ar_terrain_tableaux_v2';
 var TAB = (function(){ try{ var s=JSON.parse(localStorage.getItem(TKEY)||'null'); if(s && typeof s==='object') return s; }catch(e){} return null; })();
 function tSave(){ try{ localStorage.setItem(TKEY, JSON.stringify(TAB)); }catch(e){} }
 function newProject(c, coffret, tpl){
@@ -1899,7 +1899,7 @@ function bindTableau(){
 var PX=44;
 SCREENS.apercu = function(id){
   var c=client(id), p=TAB[id]; if(!c||!p) return SCREENS.etiquetage();
-  var h='<div class="pad"><div class="card door"><img src="logo.png" alt=""><div><b class="wordmark">ENTREPRISE A<span class="r">R</span></b><span>Électricien · Levallois-Perret</span><span>'+esc(p.client)+' · '+esc(EPDF.fmtDate(p.date))+'</span></div></div>';
+  var h='<div class="pad"><div class="card door"><img src="logo.png" alt=""><div><b class="wordmark">ENTREPRISE A<span class="r">R</span></b><span>Électricité générale</span><span>'+esc(p.client)+' · '+esc(EPDF.fmtDate(p.date))+'</span></div></div>';
   h+='<p class="hint">Bandes à coller au-dessus des appareils. Dans le PDF : échelle réelle (1 module = 17,5 mm), A4 paysage, avec la légende des circuits. Faites glisser chaque bande.</p>';
   var shown=0;
   p.rows.forEach(function(r,ri){
@@ -1928,7 +1928,7 @@ function exportPdf(p){
   if(!window.jspdf){ toast('Le moteur PDF n\'est pas chargé. Réessayez dans un instant.'); return; }
   toast('Génération du PDF…');
   loadLogo().then(function(logo){
-    var doc=EPDF.build(p,{stripH:14, legend:true, brand:{on:true, name:'ENTREPRISE AR', mail:'contact@entreprise-ar.fr', addr:'Levallois-Perret', logo:logo}});
+    var doc=EPDF.build(p,{stripH:14, legend:true, brand:{on:true, name:'ENTREPRISE AR', mail:'contact@entreprise-ar.fr', addr:'', logo:logo}});
     var blob=doc.output('blob'), name=EPDF.fileName(p), pages=doc.getNumberOfPages();
     if(lastUrl) URL.revokeObjectURL(lastUrl); lastUrl=URL.createObjectURL(blob);
     var s=sheet('<div class="row"><h3 class="grow">PDF prêt</h3><span class="pill p-ok">'+ic('check')+pages+' page'+(pages>1?'s':'')+'</span></div><p class="hint">'+esc(name)+' · A4 paysage, à imprimer à 100 % (taille réelle).</p><div class="pdfbox"><iframe src="'+lastUrl+'#toolbar=0&view=FitH" title="Aperçu du PDF"></iframe></div><a class="btn primary block" href="'+lastUrl+'" target="_blank" rel="noopener">Ouvrir le PDF</a><p class="hint">Dans l\'appli iOS et Android : bouton « Partager » pour l\'envoyer par e-mail ou WhatsApp, ou l\'imprimer.</p><button class="btn soft block" data-close>Fermer</button>');
@@ -2082,7 +2082,7 @@ function openSearch(){
   var q=s.querySelector('#uq');
   function fill(){
     var v=q.value.trim().toLowerCase(), dv=v.replace(/\D/g,''), mine=onlyMine()?myClientIds():null, out='';
-    if(!v){ out='<div class="sec"><h2>Recherches fréquentes</h2></div><div class="opts">'+['Garnier','06 00 00 00 02','DV-0142','Levallois','Tableau'].map(function(x){return '<button class="opt sm" data-sq="'+x+'">'+x+'</button>';}).join('')+'</div>'; s.querySelector('#ur').innerHTML=out; bindQ(); return; }
+    if(!v){ out='<div class="sec"><h2>Recherches fréquentes</h2></div><div class="opts">'+['Garnier','06 00 00 00 02','DV-0142','Asnières','Tableau'].map(function(x){return '<button class="opt sm" data-sq="'+x+'">'+x+'</button>';}).join('')+'</div>'; s.querySelector('#ur').innerHTML=out; bindQ(); return; }
     var cl=CLIENTS.filter(function(c){ if(mine&&!mine[c.id]) return false; return (c.nom+' '+c.ville+' '+c.ref+' '+c.adr+' '+c.type).toLowerCase().indexOf(v)>=0 || (dv.length>=4 && c.tel.replace(/\D/g,'').indexOf(dv)>=0); });
     var dvs=[]; CLIENTS.forEach(function(c){ if(mine&&!mine[c.id]) return; c.devis.forEach(function(d){ if((d.ref+' '+d.titre).toLowerCase().indexOf(v)>=0) dvs.push([c,d]); }); });
     var rs=RDVS.filter(function(r){ if(S.role!=='admin'&&r.tech!==ME) return false; var c=client(r.cid); return (c.nom+' '+r.h+' '+(r.type||c.type)).toLowerCase().indexOf(v)>=0; }).slice(0,4);
@@ -2285,7 +2285,7 @@ function mapView(list, day){
     '<path d="M-10 40 C 60 70, 40 140, 90 170 S 170 200, 150 250 S 210 300, 330 260" fill="none" stroke="var(--map-water)" stroke-width="16" stroke-linecap="round"/>'+
     '<g stroke="var(--map-road)" stroke-width="3" fill="none" stroke-linecap="round"><path d="M0 120 H320"/><path d="M0 200 C 120 190, 200 210, 320 196"/><path d="M160 0 V280"/><path d="M40 0 L 250 280"/><path d="M300 0 L 80 280"/></g>'+
     '<g stroke="var(--map-road)" stroke-width="1.2" fill="none" opacity=".7"><path d="M0 60 H320 M0 160 H320 M0 240 H320 M80 0 V280 M240 0 V280 M120 0 V280 M200 0 V280"/></g>'+
-    '<g font-size="8.5" fill="var(--muted)" font-weight="700" font-family="var(--sans)"><text x="96" y="86">LEVALLOIS</text><text x="136" y="140">NEUILLY</text><text x="214" y="112">PARIS 17</text><text x="164" y="66">CLICHY</text><text x="40" y="102">COURBEVOIE</text><text x="64" y="256">BOULOGNE</text><text x="230" y="196">PARIS 8</text></g>';
+    '<g font-size="8.5" fill="var(--muted)" font-weight="700" font-family="var(--sans)"><text x="92" y="86">ASNIÈRES</text><text x="136" y="140">NEUILLY</text><text x="214" y="112">PARIS 17</text><text x="164" y="66">CLICHY</text><text x="40" y="102">COURBEVOIE</text><text x="64" y="256">BOULOGNE</text><text x="230" y="196">PARIS 8</text></g>';
   var colors=['var(--primary)','var(--success)','var(--warning)'];
   who.forEach(function(t,ti){
     var rs=list.filter(function(r){return r.tech===t.id;}), pts=rs.map(function(r){return GEO[r.cid]||[160,140];});
@@ -2519,7 +2519,7 @@ function intro(next){
   var el=document.createElement('div'); el.className='intro'+(reduce?' calm':''); el.setAttribute('role','img'); el.setAttribute('aria-label','Entreprise AR');
   el.innerHTML='<canvas class="arcs" aria-hidden="true"></canvas><div class="i-glow"></div>'+
     '<div class="i-logo"><span class="i-ring"></span><span class="i-badge"><img src="logo.png" alt=""></span></div>'+
-    '<div class="i-word"><span class="wm">'+'ENTREPRISE'.split('').map(function(ch,i){return '<i style="--d:'+i+'">'+ch+'</i>';}).join('')+'</span> <span class="wm ar"><i style="--d:11">A</i><i class="r" style="--d:12">R</i></span><small>Électricité générale · Levallois-Perret</small></div>'+
+    '<div class="i-word"><span class="wm">'+'ENTREPRISE'.split('').map(function(ch,i){return '<i style="--d:'+i+'">'+ch+'</i>';}).join('')+'</span> <span class="wm ar"><i style="--d:11">A</i><i class="r" style="--d:12">R</i></span><small>Électricité générale</small></div>'+
     '<div class="i-road"><div class="lanes"></div></div><div class="i-van">'+VAN_SVG+'<span class="beam"></span><span class="spark"></span></div><div class="i-flash"></div>'+
     '<button class="i-skip">Passer</button>';
   ph.appendChild(el);
@@ -2641,7 +2641,7 @@ var ACT_MSG = {
   retard:'Retard de 15 min signalé à la cliente et au bureau (démo)',
   appeler:'Appel simulé : 06 00 00 00 01',
   whatsapp:'Ouverture de la discussion WhatsApp (démo)',
-  itineraire:'Itinéraire vers 12 rue Voltaire, Levallois-Perret (démo)',
+  itineraire:'Itinéraire vers 12 rue Voltaire, Asnières-sur-Seine (démo)',
   photo:'Photo ajoutée au chantier AR-2611-014 (démo)',
   signature:'Écran de signature : arrive dans la prochaine version',
   fin:'Intervention clôturée, rapport envoyé au bureau (démo)',
