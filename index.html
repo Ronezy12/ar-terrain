@@ -769,6 +769,61 @@ html,body{overscroll-behavior:none}
 .intro.s3 .i-glow{opacity:.55;transform:none}
 .intro.calm .i-logo,.intro.calm .i-word .wm i,.intro.calm .i-word small{opacity:1;transform:none;animation:none}
 .intro.calm .i-van{display:none} .intro.calm .lanes{animation:none}
+/* ---------- V10 : intro 3D ---------- */
+.i3{position:absolute;inset:0;z-index:96;overflow:hidden;background:#07103a;cursor:pointer}
+.i3-cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.i3-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 80% at 50% 45%,transparent 55%,rgba(2,6,24,.75) 100%)}
+.i3.out{animation:i3out .52s cubic-bezier(.7,0,.84,0) forwards}
+@keyframes i3out{to{opacity:0;transform:scale(1.18);filter:blur(6px)}}
+.i3-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 38%,#fff 0,rgba(255,236,170,.85) 30%,rgba(255,201,60,0) 70%);opacity:0;pointer-events:none}
+.i3.strike .i3-flash{animation:i3flash .7s ease-out}
+@keyframes i3flash{0%{opacity:0}12%{opacity:.95}100%{opacity:0}}
+.i3.strike{animation:i3shake .35s linear}
+@keyframes i3shake{0%,100%{transform:none}20%{transform:translate(3px,-2px)}40%{transform:translate(-3px,2px)}60%{transform:translate(2px,2px)}80%{transform:translate(-2px,-1px)}}
+.i3-title{position:absolute;left:0;right:0;bottom:19%;text-align:center;color:#fff;perspective:600px;pointer-events:none}
+.i3-k{font:800 28px/1.1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-shadow:0 2px 0 #142C8A,0 4px 0 #0E1F66,0 10px 24px rgba(0,0,0,.55)}
+.i3-k i,.i3-k b{font-style:normal;display:inline-block;opacity:0;transform:rotateX(-90deg) translateY(18px);transform-origin:50% 100%}
+.i3-k .r{color:#FFC93C;text-shadow:0 2px 0 #B98500,0 4px 0 #8a6400,0 0 18px rgba(255,201,60,.9)}
+.i3-agent{margin-top:12px;display:flex;justify-content:center}
+.i3-agent span{font:800 13px Inter,system-ui,sans-serif;letter-spacing:.42em;padding:8px 6px 8px 14px;border-radius:999px;color:#1D1D1F;background:linear-gradient(90deg,#FFC93C,#FFE08A,#FFC93C);background-size:200% 100%;box-shadow:0 0 24px rgba(255,201,60,.55);opacity:0;transform:scale(.6)}
+.i3-sub{margin-top:12px;font:600 14px Inter,system-ui,sans-serif;color:rgba(255,255,255,.85);opacity:0}
+.i3.title .i3-k i,.i3.title .i3-k b{animation:i3l .55s cubic-bezier(.3,1.5,.5,1) forwards;animation-delay:calc(var(--d,0) * 38ms)}
+@keyframes i3l{to{opacity:1;transform:none}}
+.i3.title .i3-k .r{animation:i3l .55s cubic-bezier(.3,1.5,.5,1) forwards,i3flick .9s steps(1) .9s;animation-delay:calc(12 * 38ms),.95s}
+@keyframes i3flick{0%{opacity:1}12%{opacity:.25}16%{opacity:1}45%{opacity:.4}49%{opacity:1}}
+.i3.title .i3-agent span{animation:i3pop .5s cubic-bezier(.3,1.6,.5,1) .5s forwards,i3shine 1.6s linear 1s infinite}
+@keyframes i3pop{to{opacity:1;transform:none}}
+@keyframes i3shine{to{background-position:-200% 0}}
+.i3.title .i3-sub{animation:fadeUp .5s ease-out .8s forwards}
+.i3.dive .i3-title{animation:i3up .6s ease-in forwards}
+@keyframes i3up{to{opacity:0;transform:translateY(30px) scale(.94)}}
+.i3-skip{position:absolute;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;border:0;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-weight:700;font-size:13px;padding:8px 14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+@media (min-width:860px){ .i3-skip{bottom:30px} .stage[data-dev="iphone"] .i3-title{bottom:17%} }
+/* ---------- V11 : suivi en direct ---------- */
+:root{--map-block:#E2E6EE}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--map-block:#2A2C33} }
+:root[data-theme="dark"]{--map-block:#2A2C33}
+.trk-map{position:relative;height:380px;overflow:hidden;background:var(--map-bg)}
+.trk-map svg{position:absolute;inset:0;width:100%;height:100%}
+#trkVan{transition:transform .1s linear}
+.trk-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;background:var(--surface);border-radius:999px;padding:8px 14px;box-shadow:var(--shadow-md);font-size:12.5px}
+.trk-dest{position:absolute;left:12px;right:12px;bottom:40px;display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow-md);font-size:13.5px;font-weight:600}
+.trk-dest svg{width:18px;height:18px;color:var(--danger);flex:none}
+.trk-sheet{position:relative;margin-top:-26px;background:var(--surface);border-radius:26px 26px 0 0;padding:10px 16px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 -10px 30px rgba(0,0,0,.12);min-height:calc(100% - 354px)}
+.trk-sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line-strong);margin:0 auto}
+.trk-eta{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.steps{display:flex;align-items:flex-start}
+.steps > b{flex:1;height:4px;border-radius:2px;background:var(--line);margin-top:15px;position:relative;overflow:hidden}
+.steps > b::after{content:"";position:absolute;inset:0;width:var(--p,0%);background:var(--primary);border-radius:2px;transition:width .3s}
+.stp{display:flex;flex-direction:column;align-items:center;gap:6px;width:74px;text-align:center;font-size:12.5px;font-weight:700;color:var(--muted)}
+.stp i{width:34px;height:34px;border-radius:999px;background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.stp i svg{width:17px;height:17px}
+.stp small{font-weight:600;font-size:11.5px}
+.stp.done i{background:var(--primary);color:#fff} .stp.done{color:var(--ink)}
+.stp.cur i{box-shadow:0 0 0 5px var(--tint);animation:micp 1.6s ease-out infinite;background:var(--accent);color:#1D1D1F}
+.stp.done.cur i{background:var(--success);color:#fff;animation:none;box-shadow:0 0 0 5px var(--success-bg)}
+.trk-feed{display:flex;flex-direction:column;gap:10px}
+.track .btn{margin-top:2px}
 </style>
 
 </head>
@@ -815,6 +870,7 @@ html,body{overscroll-behavior:none}
 <div class="vctl" id="vctl"><button id="vExit">Quitter le mode vidéo</button><button data-vbg="ar">Bleu AR</button><button data-vbg="light">Clair</button><button data-vbg="chroma">Fond vert</button><button data-vbg="black">Noir</button><button data-vdev="iphone">iPhone</button><button data-vdev="android">Android</button></div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/three.min.js"></script>
 <script src="lib/data.js"></script>
 <script src="lib/icons.js"></script>
 <script src="lib/pdf.js"></script>
@@ -1012,7 +1068,7 @@ function render(){
   var rp=$('rolePill'); rp.className='role-pill'+(S.role==='tech'?' tech':''); rp.innerHTML=(S.role==='admin'?ic('shield')+'ADMIN':ic('user')+'TECH');
   [].forEach.call(document.querySelectorAll('#sideRole button'),function(b){ b.classList.toggle('on', b.dataset.r===S.role); });
   renderTabs();
-  $('tabs').hidden = S.screen==='chat'||S.screen==='devis'||S.screen==='profil'||S.screen==='tableau'||S.screen==='apercu'||S.screen==='chantier'||S.screen==='fin';
+  $('tabs').hidden = S.screen==='chat'||S.screen==='devis'||S.screen==='profil'||S.screen==='tableau'||S.screen==='apercu'||S.screen==='chantier'||S.screen==='fin'||S.screen==='suivi';
   var key=S.role+'|'+S.screen+'|'+S.arg, same=(S._key===key); S._key=key;
   var y=V.scrollTop, ae=document.activeElement, aid=(ae&&ae.id&&V.contains(ae))?ae.id:null, ss=null, se=null; try{ if(aid){ ss=ae.selectionStart; se=ae.selectionEnd; } }catch(e){}
   var fn = SCREENS[S.screen] || SCREENS.soon;
@@ -1140,7 +1196,7 @@ SCREENS.equipe = function(){
 SCREENS.techdetail = function(id){
   var t=tech(id)||TECHS[0], e=ETAT[t.etat];
   var h='<div class="pad"><div class="head">'+avatar(t,'lg')+'<h2>'+esc(t.nom)+'</h2><span class="muted">'+esc(t.role)+'</span><span class="pill '+e[1]+'">'+e[0]+' · '+esc(t.lieu)+'</span><button class="btn line sm" data-edit="'+t.id+'">'+ic('pen')+'Modifier les informations</button></div>';
-  h+='<div class="rounds"><button class="rb" data-act="appeler"><span class="c">'+ic('phone')+'</span>Appeler</button><button class="rb w" data-act="whatsapp"><span class="c">'+ic('wa')+'</span>WhatsApp</button><button class="rb" data-go="planning"><span class="c">'+ic('cal')+'</span>Planning</button><button class="rb n" id="droits"><span class="c">'+ic('shield')+'</span>Droits</button></div>';
+  h+='<div class="rounds"><button class="rb" data-act="appeler"><span class="c">'+ic('phone')+'</span>Appeler</button><button class="rb w" data-act="whatsapp"><span class="c">'+ic('wa')+'</span>WhatsApp</button><button class="rb y" data-suivi="'+t.id+'"><span class="c">'+ic('route')+'</span>Suivre</button><button class="rb n" id="droits"><span class="c">'+ic('shield')+'</span>Droits</button></div>';
   h+='<div class="kpis"><div class="kpi"><b class="num">'+t.fait+' / '+t.jour+'</b><small>RDV du jour</small></div><div class="kpi"><b class="num">'+(t.id==='t4'?'0':'7')+'</b><small>devis ce mois</small></div><div class="kpi"><b class="num">'+(t.id==='t4'?'0 €':'12,4 k€')+'</b><small>CA signé ce mois</small></div></div>';
   h+='<div class="sec"><h2>Activité du jour</h2></div><div class="card"><div class="hist">'+hi('ok','Intervention terminée chez M. Durand','08:30 → 09:40')+hi('wa','« Je suis en route » envoyé à Mme Garnier','08:31')+hi('mail','Devis DV-0142 envoyé','Hier · 17:42')+'</div></div></div>';
   return h;
@@ -1151,7 +1207,7 @@ SCREENS.plus = function(){
   var h='<div class="pad"><div class="card li" data-go="profil" style="cursor:pointer">'+(S.role==='admin'?'<span class="av y">AH</span>':avatar(tech(ME),'y'))+'<div class="grow"><b>'+(S.role==='admin'?'Ahmed (gérant)':esc(tech(ME).nom))+'</b><div class="muted" style="font-size:13px">'+(S.role==='admin'?'Administrateur':esc(tech(ME).role))+' · Modifier mes informations</div></div>'+ic('chev').replace('<svg','<svg class="chev"')+'</div>';
   h+='<div class="card"><div class="rounds">'+rest.map(function(m){var M=MODULES[m]; return '<button class="rb'+(m==='reglages'?' y':'')+'" data-go="'+m+'"><span class="c">'+ic(M.icon)+'</span>'+esc(M.label)+'</button>';}).join('')+'</div></div>';
   h+='<div class="card cfg"><div class="cfg-it"><span class="ico">'+ic('sun')+'</span><b class="grow">Thème</b><div class="seg" id="theme" style="width:190px">'+[['auto','Auto'],['light','Clair'],['dark','Sombre']].map(function(x){return '<button data-v="'+x[0]+'" class="'+(CFG.theme===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>'+
-     '<div class="cfg-it" data-go="perms" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Autorisations</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div>'+(TROPHY.found&&S.role!=='admin'?'<div class="cfg-it" data-go="trophees" style="cursor:pointer"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><b class="grow">Mes trophées</b><span class="pill p-gray num">'+TROPHY.count+'</span></div>':'')+'<div class="cfg-it" data-go="notifs" style="cursor:pointer"><span class="ico">'+ic('bell')+'</span><b class="grow">Notifications</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it"><span class="ico">'+ic('logout')+'</span><b class="grow">Se déconnecter</b></div></div>';
+     '<div class="cfg-it" data-go="perms" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Autorisations</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div>'+(TROPHY.found&&S.role!=='admin'?'<div class="cfg-it" data-go="trophees" style="cursor:pointer"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><b class="grow">Mes trophées</b><span class="pill p-gray num">'+TROPHY.count+'</span></div>':'')+'<div class="cfg-it" id="plusNav" style="cursor:pointer"><span class="ico">'+ic('route')+'</span><b class="grow">Application d\'itinéraire</b><span class="muted" style="font-size:13px">'+(CFG.navApp?({plans:'Plans',gmaps:'Google Maps',waze:'Waze'})[CFG.navApp]:'Demander')+'</span></div>'+'<div class="cfg-it" id="plusIntro" style="cursor:pointer"><span class="ico">'+ic('bolt')+'</span><b class="grow">Rejouer l\'intro</b></div><div class="cfg-it" data-go="notifs" style="cursor:pointer"><span class="ico">'+ic('bell')+'</span><b class="grow">Notifications</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it"><span class="ico">'+ic('logout')+'</span><b class="grow">Se déconnecter</b></div></div>';
   return h+'</div>';
 };
 
@@ -1710,7 +1766,7 @@ function bindNotifs(){
 /* ---------- Barre du bas : pastille animée + glisser ---------- */
 var tabKey='', lastActive=null;
 function tabOrder(){ return tabsFor().concat(['plus']); }
-function activeTab(){ var t=tabsFor(), cur=S.screen; var parent={client:'clients', techdetail:'equipe', reglages:'plus', chat:'messages', notifs:'plus', profil:'plus', tableau:'etiquetage', apercu:'etiquetage', chantier:'planning', fin:'planning', stats:'plus', perms:'plus', trophees:'plus'}[cur]||cur; return t.indexOf(parent)>=0?parent:'plus'; }
+function activeTab(){ var t=tabsFor(), cur=S.screen; var parent={client:'clients', techdetail:'equipe', reglages:'plus', chat:'messages', notifs:'plus', profil:'plus', tableau:'etiquetage', apercu:'etiquetage', chantier:'planning', fin:'planning', stats:'plus', perms:'plus', trophees:'plus', suivi:'accueil'}[cur]||cur; return t.indexOf(parent)>=0?parent:'plus'; }
 function renderTabs(){
   var nav=$('tabs'), t=tabsFor(), act=activeTab();
   var key=S.role+'|'+t.join(',')+'|'+t.map(function(m){return MODULES[m].badge||0;}).join(',');
@@ -2385,8 +2441,8 @@ function crmFeed(flash){
 }
 function liveCard(){
   var cur=LIVE.filter(function(e){return e.k==='route';})[0], t=tech('t1'), r=RDVS.filter(function(x){return x.tech==='t1'&&x.st==='enroute';})[0];
-  var h='<div class="sec"><h2>Suivi en direct</h2><span class="live-dot">EN DIRECT</span></div>';
-  if(r){ var c=client(r.cid); h+='<div class="card track"><div class="li">'+avatar(t)+'<div class="grow"><b style="display:block">'+esc(t.nom)+' est en route</b><span class="muted" style="font-size:13px">vers '+esc(c.nom)+' · '+esc(c.ville.replace(/^\d+\s/,''))+'</span></div><div style="text-align:right"><b class="num" style="font-size:18px">8 min</b><div class="muted num" style="font-size:12px">arrivée '+esc(r.h)+'</div></div></div><div class="trk"><i style="width:68%"></i><span style="left:68%"></span></div><div class="row muted" style="justify-content:space-between;font-size:12px"><span>Départ 08:31</span><span>3,2 km restants</span></div></div>'; }
+  var h='<div class="sec"><h2>Suivi en direct</h2><button class="link" data-suivi="t1">Voir en direct</button></div>';
+  if(r){ var c=client(r.cid); h+='<div class="card track"><div class="li">'+avatar(t)+'<div class="grow"><b style="display:block">'+esc(t.nom)+' est en route</b><span class="muted" style="font-size:13px">vers '+esc(c.nom)+' · '+esc(c.ville.replace(/^\d+\s/,''))+'</span></div><div style="text-align:right"><b class="num" style="font-size:18px">8 min</b><div class="muted num" style="font-size:12px">arrivée '+esc(r.h)+'</div></div></div><div class="trk"><i style="width:68%"></i><span style="left:68%"></span></div><div class="row muted" style="justify-content:space-between;font-size:12px"><span>Départ 08:31</span><span>3,2 km restants</span></div><button class="btn primary sm" data-suivi="t1">'+ic('route')+'Voir en direct</button></div>'; }
   h+='<div class="card feed">'+LIVE.slice(0,5).map(liveRow).join('')+'</div>';
   return h;
 }
@@ -2625,8 +2681,269 @@ var _bindPerms = bindPerms;
 bindPerms = function(){
   each('[data-pa]',function(b){ b.onclick=function(){ var P=PERM_LIST.filter(function(x){return x.k===b.dataset.pa;})[0];
     var answered=false; askReal(P,function(v){ if(answered) return; answered=true; PERMS[P.k]=v; pSave(); rerender(); if(v==='yes') toast(P.t+' autorisé'); else if(!IN_PREVIEW) toast('Refusé : activez-le dans les Réglages du téléphone, rubrique AR Terrain'); }); }; });
-  $('pReplay').onclick=function(){ PERMS=null; try{ localStorage.removeItem(PKEY); }catch(e){} goTab('accueil'); intro(onboarding); };
+  $('pReplay').onclick=function(){ PERMS=null; try{ localStorage.removeItem(PKEY); }catch(e){} goTab('accueil'); introBest(onboarding); };
 };
+
+/* =========================================================
+   V10 — Intro 3D « Agent terrain » (Three.js)
+   Grille hexagonale, utilitaire 3D, onde électrique, emblème qui sort du sol,
+   éclairs et étincelles, titre en relief, plongée dans l'emblème.
+   ========================================================= */
+function webglOk(){ try{ var c=document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl'))); }catch(e){ return false; } }
+function introBest(next){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(window.THREE && webglOk() && !reduce){ try{ return intro3d(next); }catch(e){ var x=document.querySelector('.i3'); if(x) x.remove(); } }
+  intro(next);
+}
+function glowTex(inner, outer){
+  var c=document.createElement('canvas'); c.width=c.height=128; var g=c.getContext('2d'), gr=g.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,inner); gr.addColorStop(.35,outer); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,128,128);
+  var t=new THREE.CanvasTexture(c); return t;
+}
+function sideTex(){
+  var c=document.createElement('canvas'); c.width=512; c.height=160; var g=c.getContext('2d');
+  g.fillStyle='#FFFFFF'; g.fillRect(0,0,512,160);
+  g.fillStyle='#1D3FBF'; g.fillRect(0,104,512,34); g.fillStyle='#FFC93C'; g.fillRect(0,92,512,12);
+  g.font='800 46px Inter, system-ui, sans-serif'; g.fillStyle='#1D3FBF'; g.textBaseline='middle'; g.fillText('ENTREPRISE A',26,52);
+  var w=g.measureText('ENTREPRISE A').width; g.fillStyle='#E0A800'; g.fillText('R',26+w,52);
+  g.font='700 18px Inter, system-ui, sans-serif'; g.fillStyle='#FFFFFF'; g.fillText('ÉLECTRICITÉ GÉNÉRALE',26,122);
+  var t=new THREE.CanvasTexture(c); t.anisotropy=4; return t;
+}
+function intro3d(next){
+  var T=THREE, ph=$('phone');
+  var el=document.createElement('div'); el.className='i3'; el.setAttribute('role','img'); el.setAttribute('aria-label','Entreprise AR, Agent terrain');
+  el.innerHTML='<canvas class="i3-cv" aria-hidden="true"></canvas><div class="i3-vig"></div>'+
+    '<div class="i3-title"><div class="i3-k">'+'ENTREPRISE'.split('').map(function(c,i){return '<i style="--d:'+i+'">'+c+'</i>';}).join('')+'<b>&nbsp;</b><i style="--d:11">A</i><i class="r" style="--d:12">R</i></div>'+
+    '<div class="i3-agent"><span>AGENT TERRAIN</span></div><div class="i3-sub">Bonjour Karim · '+techRdv().filter(function(r){return r.st!=='termine';}).length+' RDV aujourd\'hui</div></div>'+
+    '<div class="i3-flash"></div><button class="i3-skip">Passer</button>';
+  ph.appendChild(el);
+  var cv=el.querySelector('.i3-cv'), W=ph.clientWidth, H=ph.clientHeight, dpr=Math.min(2, window.devicePixelRatio||1);
+  var R=new T.WebGLRenderer({canvas:cv, antialias:true, alpha:false, powerPreference:'high-performance'});
+  R.setPixelRatio(dpr); R.setSize(W,H,false); R.setClearColor(0x07103a,1);
+  if(R.outputEncoding!==undefined) R.outputEncoding=T.sRGBEncoding;
+  var S3=new T.Scene(); S3.fog=new T.Fog(0x07103a, 9, 26);
+  var cam=new T.PerspectiveCamera(W/H<.75?58:46, W/H, .1, 80);
+
+  /* Lumières */
+  S3.add(new T.HemisphereLight(0x9fb4ff, 0x0a0f2a, .9));
+  var key=new T.DirectionalLight(0xffffff, 1.1); key.position.set(4,7,6); S3.add(key);
+  var bolt=new T.PointLight(0xffd25a, 0, 9, 2); bolt.position.set(0,2.6,-1); S3.add(bolt);
+
+  /* Sol : grille hexagonale + onde électrique (shader) */
+  var floorMat=new T.ShaderMaterial({transparent:true, depthWrite:false, uniforms:{uR:{value:-1}, uT:{value:0}},
+    vertexShader:'varying vec2 vP; void main(){ vP=position.xy; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+    fragmentShader:[
+      'varying vec2 vP; uniform float uR; uniform float uT;',
+      'float hexd(vec2 p){ p=abs(p); return max(dot(p,vec2(.8660254,.5)),p.y); }',
+      'void main(){',
+      ' vec2 p=vP*1.15; vec2 s=vec2(1.,1.7320508); vec2 h=s*.5;',
+      ' vec2 a=mod(p,s)-h; vec2 b=mod(p-h,s)-h; vec2 g=dot(a,a)<dot(b,b)?a:b;',
+      ' float e=.5-hexd(g); float line=smoothstep(.06,.0,e);',
+      ' float d=length(vP-vec2(0.,1.2)); float fade=smoothstep(14.,2.,d);',
+      ' float ring=uR>0.?smoothstep(.9,0.,abs(d-uR))*smoothstep(12.,0.,uR):0.;',
+      ' vec3 base=vec3(.16,.30,.85); vec3 hot=vec3(1.,.82,.26);',
+      ' float shimmer=.55+.45*sin(uT*2.+d*1.4);',
+      ' vec3 col=base*line*(.35+.25*shimmer)+hot*(line*1.6+.18)*ring;',
+      ' gl_FragColor=vec4(col, (line*.75+ring*.5)*fade);',
+      '}'].join('\n')});
+  var floor=new T.Mesh(new T.PlaneGeometry(40,40,1,1), floorMat); floor.rotation.x=-Math.PI/2; S3.add(floor);
+  var ground=new T.Mesh(new T.PlaneGeometry(60,60), new T.MeshStandardMaterial({color:0x0a1446, roughness:.9, metalness:.1})); ground.rotation.x=-Math.PI/2; ground.position.y=-.01; S3.add(ground);
+
+  /* Route */
+  var road=new T.Mesh(new T.PlaneGeometry(40,1.9), new T.MeshStandardMaterial({color:0x14161d, roughness:.85})); road.rotation.x=-Math.PI/2; road.position.set(0,.005,1.2); S3.add(road);
+  var dashMat=new T.MeshBasicMaterial({color:0xffc93c}), dashes=[];
+  for(var i=0;i<16;i++){ var d=new T.Mesh(new T.PlaneGeometry(.7,.07), dashMat); d.rotation.x=-Math.PI/2; d.position.set(-20+i*2.6,.012,1.2); S3.add(d); dashes.push(d); }
+
+  /* Utilitaire 3D */
+  var van=new T.Group(), white=new T.MeshStandardMaterial({color:0xffffff, roughness:.35, metalness:.15}), dark=new T.MeshStandardMaterial({color:0x1b2b55, roughness:.15, metalness:.6});
+  var st=sideTex(), sideMat=new T.MeshStandardMaterial({map:st, roughness:.4});
+  var body=new T.Mesh(new T.BoxGeometry(2.5,1.15,1.15), [white, white, white, white, sideMat, sideMat]); body.position.set(-.25,.82,0); van.add(body);
+  var cab=new T.Mesh(new T.BoxGeometry(.8,.82,1.13), white); cab.position.set(1.33,.66,0); van.add(cab);
+  var hood=new T.Mesh(new T.BoxGeometry(.75,.55,1.12), white); hood.position.set(1.33,1.12,0); hood.rotation.z=-.55; van.add(hood);
+  var wind=new T.Mesh(new T.PlaneGeometry(.66,1.02), dark); wind.rotation.x=-Math.PI/2; wind.position.y=.278; hood.add(wind);
+  var stripe=new T.Mesh(new T.BoxGeometry(.82,.12,1.16), new T.MeshStandardMaterial({color:0x1d3fbf})); stripe.position.set(1.33,.48,0); van.add(stripe);
+  var wheels=[], wg=new T.CylinderGeometry(.27,.27,.22,18), wm=new T.MeshStandardMaterial({color:0x111216, roughness:.8}), hm=new T.MeshStandardMaterial({color:0xc9cdd4, metalness:.8, roughness:.3});
+  [[-1,-.55],[-1,.55],[1.2,-.55],[1.2,.55]].forEach(function(p){ var w=new T.Group(), t=new T.Mesh(wg,wm); t.rotation.x=Math.PI/2; w.add(t); var hub=new T.Mesh(new T.CylinderGeometry(.13,.13,.23,10),hm); hub.rotation.x=Math.PI/2; w.add(hub); w.position.set(p[0],.27,p[1]); van.add(w); wheels.push(w); });
+  var hl=new T.MeshBasicMaterial({color:0xfff3c4}), headG=new T.SpriteMaterial({map:glowTex('rgba(255,250,220,1)','rgba(255,214,120,.45)'), blending:T.AdditiveBlending, depthWrite:false, transparent:true});
+  [-.35,.35].forEach(function(z){ var l=new T.Mesh(new T.BoxGeometry(.04,.12,.2),hl); l.position.set(1.74,.72,z); van.add(l); var s=new T.Sprite(headG); s.scale.set(1.1,1.1,1); s.position.set(1.8,.72,z); van.add(s); });
+  var beam=new T.Mesh(new T.PlaneGeometry(3.2,1.3), new T.MeshBasicMaterial({map:glowTex('rgba(255,240,190,.55)','rgba(255,220,140,.12)'), transparent:true, depthWrite:false, blending:T.AdditiveBlending}));
+  beam.rotation.x=-Math.PI/2; beam.position.set(3.2,.03,0); van.add(beam);
+  var shadow=new T.Mesh(new T.PlaneGeometry(3.4,1.6), new T.MeshBasicMaterial({map:glowTex('rgba(0,0,0,.65)','rgba(0,0,0,.25)'), transparent:true, depthWrite:false})); shadow.rotation.x=-Math.PI/2; shadow.position.y=.02; van.add(shadow);
+  van.position.set(-11,0,1.2); S3.add(van);
+
+  /* Emblème hexagonal */
+  function hexShape(r){ var s=new T.Shape(); for(var k=0;k<6;k++){ var a=Math.PI/6+k*Math.PI/3, x=Math.cos(a)*r, y=Math.sin(a)*r; if(k===0) s.moveTo(x,y); else s.lineTo(x,y); } s.closePath(); return s; }
+  var emb=new T.Group();
+  var hexG=new T.ExtrudeGeometry(hexShape(1.15), {depth:.28, bevelEnabled:true, bevelThickness:.06, bevelSize:.06, bevelSegments:3}); hexG.center();
+  var embBody=new T.Mesh(hexG, new T.MeshStandardMaterial({color:0x1d3fbf, metalness:.75, roughness:.28, emissive:0x0b1a66, emissiveIntensity:.4})); emb.add(embBody);
+  var ringS=hexShape(1.02); ringS.holes.push(hexShape(.86));
+  var ringG=new T.ExtrudeGeometry(ringS, {depth:.06, bevelEnabled:false}); ringG.center();
+  var ringMat=new T.MeshStandardMaterial({color:0xffc93c, emissive:0xffb400, emissiveIntensity:.2, metalness:.4, roughness:.35});
+  var ring=new T.Mesh(ringG, ringMat); ring.position.z=.2; emb.add(ring);
+  var face=new T.Mesh(new T.CircleGeometry(.72, 48), new T.MeshBasicMaterial({color:0xffffff})); face.position.z=.205; emb.add(face);
+  var logoMat=new T.MeshBasicMaterial({transparent:true, opacity:1});
+  new T.TextureLoader().load('logo.png', function(tx){ logoMat.map=tx; logoMat.needsUpdate=true; });
+  var logoP=new T.Mesh(new T.PlaneGeometry(1.2,1.2), logoMat); logoP.position.z=.21; emb.add(logoP);
+  var halo=new T.Sprite(new T.SpriteMaterial({map:glowTex('rgba(255,214,90,.9)','rgba(255,190,40,.25)'), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:0})); halo.scale.set(5,5,1); halo.position.z=-.3; emb.add(halo);
+  emb.position.set(0,-1.6,-1); emb.scale.setScalar(.85); S3.add(emb);
+
+  /* Éclairs et étincelles */
+  var arcMat=new T.LineBasicMaterial({color:0xfff1b0, transparent:true, opacity:1, blending:T.AdditiveBlending, depthWrite:false});
+  var arcGlow=new T.LineBasicMaterial({color:0xffc93c, transparent:true, opacity:.6, blending:T.AdditiveBlending, depthWrite:false});
+  var arcs=new T.Group(); S3.add(arcs);
+  function makeBolt(a,b,rough,segs){ var pts=[]; for(var k=0;k<=segs;k++){ var t=k/segs, p=a.clone().lerp(b,t); if(k>0&&k<segs){ p.x+=(Math.random()-.5)*rough; p.y+=(Math.random()-.5)*rough; p.z+=(Math.random()-.5)*rough*.6; } pts.push(p); } return new T.BufferGeometry().setFromPoints(pts); }
+  function redrawArcs(power){
+    while(arcs.children.length){ var c=arcs.children.pop(); c.geometry.dispose(); }
+    if(power<=0) return;
+    var cpos=emb.position, n=Math.round(3+power*4);
+    for(var k=0;k<n;k++){
+      var ang=Math.random()*Math.PI*2, from=new T.Vector3(cpos.x+Math.cos(ang)*1.0*emb.scale.x, cpos.y+Math.sin(ang)*1.0*emb.scale.x, cpos.z+.1);
+      var to = Math.random()<.45 ? new T.Vector3((Math.random()-.5)*5, 0, cpos.z+(Math.random()-.2)*3) : new T.Vector3(cpos.x+Math.cos(ang)*(1.9+Math.random()), cpos.y+Math.sin(ang)*(1.9+Math.random()), cpos.z+(Math.random()-.5));
+      var g=makeBolt(from,to,.45,10); arcs.add(new T.Line(g, arcMat)); arcs.add(new T.Line(makeBolt(from,to,.3,7), arcGlow));
+    }
+    arcMat.opacity=Math.min(1,power); arcGlow.opacity=.6*Math.min(1,power);
+  }
+  var NS=220, sp=new Float32Array(NS*3), sv=[], sGeo=new T.BufferGeometry(); sGeo.setAttribute('position', new T.BufferAttribute(sp,3));
+  var sMat=new T.PointsMaterial({color:0xffd25a, size:.07, transparent:true, opacity:0, blending:T.AdditiveBlending, depthWrite:false});
+  var sparks=new T.Points(sGeo, sMat); S3.add(sparks);
+  function burst(origin){ for(var k=0;k<NS;k++){ sp[k*3]=origin.x; sp[k*3+1]=origin.y; sp[k*3+2]=origin.z; var a=Math.random()*Math.PI*2, u=Math.random()*2-1, v=2+Math.random()*4.5; sv[k]=[Math.cos(a)*Math.sqrt(1-u*u)*v, Math.abs(u)*v*.9+1, Math.sin(a)*Math.sqrt(1-u*u)*v]; } sGeo.attributes.position.needsUpdate=true; sMat.opacity=1; }
+
+  /* Timeline */
+  function ease(t){ return t<0?0:t>1?1:t*t*(3-2*t); }
+  function easeOut(t){ t=Math.max(0,Math.min(1,t)); return 1-Math.pow(1-t,3); }
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  var t0=performance.now(), last=t0, lastArc=0, struck=false, burst2=false, titled=false, done=false, raf, DUR=5.2;
+  function finish(){ if(done) return; done=true; cancelAnimationFrame(raf); el.classList.add('out'); setTimeout(function(){ try{ R.dispose(); }catch(e){} el.remove(); next&&next(); }, 520); }
+  el.querySelector('.i3-skip').onclick=function(e){ e.stopPropagation(); finish(); };
+  el.addEventListener('click', finish);
+  function frame(now){
+    if(done) return;
+    var t=(now-t0)/1000, dt=Math.min(.05,(now-last)/1000); last=now;
+    floorMat.uniforms.uT.value=t;
+    /* 0 → 1.7 s : l'utilitaire arrive et freine */
+    var vx = t<1.7 ? lerp(-11, 0, easeOut(t/1.7)) : t<2.45 ? 0 : lerp(0, 14, Math.pow(Math.min(1,(t-2.45)/1.3),2));
+    var vSpeed = Math.abs(vx-van.position.x)/Math.max(dt,.001); van.position.x=vx;
+    van.rotation.z = t>1.45 && t<1.85 ? Math.sin((t-1.45)/.4*Math.PI)*.025 : 0;
+    wheels.forEach(function(w){ w.rotation.z -= vSpeed*dt/.27; });
+    dashes.forEach(function(d){ if(t<1.7){ d.position.x -= (1-t/1.7)*9*dt; if(d.position.x<-20) d.position.x+=41.6; } });
+    /* 1.7 s : onde électrique depuis l'utilitaire */
+    floorMat.uniforms.uR.value = t>1.7 ? (t-1.7)*7 : -1;
+    /* 1.9 → 3.0 s : l'emblème sort du sol en tournant */
+    var er=easeOut((t-1.9)/1.1);
+    emb.position.y=lerp(-1.6, 2.55, er);
+    emb.rotation.y = t<3.0 ? lerp(Math.PI*2.5, 0, er) : Math.sin((t-3)*1.6)*.12;
+    emb.rotation.x = lerp(.5, -.08, er);
+    /* 2.2 → 3.6 s : éclairs */
+    var power = t>2.1 && t<3.7 ? (t<2.5 ? (t-2.1)/.4 : t>3.3 ? (3.7-t)/.4 : 1) : 0;
+    if(now-lastArc>60){ lastArc=now; redrawArcs(power); }
+    bolt.intensity = power>0 ? 2.2+Math.random()*3*power : Math.max(0,bolt.intensity-dt*6);
+    ringMat.emissiveIntensity = .2 + power*1.6 + (t>3.6?.6:0);
+    halo.material.opacity = Math.min(1, Math.max(0, (t-2.2)*1.5)) * (.75+.25*Math.sin(t*9));
+    if(!struck && t>2.25){ struck=true; el.classList.add('strike'); burst(emb.position); try{ navigator.vibrate&&navigator.vibrate([18,40,18]); }catch(e){} }
+    if(!burst2 && t>2.9){ burst2=true; burst(new T.Vector3(emb.position.x, .1, emb.position.z)); }
+    for(var k=0;k<NS;k++){ var v=sv[k]; if(!v) continue; v[1]-=9.8*dt; sp[k*3]+=v[0]*dt; sp[k*3+1]+=v[1]*dt; sp[k*3+2]+=v[2]*dt; if(sp[k*3+1]<0){ sp[k*3+1]=0; v[1]*=-.35; v[0]*=.7; v[2]*=.7; } }
+    sGeo.attributes.position.needsUpdate=true; sMat.opacity=Math.max(0,sMat.opacity-dt*.6);
+    /* Caméra : rase la grille, monte, tourne autour, puis plonge dans l'emblème */
+    var orbit = t<2 ? -.35 : lerp(-.35, .28, ease((t-2)/2.2));
+    var dist = t<1.7 ? lerp(14, 10, ease(t/1.7)) : t<4.4 ? lerp(10, 8.4, ease((t-1.7)/2.7)) : lerp(8.4, .9, Math.pow((t-4.4)/.8,2));
+    var camY = t<1.7 ? lerp(1.3, 2.3, ease(t/1.7)) : lerp(2.3, 3.0, ease((t-1.7)/2));
+    var target = new T.Vector3(0, lerp(.9, 2.15, ease((t-1.6)/1.6)), lerp(1.2, -1, ease((t-1.6)/1.6)));
+    cam.position.set(Math.sin(orbit)*dist, camY, target.z+Math.cos(orbit)*dist);
+    cam.lookAt(target);
+    if(!titled && t>3.25){ titled=true; el.classList.add('title'); }
+    if(t>4.5) el.classList.add('dive');
+    R.render(S3, cam);
+    if(t>=DUR) return finish();
+    raf=requestAnimationFrame(frame);
+  }
+  raf=requestAnimationFrame(frame);
+  return el;
+}
+
+/* =========================================================
+   V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
+   ========================================================= */
+var NAV_APPS={plans:'Plans', gmaps:'Google Maps', waze:'Waze'};
+function navUrl(k,c){ var q=encodeURIComponent(c.adr+', '+c.ville); return k==='plans'?'https://maps.apple.com/?daddr='+q : k==='gmaps'?'https://www.google.com/maps/dir/?api=1&destination='+q : 'https://waze.com/ul?q='+q+'&navigate=yes'; }
+function navOpen(k,c){
+  var a=document.createElement('a'); a.href=navUrl(k,c); a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); try{ a.click(); }catch(e){} a.remove();
+  toastUndo('Ouverture de '+NAV_APPS[k]+' · '+c.adr, function(){ CFG.navApp=null; save(); navSheet(c); });
+}
+var _navSheet=navSheet;
+navSheet=function(c){
+  if(CFG.navApp && NAV_APPS[CFG.navApp]) return navOpen(CFG.navApp, c);
+  _navSheet(c);
+  var s=$('overlay').querySelector('.sheet'); if(!s) return;
+  CFG.navCount=CFG.navCount||{};
+  var best=Object.keys(CFG.navCount).sort(function(a,b){return (CFG.navCount[b]||0)-(CFG.navCount[a]||0);})[0];
+  var hint=document.createElement('p'); hint.className='hint'; hint.style.textAlign='center';
+  hint.innerHTML = best && CFG.navCount[best]>0 ? 'Encore <b class="num">'+Math.max(0,10-CFG.navCount[best])+'</b> choix de '+NAV_APPS[best]+' et Itinéraire l\'ouvrira directement.' : 'Au bout de 10 choix de la même appli, Itinéraire l\'ouvrira directement.';
+  var apps=s.querySelector('.navapps'); apps.parentNode.insertBefore(hint, apps.nextSibling);
+  [].forEach.call(s.querySelectorAll('.navapp'),function(el){ el.addEventListener('click',function(){
+    var k=el.dataset.app; CFG.navCount[k]=(CFG.navCount[k]||0)+1; Object.keys(CFG.navCount).forEach(function(o){ if(o!==k) CFG.navCount[o]=0; });
+    if(CFG.navCount[k]>=10 && !CFG.navApp){ CFG.navApp=k; setTimeout(function(){ toast('Désormais, Itinéraire ouvre directement '+NAV_APPS[k]+'. Modifiable dans Plus.'); },700); }
+    save();
+  }); });
+};
+function navChooser(){
+  var s=sheet('<h3>Application d\'itinéraire</h3><p class="hint">Choisissez l\'appli ouverte quand vous touchez « Itinéraire ».</p><div class="list">'+[['', 'Me demander à chaque fois']].concat(Object.keys(NAV_APPS).map(function(k){return [k,NAV_APPS[k]];})).map(function(x){ var on=(CFG.navApp||'')===x[0]; return '<button class="pick'+(on?' on':'')+'" data-nv="'+x[0]+'"><span class="box">'+(on?ic('check'):'')+'</span><b class="grow" style="font-size:15px">'+x[1]+'</b>'+(x[0]?'<span class="napp nav-'+({plans:'apple',gmaps:'google',waze:'waze'})[x[0]]+'" style="width:34px;height:34px;border-radius:10px">'+navLogo(x[0]).replace('<svg','<svg style="width:18px;height:18px"')+'</span>':'')+'</button>'; }).join('')+'</div>');
+  [].forEach.call(s.querySelectorAll('[data-nv]'),function(b){ b.onclick=function(){ CFG.navApp=b.dataset.nv||null; CFG.navCount={}; save(); closeSheet(); rerender(); toast(CFG.navApp?'Itinéraire ouvrira '+NAV_APPS[CFG.navApp]:'Itinéraire vous demandera l\'appli'); }; });
+}
+
+/* ---------- Suivi en direct (façon livraison) ---------- */
+var ROUTE_D='M 70 470 C 90 420, 60 380, 110 350 S 200 330, 190 280 S 120 220, 170 180 S 270 160, 260 110';
+SCREENS.suivi = function(tid){
+  var t=tech(tid||'t1'), r=RDVS.filter(function(x){return x.tech===t.id && (x.st==='enroute'||x.st==='confirme'||x.st==='aconf'||x.st==='surplace');}).sort(function(a,b){ return (a.st==='enroute'?-1:0)-(b.st==='enroute'?-1:0) || hm2min(a.h)-hm2min(b.h); })[0];
+  TITLES.suivi='Suivi en direct';
+  if(!r) return '<div class="pad"><div class="card empty-st">'+ic('route')+'<b>'+esc(t.nom)+' n\'a pas de trajet en cours</b><span class="muted">Le suivi s\'affiche dès que le technicien indique « Je suis en route ».</span></div></div>';
+  var c=client(r.cid); S.trk={tid:t.id, rid:r.id, start:Date.now(), dur:30000};
+  var h='<div class="trk-map" data-noswipe><svg viewBox="0 0 320 520" preserveAspectRatio="xMidYMid slice" aria-label="Carte du trajet">'+
+    '<rect width="320" height="520" fill="var(--map-bg)"/>'+
+    '<path d="M-20 300 C 60 330, 140 260, 220 300 S 300 360, 360 330" fill="none" stroke="var(--map-water)" stroke-width="26" stroke-linecap="round"/>'+
+    '<g stroke="var(--map-road)" stroke-width="7" fill="none" stroke-linecap="round"><path d="M0 120 H320"/><path d="M0 420 C 120 400, 200 430, 320 410"/><path d="M160 0 V520"/><path d="M40 0 L 280 520"/><path d="M300 0 L 60 520"/></g>'+
+    '<g stroke="var(--map-road)" stroke-width="2.5" fill="none" opacity=".8"><path d="M0 60 H320 M0 200 H320 M0 260 H320 M0 360 H320 M0 480 H320 M80 0 V520 M240 0 V520 M120 0 V520 M200 0 V520"/></g>'+
+    '<g fill="var(--map-block)"><rect x="18" y="140" width="48" height="40" rx="6"/><rect x="214" y="200" width="56" height="44" rx="6"/><rect x="96" y="440" width="44" height="30" rx="6"/><rect x="250" y="440" width="50" height="50" rx="6"/><rect x="20" y="20" width="44" height="30" rx="6"/></g>'+
+    '<path d="'+ROUTE_D+'" fill="none" stroke="var(--primary)" stroke-opacity=".25" stroke-width="9" stroke-linecap="round"/>'+
+    '<path id="trkDone" d="'+ROUTE_D+'" fill="none" stroke="var(--primary)" stroke-width="9" stroke-linecap="round"/>'+
+    '<path id="trkRoute" d="'+ROUTE_D+'" fill="none" stroke="none"/>'+
+    '<g transform="translate(70,470)"><circle r="8" fill="var(--surface)" stroke="var(--primary)" stroke-width="4"/></g>'+
+    '<g transform="translate(260,110)"><circle r="22" fill="var(--accent)" opacity=".25"><animate attributeName="r" values="14;26;14" dur="2s" repeatCount="indefinite"/></circle><path d="M0 6 C -10 -6, -12 -12, -12 -18 A 12 12 0 0 1 12 -18 C 12 -12, 10 -6, 0 6 Z" fill="var(--danger)" stroke="#fff" stroke-width="2.5"/><circle cy="-18" r="4.5" fill="#fff"/></g>'+
+    '<g id="trkVan"><circle r="20" fill="var(--primary)" opacity=".18"><animate attributeName="r" values="16;26;16" dur="1.6s" repeatCount="indefinite"/></circle><circle r="15" fill="var(--primary)" stroke="#fff" stroke-width="3"/><g transform="translate(-9,-9) scale(.75)" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h12v9H2zM14 10h4l3 3v3h-7"/><circle cx="6" cy="17.5" r="1.8" fill="#fff"/><circle cx="17" cy="17.5" r="1.8" fill="#fff"/></g></g>'+
+    '</svg><div class="trk-top"><span class="live-dot">EN DIRECT</span><span class="muted num" id="trkUpd">Mis à jour à l\'instant</span></div>'+
+    '<div class="trk-dest">'+ic('pin')+'<span class="ell">'+esc(c.adr)+', '+esc(c.ville.replace(/^\d+\s/,''))+'</span></div></div>';
+  h+='<div class="trk-sheet"><div class="grab"></div>'+
+    '<div class="row" style="align-items:flex-end"><div class="grow"><div class="muted" style="font-size:13px;font-weight:600">Arrivée prévue</div><div class="trk-eta num"><span id="trkEta">8</span> min</div><div class="muted num" style="font-size:13px">vers <span id="trkAt">'+esc(r.h)+'</span> · <span id="trkKm">3,2</span> km</div></div><span class="pill p-warn" id="trkSt">'+ic('nav')+'En route</span></div>'+
+    '<div class="steps"><div class="stp done"><i>'+ic('check')+'</i><span>Parti<br><small class="num">08:31</small></span></div><b id="trkBar1"></b><div class="stp cur" id="trkS2"><i>'+ic('nav')+'</i><span>En route<br><small id="trkS2t">en cours</small></span></div><b id="trkBar2"></b><div class="stp" id="trkS3"><i>'+ic('pin')+'</i><span>Arrivé<br><small class="num" id="trkS3t">~'+esc(r.h)+'</small></span></div></div>'+
+    '<div class="card li" style="padding:12px">'+avatar(t)+'<div class="grow"><b style="display:block">'+esc(t.nom)+'</b><span class="muted" style="font-size:12.5px">Utilitaire '+esc(t.vehicule||'AB-123-CD')+' · '+esc(c.nom)+'</span></div><button class="ibtn" data-act="appeler" aria-label="Appeler">'+ic('phone')+'</button><button class="ibtn" style="background:var(--whatsapp);color:#fff" data-act="whatsapp" aria-label="WhatsApp">'+ic('wa')+'</button></div>'+
+    '<div class="trk-feed" id="trkFeed">'+'<div class="lv"><span class="lv-ic p-warn">'+ic('nav')+'</span><div class="grow">Parti du dépôt, trafic fluide</div><span class="num muted lv-t">08:31</span></div>'+'</div>'+
+    '<button class="btn primary block" id="trkShare">'+ic('send')+'Envoyer le lien de suivi au client</button></div>';
+  return h;
+};
+var trkRaf=null;
+function bindSuivi(){
+  if(!S.trk) return; var T=S.trk, path=$('trkRoute'), done=$('trkDone'), van=$('trkVan'); if(!path) return;
+  var L=path.getTotalLength(); done.style.strokeDasharray=L; done.style.strokeDashoffset=L;
+  var r=rdv(T.rid), c=client(r.cid), lastMin=-1, events=[[.3,'Trafic dense avenue de Wagram, +1 min'],[.62,'Plus que 1,2 km'],[.9,'Arrive dans la rue']], ei=0, arrived=false;
+  var startP=.32; // déjà 32 % du trajet fait
+  cancelAnimationFrame(trkRaf);
+  (function loop(){
+    if(S.screen!=='suivi' || !document.body.contains(van)) return;
+    var k=Math.min(1, startP+(1-startP)*((Date.now()-T.start)/T.dur));
+    var pt=path.getPointAtLength(L*k), pt2=path.getPointAtLength(Math.min(L, L*k+2));
+    van.setAttribute('transform','translate('+pt.x.toFixed(1)+','+pt.y.toFixed(1)+')');
+    done.style.strokeDashoffset=(L*(1-k)).toFixed(1);
+    var mins=Math.max(0, Math.ceil((1-k)*12)), km=Math.max(0,(1-k)*4.7);
+    if(mins!==lastMin){ lastMin=mins; $('trkEta').textContent=mins; $('trkKm').textContent=km.toFixed(1).replace('.',','); var at=new Date(Date.now()+mins*60000); var hhmm=String(at.getHours()).padStart(2,'0')+':'+String(at.getMinutes()).padStart(2,'0'); $('trkAt').textContent=hhmm; $('trkS3t').textContent='~'+hhmm; }
+    $('trkBar1').style.setProperty('--p','100%'); $('trkBar2').style.setProperty('--p', Math.round(Math.max(0,(k-startP)/(1-startP))*100)+'%');
+    if(ei<events.length && k>=events[ei][0]){ var f=$('trkFeed'); f.insertAdjacentHTML('afterbegin','<div class="lv flash"><span class="lv-ic p-blue">'+ic('route')+'</span><div class="grow">'+esc(events[ei][1])+'</div><span class="num muted lv-t">'+nowHM()+'</span></div>'); ei++; }
+    $('trkUpd').textContent='Mis à jour à l\'instant';
+    if(k>=1 && !arrived){ arrived=true; $('trkSt').className='pill p-ok'; $('trkSt').innerHTML=ic('check')+'Arrivé'; $('trkS2').className='stp done'; $('trkS3').className='stp done cur'; $('trkS3t').textContent=nowHM(); $('trkEta').parentNode.innerHTML='Sur place'; push('planning', tech(T.tid).nom.split(' ')[0]+' est arrivé', 'Chez '+c.nom+' · '+nowHM(), ['suivi',T.tid], {ic:'ok'}); return; }
+    trkRaf=requestAnimationFrame(loop);
+  })();
+  $('trkShare').onclick=function(){ var link='ar.example/suivi/'+c.ref.toLowerCase();
+    var s=sheet('<h3>Lien de suivi pour le client</h3><p class="hint">Comme un suivi de livraison : le client voit le technicien arriver, sans installer d\'appli.</p><div class="bubble-ed" style="padding:12px;font-size:14px;line-height:1.45">Bonjour '+esc(salut(c))+', votre électricien Entreprise AR est en route. Suivez son arrivée en direct : '+esc(link)+'</div><div class="btns"><button class="btn soft" id="shSms">SMS</button><button class="btn wa" id="shWa">'+ic('wa')+'WhatsApp</button></div>');
+    s.querySelector('#shSms').onclick=s.querySelector('#shWa').onclick=function(){ closeSheet(); done('Lien de suivi envoyé à '+c.nom+' (démo)','Lien de suivi'); }; };
+}
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
@@ -2702,6 +3019,10 @@ function bind(){
   if(S.screen==='profil') bindProfil();
   if(S.screen==='client') bindClient();
   if(S.screen==='notifs') bindNotifs();
+  var pi=$('plusIntro'); if(pi) pi.onclick=function(){ introBest(null); };
+  var pn=$('plusNav'); if(pn) pn.onclick=navChooser;
+  each('[data-suivi]',function(b){ b.onclick=function(e){ e.stopPropagation(); go('suivi', b.dataset.suivi); }; });
+  if(S.screen==='suivi') bindSuivi();
   each('[data-edit]',function(b){ b.onclick=function(){ go('profil', b.dataset.edit); }; });
   // Thème
   seg('theme',function(v){ CFG.theme=v; save(); render(); });
@@ -2734,7 +3055,7 @@ function mv(arr,i,d){ var j=i+d; if(j<0||j>=arr.length) return; var t=arr[i]; ar
 function setRole(r){ S.role=r; S.stack=[]; S.screen='accueil'; S.arg=null; render(); toast(r==='admin'?'Vous voyez l\'appli en tant qu\'admin':'Vous voyez l\'appli en tant que technicien'); }
 $('rolePill').onclick=function(){ setRole(S.role==='admin'?'tech':'admin'); };
 [].forEach.call(document.querySelectorAll('#sideRole button'),function(b){ b.onclick=function(){ setRole(b.dataset.r); }; });
-var JUMP=[['Accueil','accueil'],['Fiche client','client','c1'],['Clients','clients'],['Planning','planning'],['Nouveau devis','devis'],['Appels','appels'],['Messages','messages'],['Étiquetage','etiquetage'],['Chiffre d\'affaires (admin)','ca','',true],['Équipe (admin)','equipe','',true],['Personnaliser (admin)','reglages','',true],['Mode chantier','chantier','r1'],['Fin d\'intervention','fin','r1'],['Tableau électrique','tableau','c1'],['Tableau de bord (admin)','stats','',true],['Aperçu étiquettes','apercu','c1'],['Autorisations','perms'],['Trophées (caché)','trophees'],['Notifications','notifs'],['Mon profil','profil'],['Plus','plus']];
+var JUMP=[['Accueil','accueil'],['Fiche client','client','c1'],['Clients','clients'],['Planning','planning'],['Nouveau devis','devis'],['Appels','appels'],['Messages','messages'],['Étiquetage','etiquetage'],['Chiffre d\'affaires (admin)','ca','',true],['Équipe (admin)','equipe','',true],['Personnaliser (admin)','reglages','',true],['Mode chantier','chantier','r1'],['Fin d\'intervention','fin','r1'],['Tableau électrique','tableau','c1'],['Tableau de bord (admin)','stats','',true],['Aperçu étiquettes','apercu','c1'],['Suivi en direct (admin)','suivi','t1',true],['Autorisations','perms'],['Trophées (caché)','trophees'],['Notifications','notifs'],['Mon profil','profil'],['Plus','plus']];
 $('jump').innerHTML=JUMP.map(function(j,i){return '<button data-j="'+i+'">'+esc(j[0])+'</button>';}).join('');
 [].forEach.call(document.querySelectorAll('#jump button'),function(b){ b.onclick=function(){ var j=JUMP[+b.dataset.j]; if(j[3]&&S.role!=='admin'){S.role='admin';} S.stack=[]; go(j[1], j[2]||null, false); }; });
 
@@ -2757,9 +3078,10 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape' && document
 window.addEventListener('resize', fitDev);
 (function(){ var d='iphone'; try{ d=localStorage.getItem('ar_dev')||'iphone'; }catch(e){} setDev(d); })();
 crmFeed(false);
-$('replayOnb').onclick=function(){ PERMS=null; try{ localStorage.removeItem(PKEY); }catch(e){} if(S.role!=='tech'){ S.role='tech'; } S.stack=[]; S.screen='accueil'; render(); var o=document.querySelector('.onb'); if(o) o.remove(); intro(onboarding); };
-$('replayIntro').onclick=function(){ intro(null); };
-intro(function(){ if(!PERMS) onboarding(); else afterOnboarding(); });
+$('replayOnb').onclick=function(){ PERMS=null; try{ localStorage.removeItem(PKEY); }catch(e){} if(S.role!=='tech'){ S.role='tech'; } S.stack=[]; S.screen='accueil'; render(); var o=document.querySelector('.onb'); if(o) o.remove(); introBest(onboarding); };
+$('replayIntro').onclick=function(){ introBest(null); };
+(function(){ var go2=function(){ if(!PERMS) onboarding(); else afterOnboarding(); }, today=new Date().toDateString(), seen=null; try{ seen=localStorage.getItem('ar_intro_day'); localStorage.setItem('ar_intro_day', today); }catch(e){}
+  if(IN_PREVIEW || !PERMS || seen!==today) introBest(go2); else go2(); })();
 })();
 </script>
 

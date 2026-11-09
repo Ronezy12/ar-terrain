@@ -25,6 +25,7 @@ L'appli s'ouvre alors en plein écran, avec son icône, et fonctionne sans rése
 | `index.html` | L'appli (HTML, CSS et JavaScript) |
 | `lib/data.js`, `lib/icons.js`, `lib/pdf.js` | Moteur d'étiquetage repris de l'appli actuelle |
 | `vendor/jspdf.umd.min.js` | jsPDF 2.5.2 (licence MIT) pour l'export PDF |
+| `vendor/three.min.js` | Three.js r128 (licence MIT) pour l'intro 3D |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installation et fonctionnement hors ligne |
 
 Étape suivante : version native iOS / Android (Capacitor) branchée sur l'API du CRM, avec notifications push, SumUp et publication sur l'App Store et Google Play.
