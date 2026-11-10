@@ -923,6 +923,8 @@ html,body{overscroll-behavior:none}
 .demo-band{display:flex;gap:10px;align-items:flex-start;margin:12px 16px 0;padding:10px 14px;border-radius:16px;background:var(--warning-bg);color:var(--warning);font-size:13px;line-height:1.4}
 .demo-band svg{width:18px;height:18px;flex:none;margin-top:1px}
 .demo-band b{color:inherit}
+.rl-adv{font-size:13px;color:var(--muted)}
+.rl-adv summary{cursor:pointer;padding:4px 0}
 </style>
 
 </head>
@@ -2977,7 +2979,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.20 · 10 nov. 2026';
+var APP_VERSION='1.0.21 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3915,11 +3917,14 @@ logoutFlow=function(){
   var s=sheet('<h3>Se déconnecter ?</h3><p class="hint">'+(sessUser()?'Vous serez déconnecté du compte CRM « '+esc(sessUser().nom||'')+' ».':'Vous êtes en mode démonstration.')+' Les actions en attente d\'envoi restent sur le téléphone.</p><div class="btns"><button class="btn soft" data-close>Annuler</button><button class="btn" id="loOk" style="background:var(--danger);color:#fff">Se déconnecter</button></div>');
   s.querySelector('#loOk').onclick=function(){ closeSheet(); CRM_SESSION=null; sessSave(); if(CRM_LIVE.on) backToDemo(); realLoginScreen(); };
 };
+var CRM_DEFAULT_URLS={test:'https://crmdev.entreprise-ar.fr', prod:''};
+function ensureCrmDefaults(){ var ch=false; if(!CFG.crm.urls.test){ CFG.crm.urls.test=CRM_DEFAULT_URLS.test; ch=true; } if(ch) save(); }
+ensureCrmDefaults();
 function realLoginScreen(){
-  var ready = CFG.crm.mode!=='grok' && !!apiBase();
+  ensureCrmDefaults(); var ready = true;
   var el=document.createElement('div'); el.className='onb'; el.id='realLogin';
   el.innerHTML='<div class="onb-in"><div class="onb-hero"><img src="logo.png" alt=""><span class="hx"></span></div><h2>Connexion</h2>'+
-    (ready?'<p class="muted">Connectez-vous avec votre compte du CRM Entreprise AR.</p><div class="card form" style="width:100%;text-align:left"><label class="field"><span>E-mail du CRM</span><input id="rlE" type="email" autocomplete="username"></label><label class="field"><span>Mot de passe</span><input id="rlP" type="password" autocomplete="current-password"></label><label class="field"><span>Code de double authentification (si demandé)</span><input id="rlC" inputmode="numeric" autocomplete="one-time-code"></label></div><div id="rlRes" style="width:100%"></div>'
+    (ready?'<p class="muted">Connectez-vous avec votre compte du CRM Entreprise AR.</p><div class="card form" style="width:100%;text-align:left"><label class="field"><span>E-mail du CRM</span><input id="rlE" type="email" autocomplete="username"></label><label class="field"><span>Mot de passe</span><input id="rlP" type="password" autocomplete="current-password"></label><label class="field"><span>Code de double authentification (si demandé)</span><input id="rlC" inputmode="numeric" autocomplete="one-time-code"></label><details class="rl-adv"><summary>Adresse du CRM : '+esc((CFG.crm.urls[CFG.crm.env]||'').replace(/^https:\/\//,''))+'</summary><label class="field" style="margin-top:10px"><span>Adresse du CRM</span><input id="rlU" inputmode="url" value="'+esc(CFG.crm.urls[CFG.crm.env]||'')+'"></label></details></div><div id="rlRes" style="width:100%"></div>'
       :'<p class="muted">La connexion au CRM n\'est pas encore réglée sur ce téléphone. L\'administrateur la règle dans Connexion CRM (adresse du CRM).</p>')+
     '</div><div class="onb-foot">'+(ready?'<button class="btn primary block" id="rlGo">Se connecter</button>':'')+'<button class="link" id="rlDemo">Continuer en mode démonstration</button></div>';
   $('phone').appendChild(el);
@@ -3927,6 +3932,7 @@ function realLoginScreen(){
   el.querySelector('#rlDemo').onclick=function(){ close(); S.stack=[]; S.screen='accueil'; render(); toast('Mode démonstration : données fictives'); };
   var go=el.querySelector('#rlGo'); if(go) go.onclick=function(){ var e=el.querySelector('#rlE').value.trim(), p=el.querySelector('#rlP').value, c=el.querySelector('#rlC').value.trim(), out=el.querySelector('#rlRes');
     if(!e||!p){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez votre e-mail et votre mot de passe.</p>'; return; }
+    var uu=el.querySelector('#rlU'); if(uu){ var uv=uu.value.trim().replace(/\/+$/,''); if(!/^https:\/\//.test(uv)){ out.innerHTML='<p class="hint" style="color:var(--danger)">L\'adresse du CRM doit commencer par https://</p>'; return; } CFG.crm.urls[CFG.crm.env]=uv; CFG.crm.mode='api'; save(); }
     go.disabled=true; go.textContent='Connexion…';
     crmLogin(e,p,c).then(function(sess){ close(); S.stack=[]; S.screen='accueil'; render(); toast('Connecté : '+(sess.user.nom||e)); liveLoad(); })
       .catch(function(err){ go.disabled=false; go.textContent='Se connecter'; out.innerHTML='<p class="hint" style="color:var(--danger)"><b>Connexion refusée.</b> '+esc(String(err.message||err))+'</p>'; }); };
