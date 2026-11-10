@@ -2983,7 +2983,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.26 · 10 nov. 2026';
+var APP_VERSION='1.0.27 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3603,7 +3603,7 @@ planForm = function(){
     s.querySelector('#pfRap').onclick=function(){ f.showRap=!f.showRap; draw(); };
     var ok=s.querySelector('#pfOk'); if(ok) ok.onclick=function(){
       var tid=f.tech||f.techPick, c=client(f.cid), id='r'+Date.now();
-      RDVS.push({id:id, cid:f.cid, tech:tid, d:f.d, h:min2hm(f.start), dur:f.dur, st:'aconf', rap:f.rap, note:''}); crmSend('appointment.created',{client_id:f.cid, data:{technician_id:tid, jour:f.d, start:min2hm(f.start), duration_min:f.dur, reminder_min:f.rap}}); S.pday=f.d; closeSheet(); render();
+      RDVS.push({id:id, cid:f.cid, tech:tid, d:f.d, h:min2hm(f.start), dur:f.dur, st:'aconf', rap:f.rap, note:''}); (function(){ var dd=new Date(TODAY.getTime()+f.d*864e5), ymd=dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0'), hm=min2hm(f.start), tz=-dd.getTimezoneOffset(), off=(tz>=0?'+':'-')+String(Math.floor(Math.abs(tz)/60)).padStart(2,'0')+':'+String(Math.abs(tz)%60).padStart(2,'0'), tt=tech(tid)||{}; crmSend('appointment.created',{client_id:f.cid, data:{date:ymd, heure:hm, debut:ymd+'T'+hm+':00'+off, duree:f.dur, duration_min:f.dur, installateur:tt.nom||'', technician_id:(String(tid).indexOf('crm-t-')===0?null:tid), reminder_min:f.rap}}); })(); S.pday=f.d; closeSheet(); render();
       done('RDV planifié pour '+tech(tid).nom+' : '+dayLabel(f.d).toLowerCase()+' à '+min2hm(f.start),'Planification');
       setTimeout(function(){ push('planning','Nouveau RDV · '+dayLabel(f.d).toLowerCase()+' '+min2hm(f.start), c.nom+' · notification reçue par '+tech(tid).nom.split(' ')[0], ['planning'], {ic:'mail'}); },1200);
     };
@@ -3644,7 +3644,7 @@ function crmPost(entry){
   entry.mode='sending'; refreshCrm();
   var t0=Date.now(), ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ if(ctl) ctl.abort(); },10000);
   fetch(crmUrl()+'/api/v1/events',{method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+crmKey(),'Idempotency-Key':entry.id}, body:JSON.stringify(entry.req), signal:ctl?ctl.signal:undefined})
-    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if(!r.ok) toast('CRM : erreur '+r.status+' sur « '+CRM_LABEL[entry.code]+' »'); }); })
+    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if(!r.ok){ var em=''; try{ em=(JSON.parse(tx)||{}).error||''; }catch(e){} if(/action inconnue/i.test(em)) em='le CRM ne gère pas encore cette action (à ajouter côté CRM). Rien n\'a été enregistré dans le CRM'; toast('CRM a refusé « '+(CRM_LABEL[entry.code]||entry.code)+' »'+(em?' : '+em:' (erreur '+r.status+')')); } }); })
     .catch(function(e){ clearTimeout(to); entry.ms=Date.now()-t0; entry.mode='error'; entry.res=(IN_PREVIEW?'Envoi bloqué par l\'aperçu claude.ai : testez sur l\'appli installée. ':'')+(e&&e.name==='AbortError'?'Pas de réponse en 10 s':String(e&&e.message||e)); refreshCrm(); });
 }
 window.addEventListener('online',function(){ setTimeout(function(){ var q=CRMQ.splice(0); q.forEach(crmPost); },1500); });
@@ -3825,7 +3825,7 @@ function crmLogin(email, psw, code){
 function pick(o, keys){ for(var i=0;i<keys.length;i++){ var k=keys[i]; if(o && o[k]!=null && o[k]!=='') return o[k]; } return null; }
 function toDate(v){ if(!v) return null; if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(v)) return new Date(String(v).replace(' ','T')); var d=new Date(v); return isNaN(d)?null:d; }
 function dayOffset(d){ var a=new Date(TODAY); a.setHours(0,0,0,0); var b=new Date(d); b.setHours(0,0,0,0); return Math.round((b-a)/864e5); }
-function apptStatus(s){ s=String(s||'').toLowerCase(); if(/confirm|valid|accept|pris/.test(s)) return 'confirme'; if(/route/.test(s)) return 'enroute'; if(/place|arriv/.test(s)) return 'surplace'; if(/termin|fini|clos|done/.test(s)) return 'termine'; return 'aconf'; }
+function apptStatus(s){ s=String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); if(/a confirmer|attente|a placer|nouveau|a traiter/.test(s)) return 'aconf'; if(/confirm|valid|accept|pris/.test(s)) return 'confirme'; if(/route/.test(s)) return 'enroute'; if(/place|arriv/.test(s)) return 'surplace'; if(/termin|fini|clos|done/.test(s)) return 'termine'; return 'aconf'; }
 var LIVE_DAYS=30, CRM_DIAG=null;
 /* Date de début d'un RDV, quel que soit le nom des champs envoyés par le CRM (date et heure ensemble ou séparées) */
 function apptStart(a){
