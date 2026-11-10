@@ -1174,7 +1174,7 @@ function render(){
   if(S.screen!=='profil') S.pe=null;
   $('back').hidden = root; $('logo').hidden = !root;
   $('title').textContent = TITLES[S.screen]||'';
-  $('subtitle').textContent = S.screen==='accueil' ? (S.role==='admin'?'Vue gérant':((typeof CRM_SESSION!=='undefined'&&CRM_SESSION&&CRM_SESSION.user&&CRM_SESSION.user.nom)||'Karim')+' · '+((tech(ME)&&tech(ME).role)||'Électricien poseur'))+'' : '';
+  $('subtitle').textContent = S.screen==='accueil' ? (S.role==='admin'?((typeof sessUser==='function'&&sessUser())?'Administrateur · '+(sessUser().nom||''):'Vue gérant'):((typeof CRM_SESSION!=='undefined'&&CRM_SESSION&&CRM_SESSION.user&&CRM_SESSION.user.nom)||'Karim')+' · '+((tech(ME)&&tech(ME).role)||'Électricien poseur'))+'' : '';
   var rp=$('rolePill'); rp.className='role-pill'+(S.role==='tech'?' tech':''); rp.innerHTML=(S.role==='admin'?ic('shield')+'ADMIN':ic('user')+'TECH');
   [].forEach.call(document.querySelectorAll('#sideRole button'),function(b){ b.classList.toggle('on', b.dataset.r===S.role); });
   renderTabs();
@@ -2986,7 +2986,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.35 · 10 nov. 2026';
+var APP_VERSION='1.0.36 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4214,7 +4214,7 @@ var _applySession24=applySession;
 applySession=function(){ _applySession24(); var u=sessUser(), t0=tech(ME); if(u && t0 && !t0._live){ t0._live=true; t0.tel=u.telephone||u.tel||''; t0.mail=u.email||''; t0.vehicule=''; } };
 /* Devis et étiquetage : fonctionnent sur le téléphone, pas encore envoyés au CRM */
 var _demoBanner24=demoBanner, LOCAL_SCREENS={devis:1, etiquetage:1, tableau:1, apercu:1};
-demoBanner=function(){ if(sessUser() && S.screen==='accueil') return ''; if(sessUser() && LOCAL_SCREENS[S.screen]) return '<div class="demo-band">'+ic('late')+'<span><b>Enregistré sur ce téléphone.</b> Pas encore envoyé automatiquement au CRM.</span></div>'; return _demoBanner24(); };
+demoBanner=function(){ if(sessUser() && (S.screen==='accueil'||S.screen==='equipe')) return ''; if(sessUser() && LOCAL_SCREENS[S.screen]) return '<div class="demo-band">'+ic('late')+'<span><b>Enregistré sur ce téléphone.</b> Pas encore envoyé automatiquement au CRM.</span></div>'; return _demoBanner24(); };
 /* =========================================================
    V25 — Mode réel fiable : rôle tiré du compte CRM, barre du bas robuste, accueil admin réel,
    onglets réels, rafraîchissement plus fréquent
@@ -4689,6 +4689,58 @@ function pullSettings(){
 }
 var _liveLoad35b=liveLoad;
 liveLoad=function(){ return _liveLoad35b.apply(this, arguments).then(function(ok){ if(ok) pullSettings(); return ok; }); };
+/* =========================================================
+   V36 — Vraie vue administrateur avec un compte admin du CRM : onglets admin, écran Équipe réel
+   ========================================================= */
+delete LIVE_HIDE.equipe;
+LIVE_TABS.admin=['accueil','planning','equipe','clients'];
+var _allowed36=allowed;
+allowed=function(mod){ if(mod==='equipe' && sessUser() && !sessIsAdmin()) return false; return _allowed36(mod); };
+/* Barre admin : mise à jour une fois pour les téléphones déjà configurés avec l'ancienne barre */
+(function(){ try{ if(CFG.tabsV36) return; CFG.tabsV36=true; if(CFG.tabs && CFG.liveTabsInit){ CFG.tabs.admin=LIVE_TABS.admin.slice(); } save(); }catch(e){} })();
+/* Écran Équipe : techniciens réels tirés des RDV du CRM */
+var _equipe36=SCREENS.equipe;
+SCREENS.equipe=function(){
+  if(!sessUser()) return _equipe36();
+  var etat={road:['En route','p-warn'], site:['Sur chantier','p-blue'], ok:['Disponible','p-ok'], off:['Absent','p-gray']};
+  var list=TECHS.filter(function(t){ return RDVS.some(function(r){ return r.tech===t.id; }); });
+  var h='<div class="pad"><p class="hint">Techniciens qui ont des RDV dans le CRM sur la période. État calculé à partir des statuts du jour.</p>';
+  if(!list.length) h+='<div class="card empty-st">'+ic('team')+'<b>Aucun technicien</b><span class="muted">Aucun RDV attribué dans le CRM sur la période.</span></div>';
+  h+='<div class="list">'+list.map(function(t){
+    var mine=RDVS.filter(function(r){ return r.tech===t.id; }), today=mine.filter(function(r){ return r.d===0; }).sort(function(a,b){ return a.h<b.h?-1:1; });
+    var done=today.filter(function(r){ return r.st==='termine'; }).length, next=today.filter(function(r){ return r.st!=='termine'; })[0], e=etat[t.etat]||etat.ok;
+    var nc=next?client(next.cid):null;
+    return '<button class="card li" data-eq="'+esc(t.id)+'" style="text-align:left;width:100%"><span class="av">'+esc(initials(t.nom))+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(t.nom)+'</b><span class="muted ell" style="display:block;font-size:13px">'+today.length+' RDV aujourd\'hui · '+done+' terminé'+(done>1?'s':'')+(nc?' · prochain '+esc(next.h)+' '+esc(nc.nom):'')+'</span></div><span class="pill '+e[1]+'">'+e[0]+'</span></button>';
+  }).join('')+'</div></div>';
+  return h;
+};
+var _bind36=bind;
+bind=function(){ var r=_bind36.apply(this, arguments);
+  if(S.screen==='equipe' && sessUser()) each('[data-eq]',function(b){ b.onclick=function(){ var t=tech(b.dataset.eq)||{nom:''}; var mine=RDVS.filter(function(r){ return r.tech===b.dataset.eq; }).sort(function(a,b2){ return a.d-b2.d || (a.h<b2.h?-1:1); });
+    var stl={aconf:'À confirmer', confirme:'Confirmé', enroute:'En route', surplace:'Sur place', termine:'Terminé'};
+    sheet('<h3>'+esc(t.nom)+'</h3><div class="list">'+(mine.map(function(r){ var c=client(r.cid)||{}; var d=new Date(TODAY.getTime()+r.d*864e5).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'}); return '<div class="card li" style="padding:10px 12px"><b class="num" style="min-width:64px;font-size:13px">'+esc(d)+'<br>'+esc(r.h)+'</b><div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(c.nom||'Client')+'</b><span class="muted ell" style="display:block;font-size:12.5px">'+esc(c.ville||c.adr||'')+'</span></div><span class="pill p-gray">'+(stl[r.st]||'')+'</span></div>'; }).join('')||'<p class="hint">Aucun RDV.</p>')+'</div><button class="btn soft block" data-close>Fermer</button>'); }; });
+  return r; };
+/* Équipe complète depuis le CRM (tous les agents terrain, même sans RDV), si la route existe */
+var TEAM_SRC='rdv';
+function loadCrmTeam(){
+  if(IN_PREVIEW || !sessUser() || !sessIsAdmin()) return Promise.resolve(false);
+  return apiCall('GET','technicians').then(function(r){
+    if(!r.ok) return false; var L=Array.isArray(r.json)?r.json:(r.json&&(r.json.technicians||r.json.techniciens||r.json.agents||r.json.data||r.json.items))||[]; if(!L.length) return false;
+    L.forEach(function(a){ var nom=String(pick(a,['nom','name','nom_complet'])||'').trim(); if(!nom) return; if(a.actif===false||a.actif===0) return;
+      var t=TECHS.filter(function(x){ return x.nom.toLowerCase()===nom.toLowerCase(); })[0];
+      if(!t){ t={id:'crm-t-u'+(pick(a,['id_crmuser','id','id_user'])||TECHS.length), nom:nom, role:'Agent terrain', etat:'ok', lieu:'', tel:'', mail:'', vehicule:''}; TECHS.push(t); }
+      t.tel=pick(a,['telephone','tel','mobile'])||t.tel||''; t.mail=pick(a,['email','mail'])||t.mail||''; t.badge=pick(a,['badge','numero_badge','id_installator'])||t.badge||null; t.crmUser=pick(a,['id_crmuser','id'])||null; t.team=true; });
+    TEAM_SRC='crm'; return true; }).catch(function(){ return false; });
+}
+var _liveLoad36=liveLoad;
+liveLoad=function(){ return _liveLoad36.apply(this, arguments).then(function(ok){ if(ok && sessIsAdmin()) loadCrmTeam().then(function(x){ if(x && S.screen==='equipe') rerenderSoft(); }); return ok; }); };
+var _equipe36b=SCREENS.equipe;
+SCREENS.equipe=function(){ var h=_equipe36b(); if(!sessUser()) return h;
+  if(TEAM_SRC==='crm'){ var extra=TECHS.filter(function(t){ return t.team && !RDVS.some(function(r){ return r.tech===t.id; }); });
+    h=h.replace('Techniciens qui ont des RDV dans le CRM sur la période. ','Tous les agents terrain du CRM. ');
+    if(extra.length) h=h.replace(/<\/div><\/div>$/, extra.map(function(t){ return '<div class="card li"><span class="av">'+esc(initials(t.nom))+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(t.nom)+'</b><span class="muted ell" style="display:block;font-size:13px">Aucun RDV sur la période'+(t.badge?' · badge n° '+esc(t.badge):'')+'</span></div><span class="pill p-ok">Disponible</span></div>'; }).join('')+'</div></div>');
+  } else h=h.replace('<p class="hint">','<div class="cfg-share">'+ic('late')+'<span>Seuls les techniciens qui ont des RDV apparaissent : la liste complète des agents attend le CRM (route des techniciens).</span></div><p class="hint">');
+  return h; };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
