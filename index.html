@@ -2983,7 +2983,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.27 · 10 nov. 2026';
+var APP_VERSION='1.0.28 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4100,7 +4100,7 @@ crmLogin=function(email, psw, code){
     if(!r.ok) throw new Error(loginErr(r));
     if(!r.json || !r.json.token) throw new Error('Réponse inattendue du CRM (pas de jeton de connexion).');
     var u=r.json.user||{};
-    CRM_SESSION={env:CFG.crm.env, token:r.json.token, expires_at:r.json.expires_at, user:{id:u.id_crmuser, nom:u.nom, profil:u.id_profil, installator:u.id_installator, email:u.email||email, telephone:u.telephone||u.tel||u.mobile||''}};
+    CRM_SESSION={env:CFG.crm.env, token:r.json.token, expires_at:r.json.expires_at, user:{id:u.id_crmuser, nom:u.nom, profil:u.id_profil, installator:u.id_installator, badge:(u.badge||u.numero_badge||u.num_badge||u.n_badge||u.id_installator||null), email:u.email||email, telephone:u.telephone||u.tel||u.mobile||''}};
     sessSave(); try{ localStorage.setItem('ar_last_email', email); }catch(e){}
     applySession(); S.stack=[]; return CRM_SESSION;
   });
@@ -4323,6 +4323,68 @@ var _bind26=bind;
 bind=function(){ var r=_bind26.apply(this, arguments); if(S.screen==='diag') bindDiag(); return r; };
 var _plus26=SCREENS.plus;
 SCREENS.plus=function(){ var h=_plus26(); if(!sessUser()) return h; return h.replace('<div class="cfg-it" id="logout"','<div class="cfg-it" data-go="diag" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Diagnostic CRM</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it" id="logout"'); };
+/* =========================================================
+   V28 — Actualisation en arrière-plan : abonnement Web Push auprès du CRM, ouverture du RDV notifié,
+   numéro de badge de l'agent
+   ========================================================= */
+var PUSH_STATE='?', PUSH_INFO='';
+function b64uToBytes(b){ var p='='.repeat((4-b.length%4)%4), s=atob((b+p).replace(/-/g,'+').replace(/_/g,'/')), a=new Uint8Array(s.length); for(var i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return a; }
+function pushSet(st, info){ PUSH_STATE=st; PUSH_INFO=info||''; if(S.screen==='diag'||S.screen==='perms') rerender(); }
+function pushSetup(fromTap){
+  if(IN_PREVIEW || !sessUser()) return Promise.resolve(false);
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)){ pushSet(IS_IOS&&!STANDALONE?'install':'unsupported', IS_IOS&&!STANDALONE?'Sur iPhone : ajoutez l\'appli à l\'écran d\'accueil (Partager › Sur l\'écran d\'accueil), puis ouvrez-la depuis l\'icône.':'Ce navigateur ne gère pas les notifications en arrière-plan.'); return Promise.resolve(false); }
+  var perm=Notification.permission;
+  var ask = perm==='default' && fromTap ? Notification.requestPermission() : Promise.resolve(perm);
+  return Promise.resolve(ask).then(function(pm){
+    if(pm!=='granted'){ pushSet('perm', pm==='denied'?'Notifications refusées : activez-les dans les Réglages du téléphone, rubrique AR Terrain.':'Autorisez les notifications pour recevoir les interventions appli fermée.'); return false; }
+    return apiCall('GET','push/key').then(function(r){
+      var key=r.ok && r.json && (r.json.publicKey||r.json.public_key||r.json.key||r.json.vapid);
+      if(!key){ pushSet('crm', 'Le CRM ne propose pas encore les notifications en arrière-plan (réponse '+r.status+' sur push/key).'); return false; }
+      return navigator.serviceWorker.ready.then(function(reg){
+        return reg.pushManager.getSubscription().then(function(sub){ return sub || reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64uToBytes(key)}); })
+          .then(function(sub){ var j=sub.toJSON();
+            return apiCall('POST','push/subscribe',{endpoint:j.endpoint, keys:j.keys, platform:IS_IOS?'ios':(/Android/.test(navigator.userAgent)?'android':'web'), app_version:APP_VERSION}).then(function(r2){
+              if(!r2.ok){ pushSet('crm', 'Le CRM a refusé l\'abonnement (réponse '+r2.status+').'); return false; }
+              pushSet('ok','Ce téléphone reçoit les interventions même appli fermée.');
+              try{ if(reg.periodicSync) reg.periodicSync.register('rdv-refresh',{minInterval:15*60*1000}).catch(function(){}); }catch(e){}
+              return true; }); });
+      });
+    });
+  }).catch(function(e){ pushSet('error', String(e&&e.message||e)); return false; });
+}
+function pushUnsubscribe(){
+  try{ if(!('serviceWorker' in navigator)) return; navigator.serviceWorker.ready.then(function(reg){ reg.pushManager.getSubscription().then(function(sub){ if(!sub) return; var ep=sub.endpoint; apiCall('POST','push/unsubscribe',{endpoint:ep}).catch(function(){}); sub.unsubscribe().catch(function(){}); }); }); }catch(e){}
+}
+/* Le service worker prévient l'appli ouverte : on relit le CRM tout de suite, et on ouvre le RDV notifié */
+var PENDING_RDV=(function(){ try{ var m=location.search.match(/[?&]rdv=(\d+)/); return m?m[1]:null; }catch(e){ return null; } })();
+function openRdvByCrmId(id){ var r=RDVS.filter(function(x){ return String(x.crmId)===String(id); })[0]; if(!r) return false; PENDING_RDV=null; S.pday=r.d; S.stack=[]; S.screen='planning'; render(); setTimeout(function(){ if(typeof rdvSheet==='function') try{ rdvSheet(r.id); }catch(e){} }, 300); return true; }
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function(e){ var d=e.data||{}; if(d.type!=='crm-refresh') return; LAST_LIVE=0;
+  var go2=function(){ if(d.open && d.id_rdv) openRdvByCrmId(d.id_rdv); };
+  if(sessUser()) liveLoad().then(function(){ LIVE_SEEN=liveIds(); go2(); }); });
+var _liveLoad28=liveLoad;
+liveLoad=function(){ return _liveLoad28.apply(this, arguments).then(function(ok){ if(ok && PENDING_RDV) openRdvByCrmId(PENDING_RDV); return ok; }); };
+/* Abonnement après connexion, au démarrage et quand les notifications sont autorisées */
+var _crmLogin28=crmLogin;
+crmLogin=function(){ return _crmLogin28.apply(this, arguments).then(function(sess){ setTimeout(function(){ pushSetup(false); }, 1500); return sess; }); };
+if(sessUser()) setTimeout(function(){ pushSetup(false); }, 2500);
+var _askReal28=askReal;
+askReal=function(P, cb){ _askReal28(P, function(v){ cb(v); if(P.k==='notif' && v==='yes') setTimeout(function(){ pushSetup(false); }, 800); }); };
+var _logout28=logoutFlow;
+logoutFlow=function(){ if(sessUser()){ var s=_logout28(); var ok=document.getElementById('loOk'); if(ok){ var f=ok.onclick; ok.onclick=function(){ pushUnsubscribe(); f&&f.apply(this, arguments); }; } return s; } return _logout28(); };
+/* Retour dans l'appli : relecture immédiate (au plus toutes les 15 s) */
+document.addEventListener('visibilitychange', function(){ if(!document.hidden && sessUser() && Date.now()-LAST_LIVE>15000){ LAST_LIVE=0; liveRefresh(true); } });
+/* Diagnostic : état des notifications en arrière-plan + numéro de badge */
+var _diag28=SCREENS.diag;
+SCREENS.diag=function(){ var h=_diag28(); var u=sessUser()||{};
+  h=h.replace('N° installateur lié','N° de badge (installateur)');
+  var lab={ok:['Actives','success'], crm:['En attente du CRM','danger'], perm:['Non autorisées','danger'], install:['Appli à installer','danger'], unsupported:['Non disponibles','danger'], error:['Erreur','danger'], '?':['Vérification…','']}[PUSH_STATE]||['?',''];
+  var blk='<div class="sec"><h2>Actualisation en arrière-plan</h2></div><div class="card cfg"><div class="cfg-it"><span class="grow muted" style="font-size:13.5px">Notifications appli fermée</span><b style="font-size:13.5px;'+(lab[1]?'color:var(--'+lab[1]+')':'')+'">'+lab[0]+'</b></div>'+(PUSH_INFO?'<div class="cfg-it"><span class="muted" style="font-size:13px;line-height:1.45">'+esc(PUSH_INFO)+'</span></div>':'')+'</div><button class="btn line block" id="dgPush">'+ic('bell')+'Activer les notifications en arrière-plan</button>';
+  return h.replace('<div class="sec"><h2>Dernière lecture des RDV</h2>', blk+'<div class="sec"><h2>Dernière lecture des RDV</h2>'); };
+var _bindDiag28=bindDiag;
+bindDiag=function(){ _bindDiag28(); var b=$('dgPush'); if(b) b.onclick=function(){ b.disabled=true; pushSetup(true).then(function(ok){ toast(ok?'Notifications en arrière-plan activées':(PUSH_INFO||'Activation impossible')); }); }; };
+/* Badge : affiché sur la carte du compte */
+var _acct28=crmAccountRow;
+crmAccountRow=function(){ var h=_acct28(), u=sessUser(); if(!u) return h; var badge=u.badge||u.installator; return h.replace(' · CRM ', (badge?' · Badge n° '+esc(badge):'')+' · CRM '); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
