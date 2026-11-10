@@ -2983,7 +2983,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.24 · 10 nov. 2026';
+var APP_VERSION='1.0.25 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3411,7 +3411,7 @@ function techHomeSimple(){
   var h='<div class="pad">';
   if(S.site){ var sr=rdv(S.site.rid), sc=client(sr.cid); h+='<button class="chantier-bar" data-gosite="'+sr.id+'">'+ic('wrench')+'<span class="grow"><b style="display:block">Chantier en cours · '+esc(sc.nom)+'</b><span style="font-size:13px;opacity:.9">Sur place depuis <span class="num" data-timer>'+elapsed()+'</span></span></span>'+ic('chev')+'</button>'; }
   h+='<div class="hello"><div><small>'+esc(TODAY.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))+'</small><h1>Bonjour '+esc(firstName('Karim'))+'</h1></div><span class="pill p-blue">'+left.length+' RDV restant'+(left.length>1?'s':'')+'</span></div>';
-  if(!next){ h+='<div class="card empty-st">'+ic('check')+'<b>Journée terminée</b><span class="muted">Tous vos RDV du jour sont clôturés. Bravo !</span></div>'; }
+  if(!next){ var noneToday=!techRdv().length; h+='<div class="card empty-st">'+ic(noneToday?'cal':'check')+'<b>'+(noneToday?'Aucun RDV aujourd\'hui':'Journée terminée')+'</b><span class="muted">'+(noneToday?'Les RDV qui vous sont attribués dans le CRM apparaissent ici automatiquement.':'Tous vos RDV du jour sont clôturés. Bravo !')+'</span></div>'; }
   else {
     h+='<div class="next simple"><div class="k">'+(next.st==='surplace'?'En cours':'Prochain RDV')+' · '+esc(next.rdv)+' · '+esc(next.duree)+'</div><h3>'+esc(next.nom)+'</h3>'+
       '<div class="meta">'+ic('pin')+'<span>'+esc(next.adr)+', '+esc(next.ville)+'</span></div>'+
@@ -3826,18 +3826,32 @@ function pick(o, keys){ for(var i=0;i<keys.length;i++){ var k=keys[i]; if(o && o
 function toDate(v){ if(!v) return null; if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(v)) return new Date(String(v).replace(' ','T')); var d=new Date(v); return isNaN(d)?null:d; }
 function dayOffset(d){ var a=new Date(TODAY); a.setHours(0,0,0,0); var b=new Date(d); b.setHours(0,0,0,0); return Math.round((b-a)/864e5); }
 function apptStatus(s){ s=String(s||'').toLowerCase(); if(/confirm|valid|accept|pris/.test(s)) return 'confirme'; if(/route/.test(s)) return 'enroute'; if(/place|arriv/.test(s)) return 'surplace'; if(/termin|fini|clos|done/.test(s)) return 'termine'; return 'aconf'; }
+var LIVE_DAYS=30, CRM_DIAG=null;
+/* Date de début d'un RDV, quel que soit le nom des champs envoyés par le CRM (date et heure ensemble ou séparées) */
+function apptStart(a){
+  var v=pick(a,['start','debut','date_debut','start_at','starts_at','date_start','datetime','date_heure','date_rdv','rdv_date','date_time','dateheure','date']);
+  var t=pick(a,['heure','heure_debut','heure_rdv','time','start_time','hour']);
+  if(v && t && /^\d{4}-\d{2}-\d{2}$/.test(String(v).trim())) v=String(v).trim()+' '+String(t).trim().slice(0,5);
+  if(v && /^\d{2}\/\d{2}\/\d{4}/.test(String(v))){ var m=String(v).match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\D+(\d{1,2})[:h](\d{2}))?/); if(m){ var hh=m[4], mm=m[5]; if(!hh && t){ var mt=String(t).match(/(\d{1,2})[:h](\d{2})/); if(mt){ hh=mt[1]; mm=mt[2]; } } return new Date(+m[3], +m[2]-1, +m[1], +(hh||8), +(mm||0)); } }
+  if(typeof v==='number' || /^\d{9,13}$/.test(String(v||''))){ var n=+v; return new Date(n<1e11?n*1000:n); }
+  return toDate(v);
+}
 function liveLoad(){
   if(!(CFG.crm.mode!=='grok' && apiBase() && crmKey())){ toast('Connectez-vous d\'abord au CRM'); return Promise.resolve(false); }
   var now=new Date(); TODAY=new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  var from=TODAY.toISOString().slice(0,10), to=new Date(TODAY.getTime()+6*864e5).toISOString().slice(0,10);
-  CRM_LIVE.error=null;
+  var ymd=function(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  var from=ymd(new Date(TODAY.getTime()-1*864e5)), to=ymd(new Date(TODAY.getTime()+LIVE_DAYS*864e5));
+  CRM_LIVE.error=null; CRM_DIAG={at:nowHM(), path:'appointments?from='+from+'&to='+to, status:null, count:0, kept:0, keys:[], sample:null, error:null};
   return apiCall('GET','appointments?from='+from+'&to='+to).then(function(r){
+    CRM_DIAG.status=r.status; CRM_DIAG.raw=(r.text||'').slice(0,600);
     if(!r.ok) throw new Error((r.json&&r.json.error)||('Erreur '+r.status));
-    var list=Array.isArray(r.json)?r.json:(r.json&&(r.json.appointments||r.json.data||r.json.items))||[];
+    var J=r.json, list=Array.isArray(J)?J:(J&&(J.appointments||J.rdvs||J.rdv||J.data||J.items||J.results))||[]; if(list && !Array.isArray(list) && typeof list==='object') list=Object.keys(list).map(function(k){ return list[k]; });
+    CRM_DIAG.count=list.length; if(list[0]){ CRM_DIAG.keys=Object.keys(list[0]); CRM_DIAG.sample=list[0]; }
     var cids={};
-    var rdvs=list.map(function(a,i){ var start=toDate(pick(a,['start','debut','date_start','date_rdv','datetime','date'])); if(!start) return null;
+    var rdvs=list.map(function(a,i){ var start=apptStart(a); if(!start) return null;
       var cid=pick(a,['id_contact','contact_id','client_id']); cids[cid]=a;
       return {id:'crm-rdv-'+pick(a,['id_rdv','id','appointment_id']), crmId:pick(a,['id_rdv','id','appointment_id']), cid:'crm-c-'+cid, tech:ME, d:dayOffset(start), h:String(start.getHours()).padStart(2,'0')+':'+String(start.getMinutes()).padStart(2,'0'), dur:+pick(a,['duree','duration','duration_min','duree_min'])||60, st:apptStatus(pick(a,['statut','status','etat'])), rap:30, note:pick(a,['note','commentaire','remarque'])||'', tname:pick(a,['installateur','nom_installateur','technicien','nom_technicien','installator','nom_installator','tech_nom'])||''}; }).filter(Boolean);
+    CRM_DIAG.kept=rdvs.length;
     var ids=Object.keys(cids).filter(function(x){ return x && x!=='null'; });
     return Promise.all(ids.map(function(id){ return apiCall('GET','clients/'+encodeURIComponent(id)).then(function(cr){ return {id:id, a:cids[id], c:cr.ok?(cr.json&&(cr.json.client||cr.json.contact||cr.json))||{}:{} }; }).catch(function(){ return {id:id, a:cids[id], c:{}}; }); }))
       .then(function(rows){
@@ -3850,7 +3864,7 @@ function liveLoad(){
         render(); toast(rdvs.length+' RDV et '+clients.length+' fiche'+(clients.length>1?'s':'')+' chargés depuis le CRM');
         return true;
       });
-  }).catch(function(e){ CRM_LIVE.error=String(e.message||e); toast('Chargement CRM impossible : '+CRM_LIVE.error); refreshCrm(); return false; });
+  }).catch(function(e){ CRM_LIVE.error=String(e.message||e); if(CRM_DIAG) CRM_DIAG.error=CRM_LIVE.error; toast('Chargement CRM impossible : '+CRM_LIVE.error); refreshCrm(); return false; });
 }
 var DEMO_BACKUP=null;
 function backToDemo(){ if(!DEMO_BACKUP) return; CLIENTS.length=0; DEMO_BACKUP.clients.forEach(function(c){ CLIENTS.push(c); }); RDVS.length=0; DEMO_BACKUP.rdvs.forEach(function(x){ RDVS.push(x); }); TODAY=DEMO_BACKUP.today; CRM_LIVE.on=false; S.site=null; render(); toast('Retour aux données de démo'); }
@@ -4267,6 +4281,47 @@ liveLoad=function(){ return _liveLoad25.apply(this, arguments).then(function(ok)
 /* Planning en mode réel : pas de carte illustrative avec des positions de démonstration */
 var _planning25=SCREENS.planning;
 SCREENS.planning=function(){ if(sessUser() && S.pmode==='carte') S.pmode='liste'; var h=_planning25(); if(!sessUser()) return h; return h.replace('<button data-v="carte" class="','<button data-v="carte" style="display:none" class="'); };
+/* =========================================================
+   V26 — Diagnostic de la connexion CRM : ce que le CRM renvoie vraiment à l'appli
+   ========================================================= */
+function diagReport(){
+  var u=sessUser()||{}, d=CRM_DIAG||{}, smp=d.sample||{}, pickv=function(keys){ var o={}; keys.forEach(function(k){ if(smp[k]!=null) o[k]=smp[k]; }); return o; };
+  var dateish=pickv(Object.keys(smp).filter(function(k){ return /date|debut|start|heure|time|jour/i.test(k); }));
+  var instish=pickv(Object.keys(smp).filter(function(k){ return /install|tech|agent|user|statut|status|etat/i.test(k); }));
+  return {version:APP_VERSION, crm:crmUrl(), compte:{id_crmuser:u.id, profil:u.profil, id_installator:u.installator, role_appli:S.role}, lecture:{heure:d.at, periode:d.path, statut_http:d.status, rdv_recus:d.count, rdv_lus:d.kept, erreur:d.error||null, champs_du_1er_rdv:d.keys, dates_du_1er_rdv:dateish, technicien_statut_du_1er_rdv:instish}};
+}
+TITLES.diag='Diagnostic CRM';
+SCREENS.diag=function(){
+  TITLES.diag='Diagnostic CRM';
+  var u=sessUser()||{}, d=CRM_DIAG, R=diagReport();
+  var line=function(k,v,cls){ return '<div class="cfg-it"><span class="grow muted" style="font-size:13.5px">'+esc(k)+'</span><b class="num" style="font-size:13.5px;text-align:right;'+(cls?'color:var(--'+cls+')':'')+'">'+esc(v==null||v===''?'—':String(v))+'</b></div>'; };
+  var h='<div class="pad"><p class="hint">Ce que le CRM renvoie vraiment à l\'appli. Si un RDV n\'apparaît pas, faites une capture de cet écran ou copiez le rapport.</p>';
+  h+='<div class="sec"><h2>Compte connecté</h2></div><div class="card cfg">'+line('Nom',u.nom)+line('Profil CRM',u.profil)+line('Rôle dans l\'appli',S.role==='admin'?'Administrateur':'Agent terrain')+line('N° utilisateur CRM',u.id)+line('N° installateur lié',u.installator, u.installator==null&&S.role!=='admin'?'danger':'')+line('CRM',crmUrl())+line('Mode test',CRM_LIVE.testMode===undefined?'?':CRM_LIVE.testMode?'Actif':'Coupé')+'</div>';
+  h+='<div class="sec"><h2>Dernière lecture des RDV</h2></div><div class="card cfg">';
+  if(!d) h+=line('Lecture','pas encore faite');
+  else h+=line('Heure',d.at)+line('Période demandée',(d.path||'').replace('appointments?',''))+line('Réponse du CRM',d.status, d.status&&d.status!==200?'danger':'')+line('RDV reçus',d.count, d.count===0?'danger':'')+line('RDV affichés',d.kept, d.kept<d.count?'danger':'')+(d.error?line('Erreur',d.error,'danger'):'');
+  h+='</div>';
+  var why=[];
+  if(d){
+    if(d.status===401) why.push('Session refusée : déconnectez-vous puis reconnectez-vous.');
+    if(d.status===403) why.push('Ce compte n\'est pas autorisé : dans le CRM, Paramétrage › Application terrain, cochez ce technicien.');
+    if(d.status===503) why.push('L\'API de l\'application est coupée dans le CRM (Paramétrage › Application terrain).');
+    if(d.status===200 && d.count===0) why.push('Le CRM répond mais ne renvoie aucun RDV pour ce compte sur la période. Causes probables : le compte CRM n\'est relié à aucune fiche installateur'+(u.installator==null?' (c\'est le cas ici : aucun n° installateur)':' (n° '+u.installator+')')+', le RDV est attribué à une autre fiche installateur, ou il est hors période.');
+    if(d.count>d.kept) why.push((d.count-d.kept)+' RDV reçus mais ignorés : leur date n\'a pas pu être lue. Champs reçus : '+(d.keys||[]).join(', ')+'.');
+  }
+  if(why.length) h+='<div class="sec"><h2>Causes probables</h2></div><div class="card" style="display:flex;flex-direction:column;gap:8px">'+why.map(function(w){ return '<div class="pos-ko" style="padding:10px">'+ic('late')+'<div style="font-size:13.5px;line-height:1.45">'+esc(w)+'</div></div>'; }).join('')+'</div>';
+  if(d && d.keys && d.keys.length) h+='<div class="sec"><h2>Champs du 1er RDV reçu</h2></div><div class="card"><div class="num" style="font-size:12.5px;line-height:1.5;word-break:break-word">'+esc(d.keys.join(', '))+'</div></div>';
+  h+='<button class="btn primary block" id="dgRun">'+ic('route')+'Relancer la lecture</button><button class="btn soft block" id="dgCopy">'+ic('copy')+'Copier le rapport</button><p class="hint" style="text-align:center">Le rapport ne contient ni mot de passe ni jeton, ni nom ou téléphone de client.</p></div>';
+  return h;
+};
+function bindDiag(){
+  var r=$('dgRun'); if(r) r.onclick=function(){ r.disabled=true; r.textContent='Lecture…'; liveLoad().then(function(){ LIVE_SEEN=liveIds(); if(S.screen==='diag') rerender(); }); };
+  var c=$('dgCopy'); if(c) c.onclick=function(){ var t=JSON.stringify(diagReport(),null,2); try{ navigator.clipboard.writeText(t).then(function(){ toast('Rapport copié : collez-le dans la conversation'); }, function(){ sheet('<h3>Rapport</h3><textarea rows="12" style="width:100%;font-size:12px">'+esc(t)+'</textarea><button class="btn soft block" data-close>Fermer</button>'); }); }catch(e){ sheet('<h3>Rapport</h3><textarea rows="12" style="width:100%;font-size:12px">'+esc(t)+'</textarea><button class="btn soft block" data-close>Fermer</button>'); } };
+}
+var _bind26=bind;
+bind=function(){ var r=_bind26.apply(this, arguments); if(S.screen==='diag') bindDiag(); return r; };
+var _plus26=SCREENS.plus;
+SCREENS.plus=function(){ var h=_plus26(); if(!sessUser()) return h; return h.replace('<div class="cfg-it" id="logout"','<div class="cfg-it" data-go="diag" style="cursor:pointer"><span class="ico">'+ic('shield')+'</span><b class="grow">Diagnostic CRM</b>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</div><div class="cfg-it" id="logout"'); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
