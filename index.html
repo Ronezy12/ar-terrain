@@ -928,6 +928,7 @@ html,body{overscroll-behavior:none}
 .pos-ok,.pos-ko{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px}.pos-ok{background:var(--success-bg);color:var(--success)}.pos-ko{background:var(--danger-bg);color:var(--danger)}.pos-ok>svg,.pos-ko>svg{width:22px;height:22px;flex:none}.pos-ok b,.pos-ko b{display:block}.pos-ok .muted{color:inherit;opacity:.8}
 .ph{position:relative}.ph-up{position:absolute;right:6px;bottom:6px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;font-size:12px}.ph-up svg{width:14px;height:14px}.ph-up.ok{background:var(--success)}.ph-up.wait{background:var(--warning,#B26A00)}
 .live-band{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);padding:2px 2px 0}.live-band svg{width:14px;height:14px;color:var(--success)}.live-band.on{color:var(--primary)}.spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;display:inline-block;animation:spin .8s linear infinite;color:var(--primary)}.spin.big{width:28px;height:28px;border-width:3px}@keyframes spin{to{transform:rotate(360deg)}}.ptr{position:absolute;left:50%;top:70px;z-index:40;transform:translate(-50%,0);opacity:0;width:36px;height:36px;border-radius:50%;background:var(--surface);box-shadow:0 4px 14px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .2s}
+.tabs-prev{display:flex;gap:4px;padding:8px;border-radius:22px;background:var(--surface);border:1px solid var(--line);margin-bottom:10px}.tabs-prev span{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:11px}.tabs-prev span:first-child{color:var(--primary)}.tabs-prev svg{width:20px;height:20px}.cfg-share{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--warning-bg,#FFF4E0);color:var(--ink-2);font-size:13px;line-height:1.4;margin-bottom:10px}.cfg-share.ok{background:var(--success-bg)}.cfg-share svg{width:18px;height:18px;flex:none}
 </style>
 
 </head>
@@ -1631,7 +1632,7 @@ function popup(html){
 }
 function reminderPopup(rid){
   var r=rdv(rid), c=client(r.cid);
-  var p=popup('<div class="pop-ic">'+ic('bell')+'</div><div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Rappel · dans '+(r.rap||30)+' min</div><h3>'+esc(c.nom)+'</h3><div class="meta" style="justify-content:center">'+ic('clock')+'<span class="num">'+esc(r.h)+' → '+esc(fin(r))+'</span></div><div class="meta" style="justify-content:center;text-align:center">'+ic('pin')+'<span>'+esc(c.adr)+', '+esc(c.ville)+'</span></div>'+(r.note?'<div class="note-in">'+ic('pen')+esc(r.note)+'</div>':'')+
+  var p=popup('<div class="pop-ic">'+ic('bell')+'</div><div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Rappel · dans '+((typeof sessUser==='function'&&sessUser()&&typeof rdvTs==='function')?Math.max(1,Math.round((rdvTs(r)-Date.now())/60000)):(r.rap||30))+' min</div><h3>'+esc(c.nom)+'</h3><div class="meta" style="justify-content:center">'+ic('clock')+'<span class="num">'+esc(r.h)+' → '+esc(fin(r))+'</span></div><div class="meta" style="justify-content:center;text-align:center">'+ic('pin')+'<span>'+esc(c.adr)+', '+esc(c.ville)+'</span></div>'+(r.note?'<div class="note-in">'+ic('pen')+esc(r.note)+'</div>':'')+
     '<button class="btn accent block" id="pR">'+ic('nav')+'Je suis en route</button><div class="btns"><button class="btn soft sm" id="pI">'+ic('route')+'Itinéraire</button><button class="btn soft sm" id="pS">'+ic('clock')+'Dans 10 min</button></div><button class="link" data-close style="align-self:center">Fermer</button>');
   p.querySelector('#pR').onclick=function(){ r.st='enroute'; live('route','est en route vers '+c.nom,{eta:r.h}); closeSheet(); toast('« Je suis en route » envoyé à '+c.nom+' (démo)'); if(S.screen==='planning'||S.screen==='accueil') render(); };
   p.querySelector('#pI').onclick=function(){ closeSheet(); navSheet(c); };
@@ -1728,8 +1729,8 @@ function rdvSheet(id){
   if(q('#sNav')) q('#sNav').onclick=function(){ navSheet(c); };
   q('#sFiche').onclick=function(){ closeSheet(); go('client', c.id); };
   if(q('#sDel')) q('#sDel').onclick=function(){ crmSend('appointment.cancelled',{appointment_id:r.id, data:{motif:'Annulé par l\'admin'}}); var ix=RDVS.indexOf(r); RDVS.splice(ix,1); closeSheet(); rerender(); toastUndo('RDV annulé, le technicien est prévenu', function(){ RDVS.splice(ix,0,r); rerender(); }); };
-  [].forEach.call(sh.querySelectorAll('[data-rap]'),function(b){ b.onclick=function(){ r.rap=+b.dataset.rap; [].forEach.call(sh.querySelectorAll('[data-rap]'),function(x){x.classList.toggle('on',x===b);});
-    if(r.rap){ toast('Rappel programmé : '+b.textContent.toLowerCase()); setTimeout(function(){ push('rappels','Rappel · RDV à '+r.h, c.nom+' · '+c.adr+', '+c.ville.replace(/^\d+\s/,''), null, {rid:r.id, ic:'mail'}); }, 3500); } else toast('Rappel supprimé'); }; });
+  [].forEach.call(sh.querySelectorAll('[data-rap]'),function(b){ b.onclick=function(){ r.rap=+b.dataset.rap; if(typeof remSetOwn==='function') remSetOwn(r); [].forEach.call(sh.querySelectorAll('[data-rap]'),function(x){x.classList.toggle('on',x===b);});
+    if(r.rap && sessUser()){ var _at=rdvTs(r)-r.rap*60000; toast(_at>Date.now()?'Rappel programmé à '+parisHM(new Date(_at))+' ('+b.textContent.toLowerCase()+')':'Rappel : le RDV commence dans moins de '+r.rap+' min'); remindTick(); return; } if(r.rap){ toast('Rappel programmé : '+b.textContent.toLowerCase()); setTimeout(function(){ push('rappels','Rappel · RDV à '+r.h, c.nom+' · '+c.adr+', '+c.ville.replace(/^\d+\s/,''), null, {rid:r.id, ic:'mail'}); }, 3500); } else toast('Rappel supprimé'); }; });
   [].forEach.call(sh.querySelectorAll('[data-tt]'),function(b){ b.onclick=function(){ r.tech=b.dataset.tt; crmSend('appointment.updated',{appointment_id:r.id, data:{technician_id:r.tech}}); closeSheet(); render(); toast('RDV attribué à '+tech(r.tech).nom+' : notification envoyée'); }; });
 }
 function validRdv(id){
@@ -2382,7 +2383,7 @@ function bindFin(){
   var p=$('fPrev'); if(p) p.onclick=function(){ save3(); F.step--; render(); };
   var n=$('fNext'); if(n) n.onclick=function(){ save3(); if(F.step===3 && !F.sig){ toast('La signature du client est nécessaire'); return; } F.step++; render(); };
   function save3(){ var nm=$('sigNom'); if(nm) F.nom=nm.value; var nt=$('finNote'); if(nt) F.note=nt.value; var ok=$('sigOk'); if(ok) F.ok=ok.checked; }
-  each('[data-baf]',function(el){ el.onchange=function(){ var f=el.files&&el.files[0]; if(!f) return; var k=el.dataset.baf, rd=new FileReader(); rd.onload=function(){ var o={cap:k==='avant'?'Avant':'Après', src:rd.result, who:'Vous', w:'À l\'instant'}; o[k]=true; c.photos.unshift(o); rr(); }; rd.readAsDataURL(f); }; });
+  each('[data-baf]',function(el){ el.onchange=function(){ var f=el.files&&el.files[0]; if(!f) return; var k=el.dataset.baf, rd=new FileReader(); rd.onload=function(){ var o={cap:k==='avant'?'Avant travaux':'Après travaux', src:rd.result, who:'Vous', w:'À l\'instant'}; o[k]=true; o.cat=(k==='avant'?'avant_travaux':'apres_travaux'); c.photos.unshift(o); rr(); photoUpload(c, o, (S.site&&S.site.rid)||null); }; rd.readAsDataURL(f); }; });
   each('[data-bax]',function(b){ b.onclick=function(){ var k=b.dataset.bax, o={cap:(k==='avant'?'Ancien tableau':'Nouveau tableau'), col:k==='avant'?'#5C4A2E':'#2C3E66', who:'Vous', w:'À l\'instant'}; o[k]=true; c.photos.unshift(o); rr(); }; });
   each('[data-tv]',function(b){ b.onclick=function(){ save3(); F.travaux[b.dataset.tv]=!F.travaux[b.dataset.tv]; rr(); }; });
   each('[data-rs]',function(b){ b.onclick=function(){ save3(); F.reserve=b.dataset.rs; rr(); }; });
@@ -2985,7 +2986,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.32 · 10 nov. 2026';
+var APP_VERSION='1.0.35 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3829,6 +3830,7 @@ function toDate(v){ if(!v) return null; if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.t
 function dayOffset(d){ var a=new Date(TODAY); a.setHours(0,0,0,0); var b=new Date(d); b.setHours(0,0,0,0); return Math.round((b-a)/864e5); }
 function apptStatus(s){ s=String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); if(/a confirmer|attente|a placer|nouveau|a traiter/.test(s)) return 'aconf'; if(/confirm|valid|accept|pris/.test(s)) return 'confirme'; if(/route/.test(s)) return 'enroute'; if(/place|arriv/.test(s)) return 'surplace'; if(/termin|fini|clos|done/.test(s)) return 'termine'; return 'aconf'; }
 var LIVE_DAYS=30, CRM_DIAG=null;
+function parisHM(d){ try{ return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'}); }catch(e){ return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); } }
 /* Date de début d'un RDV, quel que soit le nom des champs envoyés par le CRM (date et heure ensemble ou séparées) */
 function apptStart(a){
   var v=pick(a,['start','debut','date_debut','start_at','starts_at','date_start','datetime','date_heure','date_rdv','rdv_date','date_time','dateheure','date']);
@@ -3852,7 +3854,7 @@ function liveLoad(){
     var cids={};
     var rdvs=list.map(function(a,i){ var start=apptStart(a); if(!start) return null;
       var cid=pick(a,['id_contact','contact_id','client_id']); cids[cid]=a;
-      return {id:'crm-rdv-'+pick(a,['id_rdv','id','appointment_id']), crmId:pick(a,['id_rdv','id','appointment_id']), cid:'crm-c-'+cid, tech:ME, d:dayOffset(start), h:String(start.getHours()).padStart(2,'0')+':'+String(start.getMinutes()).padStart(2,'0'), dur:+pick(a,['duree','duration','duration_min','duree_min'])||60, st:apptStatus(pick(a,['statut','status','etat'])), rap:30, note:pick(a,['note','commentaire','remarque'])||'', tname:pick(a,['installateur','nom_installateur','technicien','nom_technicien','installator','nom_installator','tech_nom'])||''}; }).filter(Boolean);
+      return {id:'crm-rdv-'+pick(a,['id_rdv','id','appointment_id']), crmId:pick(a,['id_rdv','id','appointment_id']), cid:'crm-c-'+cid, tech:ME, d:dayOffset(start), h:parisHM(start), ts:start.getTime(), dur:+pick(a,['duree','duration','duration_min','duree_min'])||60, st:apptStatus(pick(a,['statut','status','etat'])), rap:30, note:pick(a,['note','commentaire','remarque'])||'', tname:pick(a,['installateur','nom_installateur','technicien','nom_technicien','installator','nom_installator','tech_nom'])||''}; }).filter(Boolean);
     CRM_DIAG.kept=rdvs.length;
     var ids=Object.keys(cids).filter(function(x){ return x && x!=='null'; });
     return Promise.all(ids.map(function(id){ return apiCall('GET','clients/'+encodeURIComponent(id)).then(function(cr){ return {id:id, a:cids[id], c:cr.ok?(cr.json&&(cr.json.client||cr.json.contact||cr.json))||{}:{} }; }).catch(function(){ return {id:id, a:cids[id], c:{}}; }); }))
@@ -3862,7 +3864,7 @@ function liveLoad(){
         DEMO_BACKUP=DEMO_BACKUP||{clients:CLIENTS.slice(), rdvs:RDVS.slice(), today:new Date(2026,10,9)};
         CLIENTS.length=0; clients.forEach(function(c){ CLIENTS.push(c); });
         RDVS.length=0; rdvs.forEach(function(x){ RDVS.push(x); });
-        CRM_LIVE.on=true; CRM_LIVE.loadedAt=nowHM(); S.site=null; NOTIFS.length=0; MODULES.appels.badge=0; MODULES.messages.badge=0; MODULES.planning.badge=0; tabKey=''; bellDot();
+        CRM_LIVE.on=true; CRM_LIVE.loadedAt=nowHM(); NOTIFS.length=0; MODULES.appels.badge=0; MODULES.messages.badge=0; MODULES.planning.badge=0; tabKey=''; bellDot();
         render(); toast(rdvs.length+' RDV et '+clients.length+' fiche'+(clients.length>1?'s':'')+' chargés depuis le CRM');
         return true;
       });
@@ -4104,7 +4106,7 @@ crmLogin=function(email, psw, code){
     if(!r.ok) throw new Error(loginErr(r));
     if(!r.json || !r.json.token) throw new Error('Réponse inattendue du CRM (pas de jeton de connexion).');
     var u=r.json.user||{};
-    CRM_SESSION={env:CFG.crm.env, token:r.json.token, expires_at:r.json.expires_at, user:{id:u.id_crmuser, nom:u.nom, profil:u.id_profil, installator:u.id_installator, badge:(u.badge||u.numero_badge||u.num_badge||u.n_badge||u.id_installator||null), email:u.email||email, telephone:u.telephone||u.tel||u.mobile||''}};
+    CRM_SESSION={env:CFG.crm.env, token:r.json.token, expires_at:r.json.expires_at, user:{id:u.id_crmuser, nom:u.nom, profil:u.id_profil, installator:u.id_installator, badge:(u.badge||u.numero_badge||u.num_badge||u.n_badge||u.id_installator||null), profil_nom:(u.profil_nom||u.nom_profil||u.name_profil||u.libelle_profil||u.profil_libelle||u.profile||null), email:u.email||email, telephone:u.telephone||u.tel||u.mobile||''}};
     sessSave(); try{ localStorage.setItem('ar_last_email', email); }catch(e){}
     applySession(); S.stack=[]; return CRM_SESSION;
   });
@@ -4505,6 +4507,188 @@ window.addEventListener('pageshow', function(){ liveRefresh(true); });
 /* Déconnexion : on efface les données réelles gardées sur le téléphone */
 var _logout30=logoutFlow;
 logoutFlow=function(){ var r=_logout30.apply(this, arguments); var ok=document.getElementById('loOk'); if(ok && sessUser()){ var f=ok.onclick; ok.onclick=function(){ liveCacheClear(); f&&f.apply(this, arguments); }; } return r; };
+/* =========================================================
+   V33 — Rôles du CRM, photos classées (avant / pendant / après travaux), commentaires poseur,
+   prix masqués pour les agents, catalogue et devis du CRM
+   ========================================================= */
+/* Rôles : « Agent terrain » et tout profil non listé = agent terrain ; Admin+, administrateur, commercial sédentaire = admin */
+var ADMIN_PROFIL_NAMES=/(^|\s)admin|administrat|commercial\s*s[ée]dentaire/i;
+sessIsAdmin=function(){ var u=sessUser(); if(!u) return false; if(u.profil_nom) return ADMIN_PROFIL_NAMES.test(String(u.profil_nom)) && !/agent\s*terrain/i.test(String(u.profil_nom)); return ADMIN_PROFILS.indexOf(String(u.profil))>=0; };
+sessIsTech=function(){ return !!sessUser() && !sessIsAdmin(); };
+/* Photos : type demandé à l'agent (le choix par défaut dépend du moment) */
+var PH_CATS=[['avant_travaux','Avant travaux'],['pendant','Pendant'],['apres_travaux','Après travaux']];
+function phDefaultCat(c, rid){ var r=rid?rdv(rid):null; if(!r) r=RDVS.filter(function(x){ return x.cid===c.id; }).sort(function(a,b){ return Math.abs(a.d)-Math.abs(b.d); })[0]; if(r && r.st==='termine') return 'apres_travaux'; if(r && r.st==='surplace') return 'pendant'; return 'avant_travaux'; }
+var _photoUpload33=photoUpload;
+photoUpload=function(c, ph, rid){
+  if(!sessUser() || ph.cat) return _photoUpload33(c, ph, rid);
+  setTimeout(function(){ phAskCat(c, ph, rid); }, 80);
+};
+function phAskCat(c, ph, rid){
+  var def=phDefaultCat(c, rid), sent=false;
+  var sh=sheet('<h3>Type de photo</h3><p class="hint">Elle sera rangée dans le bon dossier du CRM.</p><div class="opts" id="phCat">'+PH_CATS.map(function(x){ return '<button class="opt'+(x[0]===def?' on':'')+'" data-v="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div><button class="btn primary block" id="phGo">'+ic('send')+'Envoyer au CRM</button>');
+  var cur=def; [].forEach.call(sh.querySelectorAll('#phCat .opt'),function(b){ b.onclick=function(){ cur=b.dataset.v; [].forEach.call(sh.querySelectorAll('#phCat .opt'),function(x){ x.classList.toggle('on',x===b); }); }; });
+  function go(){ if(sent) return; sent=true; ph.cat=cur; ph.cap=(PH_CATS.filter(function(x){return x[0]===cur;})[0]||[0,ph.cap])[1]; if(cur==='apres_travaux') ph.apres=true; if(cur==='avant_travaux') ph.avant=true; closeSheet(); _photoUpload33(c, ph, rid); }
+  sh.querySelector('#phGo').onclick=go;
+  var sc=$('scrim'); if(sc) sc.onclick=function(e){ if(e.target.id==='scrim') go(); };
+}
+var _phSend33=phSend;
+phSend=function(item){ if(!item.categorie) return _phSend33(item); var _fd=window.FormData; window.FormData=function(){ var f=new _fd(); f.append('categorie', item.categorie); return f; }; try{ return _phSend33(item); } finally { window.FormData=_fd; } };
+var _phTry33=phTry;
+phTry=function(item, ph, first){ if(ph && ph.cat && !item.categorie) item.categorie=ph.cat; return _phTry33(item, ph, first); };
+/* Commentaires de l'agent : rangés en « commentaire poseur » */
+var _crmSend33=crmSend;
+crmSend=function(code, fields){
+  if(code==='note.added' && sessUser()){ var f={}; for(var k in (fields||{})) f[k]=fields[k]; f.data=f.data||{}; f.data.categorie=sessIsAdmin()?'commentaire':'commentaire_poseur'; if(!f.appointment_id){ var r=nextRid(); if(r) f.appointment_id=r; } return _crmSend33(code, f); }
+  if(code==='intervention.completed' && sessUser()){ var g={}; for(var k2 in (fields||{})) g[k2]=fields[k2]; g.data=g.data||{}; g.data.statut='Terminé'; return _crmSend33(code, g); }
+  return _crmSend33(code, fields);
+};
+/* Prix : jamais affichés aux agents terrain connectés au CRM */
+var _canSee33=canSeeMoney;
+canSeeMoney=function(){ if(sessUser()) return sessIsAdmin(); return _canSee33(); };
+/* Catalogue du CRM (si disponible) à la place du catalogue de démonstration */
+var CATALOGUE_SRC='local';
+function loadCrmCatalogue(){
+  if(IN_PREVIEW || !sessUser()) return;
+  apiCall('GET','catalogue').then(function(r){
+    if(!r.ok) return; var L=Array.isArray(r.json)?r.json:(r.json&&(r.json.catalogue||r.json.produits||r.json.articles||r.json.items||r.json.data))||[]; if(!L.length) return;
+    var rows=L.map(function(a){ return [pick(a,['categorie','famille','category'])||'Catalogue', pick(a,['libelle','designation','nom','label','name'])||'Article', pick(a,['unite','unit'])||'u', +pick(a,['prix_ht','prix','price','pu_ht'])||0, +pick(a,['tva','taux_tva','vat'])||20, pick(a,['id','id_produit','ref','reference'])]; });
+    CATALOGUE.length=0; rows.forEach(function(x){ CATALOGUE.push(x); }); CATALOGUE_SRC='crm';
+  }).catch(function(){});
+}
+var _liveLoad33=liveLoad;
+liveLoad=function(){ return _liveLoad33.apply(this, arguments).then(function(ok){ if(ok && CATALOGUE_SRC!=='crm') loadCrmCatalogue(); return ok; }); };
+/* Devis : créé directement dans le CRM si la route existe, sinon événement + PDF comme avant */
+function devisToCrm(dv, cid){
+  var c=client(cid)||{}; if(!sessUser() || c.crmId==null) return Promise.resolve(null);
+  var body={client_id:c.crmId, titre:dv.titre||'', lignes:(dv.lignes||[]).map(function(l){ var ref=null; CATALOGUE.forEach(function(c){ if(c[1]===l.des && c[5]!=null) ref=c[5]; }); return {ref:ref, libelle:l.des||'', quantite:l.qty||1, unite:l.u||'u', prix_ht:l.pu||0, tva:l.tva||20}; }), remise:dv.remise||null, acomptes:dv.acomptes||[]};
+  return apiCall('POST','devis',body).then(function(r){ return r; }).catch(function(){ return null; });
+}
+var _crmSend33b=crmSend;
+crmSend=function(code, fields){
+  if(code==='quote.created' && sessUser() && S.dv){ var dv=S.dv, cid=(fields&&fields.client_id)||dv.client;
+    devisToCrm(dv, cid).then(function(r){ if(r && r.ok){ toast('Devis créé dans le CRM'+(r.json&&r.json.numero?' : '+r.json.numero:'')); } else { _crmSend33b(code, fields); } }); return; }
+  return _crmSend33b(code, fields);
+};
+/* =========================================================
+   V34 — Chantier en cours et statuts gardés : l'appli se souvient de ce qu'elle a envoyé au CRM
+   (en route, sur place, terminé, chantier ouvert et son chronomètre) jusqu'à ce que le CRM affiche le même statut
+   ========================================================= */
+var ST_KEY='ar_local_status', SITE_KEY='ar_site', ST_RANK={aconf:0, confirme:1, enroute:2, surplace:3, termine:4};
+var ST_BY_ACTION={'appointment.accepted':'confirme','appointment.confirmed':'confirme','tech.on_the_way':'enroute','tech.arrived':'surplace','intervention.completed':'termine'};
+function stLoad(){ try{ return JSON.parse(localStorage.getItem(ST_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function stSave(m){ try{ localStorage.setItem(ST_KEY, JSON.stringify(m)); }catch(e){} }
+function crmIdOf(id){ if(id==null) return null; var r=rdv(id); if(r && r.crmId!=null) return String(r.crmId); var m=String(id).match(/^crm-rdv-(.+)$/); return m?m[1]:null; }
+function stRemember(rid, st){ var k=crmIdOf(rid); if(!k) return; var m=stLoad(); m[k]={st:st, at:Date.now()}; stSave(m); }
+/* Réapplique les statuts locaux plus avancés que ceux du CRM ; oublie ceux que le CRM a rattrapés ou trop anciens */
+function stApply(){
+  var m=stLoad(), ch=false, now=Date.now();
+  Object.keys(m).forEach(function(k){
+    var e=m[k], r=RDVS.filter(function(x){ return String(x.crmId)===k; })[0];
+    if(now-e.at>3*864e5){ delete m[k]; ch=true; return; }
+    if(!r) return;
+    if((ST_RANK[r.st]||0)>=(ST_RANK[e.st]||0)){ delete m[k]; ch=true; return; }
+    r.st=e.st;
+  });
+  if(ch) stSave(m);
+}
+function siteSave(){ try{ if(S.site){ var k=crmIdOf(S.site.rid); localStorage.setItem(SITE_KEY, JSON.stringify({crmId:k, rid:S.site.rid, t0:S.site.t0})); } else localStorage.removeItem(SITE_KEY); }catch(e){} }
+function siteRestore(){
+  if(!sessUser()) return; var o=null; try{ o=JSON.parse(localStorage.getItem(SITE_KEY)||'null'); }catch(e){} if(!o) return;
+  var r=RDVS.filter(function(x){ return o.crmId && String(x.crmId)===String(o.crmId); })[0] || rdv(o.rid);
+  if(!r){ return; }
+  if(r.st==='termine'){ try{ localStorage.removeItem(SITE_KEY); }catch(e){} S.site=null; return; }
+  if(r.st!=='surplace') r.st='surplace';
+  S.site={rid:r.id, t0:o.t0||Date.now()};
+}
+/* Ce que l'appli envoie au CRM est mémorisé */
+var _crmSend34=crmSend;
+crmSend=function(code, fields){
+  var st=ST_BY_ACTION[code], rid=fields&&fields.appointment_id;
+  if(st && rid && sessUser()) stRemember(rid, st);
+  if(code==='intervention.completed'){ setTimeout(function(){ if(!S.site || (rid && crmIdOf(S.site.rid)===crmIdOf(rid))){ S.site=null; } siteSave(); }, 0); }
+  return _crmSend34(code, fields);
+};
+var _arrive34=arrive;
+arrive=function(rid){ var r=_arrive34.apply(this, arguments); siteSave(); return r; };
+/* Après chaque relecture du CRM et au démarrage : statuts et chantier en cours remis en place */
+var _liveLoad34=liveLoad;
+liveLoad=function(){ var keepScreen=S.screen, keepArg=S.arg; return _liveLoad34.apply(this, arguments).then(function(ok){ if(ok){ stApply(); siteRestore(); liveCacheSave(); if(keepScreen==='chantier' && S.site){ S.screen='chantier'; S.arg=S.site.rid; } render(); } return ok; }); };
+if(sessUser()){ stApply(); siteRestore(); if(S.site){ S.stack=[]; S.screen='chantier'; S.arg=S.site.rid; } }
+/* =========================================================
+   V35 — Vrais rappels (heure exacte du RDV, heure de Paris) et personnalisation en direct, partagée par le CRM
+   ========================================================= */
+/* Instant exact d'un RDV */
+function rdvTs(r){ if(r.ts) return r.ts; var p=String(r.h||'08:00').split(':'); var d=new Date(TODAY.getTime()+(r.d||0)*864e5); d.setHours(+p[0]||0, +p[1]||0, 0, 0); return d.getTime(); }
+var REM_KEY='ar_reminders_done';
+function remDone(){ try{ return JSON.parse(localStorage.getItem(REM_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function remTell(r){
+  var c=client(r.cid)||{}, mins=Math.max(1, Math.round((rdvTs(r)-Date.now())/60000));
+  var title='Rappel · RDV à '+r.h+' (dans '+mins+' min)', body=(c.nom||'Client')+(c.adr?' · '+c.adr:'');
+  push('rappels', title, body, null, {rid:r.id, ic:'bell'});
+  if(!$('scrim') && typeof reminderPopup==='function'){ try{ reminderPopup(r.id); }catch(e){} }
+  try{ if('Notification' in window && Notification.permission==='granted' && navigator.serviceWorker){ navigator.serviceWorker.getRegistration().then(function(reg){ if(reg) reg.showNotification(title,{body:body, icon:'icons/icon-192.png', badge:'icons/icon-192.png', tag:'rappel-'+(r.crmId||r.id), data:{url:r.crmId?'./?rdv='+r.crmId:'./', id_rdv:r.crmId||null}}); }); } }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate([120,80,120]); }catch(e){}
+}
+function remindTick(){
+  if(!sessUser() || CFG.notif.rappels===false) return;
+  var now=Date.now(), done=remDone(), ch=false, mine=S.role==='admin'?[]:RDVS.filter(function(r){ return r.tech===ME; });
+  mine.forEach(function(r){
+    if(!r.rap || r.st==='termine' || r.st==='surplace') return;
+    var ts=rdvTs(r), at=ts-r.rap*60000, key=(r.crmId||r.id)+'@'+r.rap+'@'+ts;
+    if(done[key] || now<at || now>=ts) return;
+    done[key]=now; ch=true; remTell(r);
+  });
+  Object.keys(done).forEach(function(k){ if(now-done[k]>3*864e5){ delete done[k]; ch=true; } });
+  if(ch) try{ localStorage.setItem(REM_KEY, JSON.stringify(done)); }catch(e){}
+}
+setInterval(remindTick, 20000);
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) setTimeout(remindTick, 1500); });
+/* Les RDV du CRM prennent le délai de rappel choisi dans Notifications (15 min, 30 min, 1 h, la veille) */
+var _liveLoad35=liveLoad;
+liveLoad=function(){ return _liveLoad35.apply(this, arguments).then(function(ok){ if(ok){ var dl=+(CFG.notif&&CFG.notif.delai)||30, own=remOwn(); RDVS.forEach(function(r){ if(r.crmId!=null){ var o=own[r.crmId]; r.rap = o!=null ? o : dl; } }); setTimeout(remindTick, 1000); } return ok; }); };
+/* Rappel choisi à la main sur un RDV : gardé sur le téléphone */
+function remOwn(){ try{ return JSON.parse(localStorage.getItem('ar_rap_own')||'{}')||{}; }catch(e){ return {}; } }
+function remSetOwn(r){ if(r.crmId==null) return; var m=remOwn(); m[r.crmId]=r.rap; try{ localStorage.setItem('ar_rap_own', JSON.stringify(m)); }catch(e){} }
+
+/* ---------- Personnalisation en direct ---------- */
+/* Barre du bas : vos réglages s'appliquent aussi avec un vrai compte (sans les modules pas encore reliés au CRM) */
+tabsFor=function(){
+  var role=S.role==='admin'?'admin':'tech';
+  if(!sessUser()) return _tabsFor25();
+  if(!CFG.liveTabsInit){ CFG.liveTabsInit=true; CFG.tabs={tech:LIVE_TABS.tech.slice(), admin:LIVE_TABS.admin.slice()}; save(); }
+  var t=(CFG.tabs[role]||[]).filter(function(m){ return MODULES[m] && allowed(m); }).slice(0,4);
+  return t.length ? (t.indexOf('accueil')<0 ? ['accueil'].concat(t).slice(0,4) : t) : LIVE_TABS[role].slice();
+};
+/* Réglages : on ne propose pas les modules pas encore reliés au CRM, et on montre la barre en direct */
+var _reglages35=SCREENS.reglages;
+SCREENS.reglages=function(){
+  var h=_reglages35(); if(!sessUser()) return h;
+  Object.keys(LIVE_HIDE).forEach(function(m){ h=h.replace(new RegExp('<button class="chip" data-tadd="'+m+'"[\\s\\S]*?</button>','g'),''); });
+  var role=S.cfgRole||'tech', t=(CFG.tabs[role]||[]).filter(function(m){ return MODULES[m] && !LIVE_HIDE[m]; }).slice(0,4);
+  var bar='<div class="tabs-prev">'+t.concat(['plus']).map(function(m){ var M=m==='plus'?{icon:'grid',label:'Plus'}:MODULES[m]; return '<span>'+ic(M.icon)+'<small>'+esc(M.short||M.label)+'</small></span>'; }).join('')+'</div>';
+  var share='<div class="cfg-share '+(SET_SYNC==='ok'?'ok':'')+'">'+ic(SET_SYNC==='ok'?'check':'late')+'<span>'+(SET_SYNC==='ok'?'Partagé : chaque changement arrive sur tous les téléphones à leur prochaine actualisation (30 s max).':SET_SYNC==='sending'?'Envoi au CRM…':'Appliqué sur ce téléphone. Le partage avec les téléphones des agents attend le CRM (réglages de l\'application).')+'</span></div>';
+  h=h.replace('<div class="sec"><h2>Barre du bas</h2></div>','<div class="sec"><h2>Barre du bas</h2></div>'+bar);
+  return h.replace('<div class="pad">','<div class="pad">'+share);
+};
+/* Partage des réglages par le CRM : l'admin envoie, tous les téléphones les reçoivent */
+var SET_SYNC='?', SET_TIMER=null, SET_FIELDS=['tabs','quick','techAccess','simple','shape','size','tour','notif'];
+function settingsPayload(){ var o={}; SET_FIELDS.forEach(function(k){ if(CFG[k]!==undefined) o[k]=CFG[k]; }); o.updated_at=new Date().toISOString(); return o; }
+var _save35=save;
+save=function(){ var r=_save35.apply(this, arguments); if(sessUser() && sessIsAdmin() && S.screen==='reglages' && !SET_APPLYING){ clearTimeout(SET_TIMER); SET_SYNC='sending'; SET_TIMER=setTimeout(pushSettings, 600); } return r; };
+var SET_APPLYING=false;
+function pushSettings(){ apiCall('POST','settings',{app:settingsPayload()}).then(function(r){ SET_SYNC=r.ok?'ok':'local'; if(S.screen==='reglages') rerender(); }).catch(function(){ SET_SYNC='local'; if(S.screen==='reglages') rerender(); }); }
+function pullSettings(){
+  if(IN_PREVIEW || !sessUser()) return Promise.resolve(false);
+  return apiCall('GET','settings').then(function(r){
+    if(!r.ok){ if(SET_SYNC==='?') SET_SYNC='local'; return false; }
+    var app=(r.json&&(r.json.app||r.json.settings||r.json.config))||null; SET_SYNC='ok'; if(!app) return false;
+    var before=JSON.stringify(settingsPayload()); SET_APPLYING=true;
+    SET_FIELDS.forEach(function(k){ if(app[k]!==undefined) CFG[k]=app[k]; }); CFG.liveTabsInit=true; save(); SET_APPLYING=false;
+    var after=JSON.stringify(settingsPayload()); if(before.replace(/"updated_at":"[^"]*"/,'')!==after.replace(/"updated_at":"[^"]*"/,'')){ tabKey=''; if(S.screen!=='reglages') rerender(); }
+    return true; }).catch(function(){ return false; });
+}
+var _liveLoad35b=liveLoad;
+liveLoad=function(){ return _liveLoad35b.apply(this, arguments).then(function(ok){ if(ok) pullSettings(); return ok; }); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
