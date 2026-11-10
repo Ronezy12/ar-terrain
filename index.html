@@ -1724,7 +1724,7 @@ function rdvSheet(id){
   if(q('#sValid')) q('#sValid').onclick=function(){ validRdv(r.id); };
   if(q('#sArr')) q('#sArr').onclick=function(){ arrive(r.id); };
   if(q('#sSite')) q('#sSite').onclick=function(){ closeSheet(); go('chantier', r.id); };
-  if(q('#sRoute')) q('#sRoute').onclick=function(){ r.st='enroute'; live('route','est en route vers '+c.nom,{eta:r.h}); closeSheet(); toast('« Je suis en route » envoyé à '+c.nom+' (démo)'); render(); };
+  if(q('#sRoute')) q('#sRoute').onclick=function(){ r.st='enroute'; live('route','est en route vers '+c.nom,{eta:r.h, rid:r.id}); closeSheet(); toast(sessUser()?'En route vers '+c.nom+' : le bureau est prévenu':'« Je suis en route » envoyé à '+c.nom+' (démo)'); render(); };
   if(q('#sNav')) q('#sNav').onclick=function(){ navSheet(c); };
   q('#sFiche').onclick=function(){ closeSheet(); go('client', c.id); };
   if(q('#sDel')) q('#sDel').onclick=function(){ crmSend('appointment.cancelled',{appointment_id:r.id, data:{motif:'Annulé par l\'admin'}}); var ix=RDVS.indexOf(r); RDVS.splice(ix,1); closeSheet(); rerender(); toastUndo('RDV annulé, le technicien est prévenu', function(){ RDVS.splice(ix,0,r); rerender(); }); };
@@ -2985,7 +2985,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.31 · 10 nov. 2026';
+var APP_VERSION='1.0.32 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3646,7 +3646,7 @@ function crmPost(entry){
   entry.mode='sending'; refreshCrm();
   var t0=Date.now(), ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ if(ctl) ctl.abort(); },10000);
   fetch(crmUrl()+'/api/v1/events',{method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+crmKey(),'Idempotency-Key':entry.id}, body:JSON.stringify(entry.req), signal:ctl?ctl.signal:undefined})
-    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if(!r.ok){ if(sessUser()) setTimeout(function(){ LAST_LIVE=0; if(typeof liveLoad==='function') liveLoad().then(function(){ LIVE_SEEN=liveIds(); }); }, 1200); var em=''; try{ em=(JSON.parse(tx)||{}).error||''; }catch(e){} if(/action inconnue/i.test(em)) em='le CRM ne gère pas encore cette action (à ajouter côté CRM). Rien n\'a été enregistré dans le CRM'; toast('CRM a refusé « '+(CRM_LABEL[entry.code]||entry.code)+' »'+(em?' : '+em:' (erreur '+r.status+')')); } }); })
+    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if(!r.ok && entry.code==='location.update'){ LOC_OFF=true; return; } if(!r.ok){ if(sessUser()) setTimeout(function(){ LAST_LIVE=0; if(typeof liveLoad==='function') liveLoad().then(function(){ LIVE_SEEN=liveIds(); }); }, 1200); var em=''; try{ em=(JSON.parse(tx)||{}).error||''; }catch(e){} if(/action inconnue/i.test(em)) em='le CRM ne gère pas encore cette action (à ajouter côté CRM). Rien n\'a été enregistré dans le CRM'; toast('CRM a refusé « '+(CRM_LABEL[entry.code]||entry.code)+' »'+(em?' : '+em:' (erreur '+r.status+')')); } }); })
     .catch(function(e){ clearTimeout(to); entry.ms=Date.now()-t0; entry.mode='error'; entry.res=(IN_PREVIEW?'Envoi bloqué par l\'aperçu claude.ai : testez sur l\'appli installée. ':'')+(e&&e.name==='AbortError'?'Pas de réponse en 10 s':String(e&&e.message||e)); refreshCrm(); });
 }
 window.addEventListener('online',function(){ setTimeout(function(){ var q=CRMQ.splice(0); q.forEach(crmPost); },1500); });
@@ -3697,12 +3697,12 @@ function bindCrm(){
   $('crmClear').onclick=function(){ CRMLOG.length=0; refreshCrm(); };
 }
 /* Branche les actions existantes de l'appli sur le CRM */
-function nextRid(){ if(S.site) return S.site.rid; var n=techRdv().filter(function(r){return r.st!=='termine';})[0]; return n?n.rid:null; }
+function nextRid(){ if(S.site) return S.site.rid; var n=techRdv().filter(function(r){return r.st!=='termine';})[0]; if(n) return n.rid; var a=RDVS.filter(function(r){ return r.st==='enroute'||r.st==='surplace'; }).sort(function(x,y){ return Math.abs(x.d)-Math.abs(y.d); })[0]; return a?a.id:null; }
 var _live=live;
 live=function(k, txt, extra){
   _live(k, txt, extra);
   var map={route:'tech.on_the_way', late:'tech.delay', pay:'payment.recorded'};
-  if(map[k]) crmSend(map[k], {appointment_id:nextRid(), data:{texte:txt, eta:extra&&extra.eta||null}});
+  if(map[k]) crmSend(map[k], {appointment_id:(extra&&extra.rid)||nextRid(), data:{texte:txt, eta:extra&&extra.eta||null}});
 };
 
 /* =========================================================
@@ -3963,7 +3963,7 @@ function realLoginScreen(){
 /* =========================================================
    V23 — Localisation réelle : état lu sur le téléphone, test de position, position jointe aux actions
    ========================================================= */
-var IS_IOS=/iPhone|iPad|iPod/.test(navigator.userAgent), POS_HTML='', LAST_POS=null, WATCH_ID=null, LAST_SENT=0;
+var LOC_OFF=false, IS_IOS=/iPhone|iPad|iPod/.test(navigator.userAgent), POS_HTML='', LAST_POS=null, WATCH_ID=null, LAST_SENT=0;
 function geoHelp(code){
   if(code===1) return IS_IOS ? 'La localisation est refusée. Sur iPhone : Réglages › Confidentialité et sécurité › Service de localisation (activé) › Sites web Safari › « Lorsque l\'app est active ». Puis fermez et rouvrez l\'appli.'
                              : 'La localisation est refusée. Sur Android : appui long sur l\'icône de l\'appli › Infos sur l\'appli › Autorisations › Position › « Autoriser seulement si l\'appli est en cours d\'utilisation ».';
@@ -4011,7 +4011,7 @@ function startTripTracking(rid){
   WATCH_ID=navigator.geolocation.watchPosition(function(p){
     LAST_POS={lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), accuracy_m:Math.round(p.coords.accuracy), at:new Date().toISOString()};
     if(Date.now()-LAST_SENT<30000) return; LAST_SENT=Date.now();
-    _crmSendPos('location.update', {appointment_id:rid||nextRid(), data:{lat:LAST_POS.lat, lng:LAST_POS.lng, accuracy_m:LAST_POS.accuracy_m, speed_kmh:p.coords.speed!=null?Math.round(p.coords.speed*3.6):null}});
+    if(LOC_OFF) return; _crmSendPos('location.update', {appointment_id:rid||nextRid(), data:{lat:LAST_POS.lat, lng:LAST_POS.lng, accuracy_m:LAST_POS.accuracy_m, speed_kmh:p.coords.speed!=null?Math.round(p.coords.speed*3.6):null}});
   }, function(){}, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
 }
 function stopTripTracking(){ if(WATCH_ID!=null && navigator.geolocation){ navigator.geolocation.clearWatch(WATCH_ID); } WATCH_ID=null; }
@@ -4047,7 +4047,7 @@ doAct=function(id){
   var ta=s.querySelector('#msgtxt'); ta.value=txt();
   [].forEach.call(s.querySelectorAll('#canal button'),function(b){ b.onclick=function(){ canal=b.dataset.c; [].forEach.call(s.querySelectorAll('#canal button'),function(x){x.classList.toggle('on',x===b);}); }; });
   [].forEach.call(s.querySelectorAll('#etaC .chip'),function(b){ b.onclick=function(){ sel=+b.dataset.i; [].forEach.call(s.querySelectorAll('#etaC .chip'),function(x){x.classList.toggle('on',x===b);}); ta.value=txt(); }; });
-  function leave(sent){ closeSheet(); var r=rdv(nx.rid); if(r) r.st='enroute'; live('route','est en route vers '+nx.nom,{eta:etas[sel][1]}); rerender();
+  function leave(sent){ closeSheet(); var r=rdv(nx.rid); if(r) r.st='enroute'; live('route','est en route vers '+nx.nom,{eta:etas[sel][1], rid:nx.rid}); rerender();
     if(!sent) toast('En route : le bureau est prévenu'); }
   s.querySelector('#noMsg').onclick=function(){ leave(false); };
   s.querySelector('#sendMsg').onclick=function(){
