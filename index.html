@@ -920,6 +920,9 @@ html,body{overscroll-behavior:none}
 .pf-foot .btn:disabled{opacity:.4}
 /* ---------- V18 : connexion CRM ---------- */
 .crmjson{margin:0;max-height:220px;overflow:auto;background:var(--fill-2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink-2);white-space:pre-wrap;word-break:break-word}
+.demo-band{display:flex;gap:10px;align-items:flex-start;margin:12px 16px 0;padding:10px 14px;border-radius:16px;background:var(--warning-bg);color:var(--warning);font-size:13px;line-height:1.4}
+.demo-band svg{width:18px;height:18px;flex:none;margin-top:1px}
+.demo-band b{color:inherit}
 </style>
 
 </head>
@@ -1174,6 +1177,7 @@ function render(){
   V.innerHTML = fn(S.arg);
   if(same){ V.scrollTop=y; if(aid){ var nf=document.getElementById(aid); if(nf){ try{ nf.focus({preventScroll:true}); if(ss!=null) nf.setSelectionRange(ss,se); }catch(e){} } } } else V.scrollTop=0;
   $('title').textContent = TITLES[S.screen]||'';
+  var db=demoBanner(); if(db) V.insertAdjacentHTML('afterbegin', db);
   animateView(); bellDot();
   bind();
 }
@@ -1363,7 +1367,7 @@ var FAVORIS = [
   {nom:'Mise en conformité standard', lignes:[L(3,1),L(8,1),L(9,6),L(11,25),L(13,6),L(14,1)], remise:{type:'pct',val:5}, acomptes:[{label:'À la signature',pct:30},{label:'Au démarrage',pct:30}]},
   {nom:'Dépannage simple', lignes:[L(15,1),L(13,1)], remise:{type:'pct',val:0}, acomptes:[]}
 ];
-function newDraft(){ return {client:'c1', titre:'Remplacement du tableau électrique', lignes:clone(FAVORIS[0].lignes), remise:{type:'pct',val:0}, acomptes:[{label:'À la signature',pct:30}]}; }
+function newDraft(){ return {client:(CLIENTS[0]||{id:'c1'}).id, titre:'Remplacement du tableau électrique', lignes:clone(FAVORIS[0].lignes), remise:{type:'pct',val:0}, acomptes:[{label:'À la signature',pct:30}]}; }
 function r2(n){ return Math.round((n+Number.EPSILON)*100)/100; }
 /* Calculs : arrondi au centime par ligne, TVA par taux, remise plafonnée, acomptes plafonnés à 100 % */
 function totals(d){
@@ -1379,6 +1383,7 @@ function totals(d){
 function pct(n){ return String(n).replace('.',','); }
 SCREENS.devis = function(){
   if(!S.dv) S.dv=newDraft();
+  if(S.dv && !client(S.dv.client) && CLIENTS[0]) S.dv.client=CLIENTS[0].id;
   var d=S.dv, c=client(d.client), t=totals(d), showPrix = canSeeMoney() && (S.role==='admin' || CFG.techAccess.prix!==false);
   var h='<div class="pad">';
   h+='<div class="btns"><button class="btn line sm" id="fav">'+ic('star')+'Devis favori</button><button class="btn soft sm" id="saveFav">'+ic('plus')+'Enregistrer en favori</button></div>';
@@ -1492,11 +1497,12 @@ var CONVS = [
 ];
 SCREENS.messages = function(){
   var mine=onlyMine()?myClientIds():null;
-  return '<div class="pad">'+(S.role==='admin'?'<p class="hint">Toutes les discussions WhatsApp de l\'entreprise, avec le technicien qui suit chaque client.</p>':'')+'<div class="search">'+ic('search')+'<input placeholder="Rechercher une discussion" aria-label="Rechercher une discussion" id="waq" value="'+esc(S.waq||'')+'"></div><div class="list">'+CONVS.map(function(cv,i){ var c=client(cv.cid), last=cv.msgs[cv.msgs.length-1]; if(mine&&!mine[c.id]) return ''; if(S.waq && (c.nom+' '+cv.msgs.map(function(m){return m[1];}).join(' ')).toLowerCase().indexOf(S.waq.toLowerCase())<0) return '';
+  if(sessUser() && !CONVS.some(function(cv){ return client(cv.cid); })) return '<div class="pad"><div class="card empty-st">'+ic('wa')+'<b>Pas encore de discussions</b><span class="muted">Les discussions WhatsApp du CRM arriveront ici quand le module WhatsApp sera relié à l\'appli.</span></div></div>';
+  return '<div class="pad">'+(S.role==='admin'?'<p class="hint">Toutes les discussions WhatsApp de l\'entreprise, avec le technicien qui suit chaque client.</p>':'')+'<div class="search">'+ic('search')+'<input placeholder="Rechercher une discussion" aria-label="Rechercher une discussion" id="waq" value="'+esc(S.waq||'')+'"></div><div class="list">'+CONVS.map(function(cv,i){ var c=client(cv.cid), last=cv.msgs[cv.msgs.length-1]; if(!c) return ''; if(mine&&!mine[c.id]) return ''; if(S.waq && (c.nom+' '+cv.msgs.map(function(m){return m[1];}).join(' ')).toLowerCase().indexOf(S.waq.toLowerCase())<0) return '';
     return '<div class="card tap li" data-conv="'+i+'"><span class="av">'+initials(c.nom)+'</span><div class="grow"><div class="row"><b class="grow ell">'+esc(c.nom)+'</b>'+(S.role==='admin'?'<span class="pill p-gray" style="padding:2px 8px;font-size:11px">'+esc(tech(c.tech).nom.split(' ')[0])+'</span>':'')+'<span class="muted num" style="font-size:12px">'+esc(last[2])+'</span></div><div class="row"><span class="grow ell muted" style="font-size:13.5px">'+(last[0]==='me'?'Vous : ':'')+esc(last[1])+'</span>'+(cv.unread?'<span class="pill" style="background:var(--whatsapp);color:#fff;padding:2px 8px">'+cv.unread+'</span>':'')+'</div></div></div>'; }).join('')+'</div></div>';
 };
 SCREENS.chat = function(i){
-  var cv=CONVS[+i]||CONVS[0], c=client(cv.cid); cv.unread=0; MODULES.messages.badge=CONVS.reduce(function(s,x){return s+x.unread;},0)||0;
+  var cv=CONVS[+i]||CONVS[0], c=client(cv.cid); if(!c) return '<div class="pad"><div class="card empty-st">'+ic('wa')+'<b>Discussion indisponible</b><span class="muted">Les discussions WhatsApp ne sont pas encore reliées au CRM.</span></div></div>'; cv.unread=0; MODULES.messages.badge=CONVS.reduce(function(s,x){return s+x.unread;},0)||0;
   TITLES.chat=c.nom;
   var h='<div class="pad" style="gap:8px;background:var(--fill-2);min-height:100%"><div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap"><button class="chip" data-open="'+c.id+'">'+ic('user').replace('<svg','<svg style="width:15px;height:15px"')+'Fiche</button><button class="chip" data-go="etiquetage">'+ic('tag').replace('<svg','<svg style="width:15px;height:15px"')+'Étiquetage</button></div>';
   h+=cv.msgs.map(function(m){ var me=m[0]==='me'; return '<div style="align-self:'+(me?'flex-end':'flex-start')+';max-width:82%;background:'+(me?'var(--tint)':'var(--surface)')+';border:1px solid var(--line);border-radius:'+(me?'18px 18px 4px 18px':'18px 18px 18px 4px')+';padding:9px 12px;font-size:14.5px;line-height:1.4">'+esc(m[1])+'<div class="muted num" style="font-size:11px;text-align:right;margin-top:3px">'+esc(m[2])+(me?(m[3]===0?' · en attente':' ✓✓'):'')+'</div></div>'; }).join('');
@@ -2041,6 +2047,7 @@ function confirmSheet(title, txt, okLabel, fn){
 }
 function bindTableau(){
   var id=S.arg, c=client(id), p=TAB[id];
+  if(!c){ bindEtiq(); return; }
   if(!p){
     each('[data-cof]',function(b){ b.onclick=function(){ S.tsel.coffret=b.dataset.cof; rerender(); }; });
     each('[data-tpl]',function(b){ b.onclick=function(){ S.tsel.tpl=b.dataset.tpl; rerender(); }; });
@@ -2595,7 +2602,7 @@ function sysDialog(P, cb){
   ph.appendChild(d);
   [].forEach.call(d.querySelectorAll('button'),function(b){ b.onclick=function(){ d.remove(); cb(b.dataset.v); }; });
 }
-function afterOnboarding(){ setTimeout(function(){ if(S.role==='tech'){ var r=rdv('r2'), c=client(r.cid); push('rappels','Rappel · RDV à '+r.h+' (dans 30 min)', c.nom+' · '+c.adr, null, {rid:'r2'}); } }, 1200); setTimeout(function(){ if(S.role==='tech' && !$('scrim')) crmAssign(); }, 12000); }
+function afterOnboarding(){ if(sessUser()) return; setTimeout(function(){ if(S.role==='tech' && !sessUser()){ var r=rdv('r2'), c=client(r.cid); push('rappels','Rappel · RDV à '+r.h+' (dans 30 min)', c.nom+' · '+c.adr, null, {rid:'r2'}); } }, 1200); setTimeout(function(){ if(S.role==='tech' && !$('scrim') && !sessUser()) crmAssign(); }, 12000); }
 SCREENS.perms = function(){
   TITLES.perms='Autorisations';
   PERMS=PERMS||{};
@@ -2970,7 +2977,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.19 · 10 nov. 2026';
+var APP_VERSION='1.0.20 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3814,7 +3821,7 @@ function toDate(v){ if(!v) return null; if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.t
 function dayOffset(d){ var a=new Date(TODAY); a.setHours(0,0,0,0); var b=new Date(d); b.setHours(0,0,0,0); return Math.round((b-a)/864e5); }
 function apptStatus(s){ s=String(s||'').toLowerCase(); if(/confirm|valid|accept|pris/.test(s)) return 'confirme'; if(/route/.test(s)) return 'enroute'; if(/place|arriv/.test(s)) return 'surplace'; if(/termin|fini|clos|done/.test(s)) return 'termine'; return 'aconf'; }
 function liveLoad(){
-  if(!(CFG.crm.on && CFG.crm.mode!=='grok' && apiBase() && crmKey())){ toast('Connectez-vous d\'abord au CRM'); return Promise.resolve(false); }
+  if(!(CFG.crm.mode!=='grok' && apiBase() && crmKey())){ toast('Connectez-vous d\'abord au CRM'); return Promise.resolve(false); }
   var now=new Date(); TODAY=new Date(now.getFullYear(), now.getMonth(), now.getDate());
   var from=TODAY.toISOString().slice(0,10), to=new Date(TODAY.getTime()+6*864e5).toISOString().slice(0,10);
   CRM_LIVE.error=null;
@@ -3833,7 +3840,7 @@ function liveLoad(){
         DEMO_BACKUP=DEMO_BACKUP||{clients:CLIENTS.slice(), rdvs:RDVS.slice(), today:new Date(2026,10,9)};
         CLIENTS.length=0; clients.forEach(function(c){ CLIENTS.push(c); });
         RDVS.length=0; rdvs.forEach(function(x){ RDVS.push(x); });
-        CRM_LIVE.on=true; CRM_LIVE.loadedAt=nowHM(); S.site=null;
+        CRM_LIVE.on=true; CRM_LIVE.loadedAt=nowHM(); S.site=null; NOTIFS.length=0; MODULES.appels.badge=0; MODULES.messages.badge=0; MODULES.planning.badge=0; tabKey=''; bellDot();
         render(); toast(rdvs.length+' RDV et '+clients.length+' fiche'+(clients.length>1?'s':'')+' chargés depuis le CRM');
         return true;
       });
@@ -3868,7 +3875,7 @@ function crmAccountBlock(){
 }
 function bindCrmAccount(){
   var go=$('lgGoCrm'); if(go) go.onclick=function(){ var e=$('lgEmail').value.trim(), p=$('lgPsw').value, c=$('lg2fa').value.trim(), out=$('lgRes'); if(!apiBase()){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez et enregistrez d\'abord l\'URL de l\'API.</p>'; return; } if(!e||!p){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez l\'e-mail et le mot de passe.</p>'; return; } out.innerHTML='<p class="hint">Connexion…</p>';
-    crmLogin(e,p,c).then(function(s){ $('lgPsw').value=''; if(sessIsTech()){ S.stack=[]; S.screen='accueil'; render(); toast('Connecté en agent terrain : '+(s.user.nom||e)); if(CFG.crm.on) liveLoad(); } else { toast('Connecté au CRM : '+(s.user.nom||e)+' (administrateur)'); refreshCrm(); } })
+    crmLogin(e,p,c).then(function(s){ $('lgPsw').value=''; if(sessIsTech()){ S.stack=[]; S.screen='accueil'; render(); toast('Connecté en agent terrain : '+(s.user.nom||e)); liveLoad(); } else { toast('Connecté au CRM : '+(s.user.nom||e)+' (administrateur)'); liveLoad().then(function(){ refreshCrm(); }); } })
     .catch(function(err){ out.innerHTML='<p class="hint" style="color:var(--danger)"><b>Connexion refusée.</b> '+esc(String(err.message||err))+(IN_PREVIEW?' (l\'aperçu claude.ai bloque les appels externes)':'')+'</p>'; }); };
   var lo=$('crmLogout'); if(lo) lo.onclick=function(){ CRM_SESSION=null; sessSave(); if(CRM_LIVE.on) backToDemo(); refreshCrm(); toast('Déconnecté du CRM'); };
   var ll=$('liveLoad'); if(ll) ll.onclick=function(){ liveLoad().then(function(){ refreshCrm(); }); };
@@ -3884,7 +3891,8 @@ function sessIsTech(){ var u=sessUser(); return !!(u && String(u.profil)==='6');
 function firstName(def){ var u=sessUser(); if(!u||!u.nom) return def; return String(u.nom).trim().split(/\s+/)[0]; }
 function applySession(){
   var u=sessUser(); if(!u) return;
-  if(sessIsTech()){ var t=tech(ME); if(t){ t.nom=u.nom||t.nom; t.role='Agent terrain'; } S.role='tech'; }
+  var t0=tech(ME); if(t0){ t0.nom=u.nom||t0.nom; t0.role=sessIsTech()?'Agent terrain':'Administrateur'; }
+  if(sessIsTech()){ S.role='tech'; }
   else if(sessIsAdmin()){ S.role='admin'; }
 }
 var _crmLogin=crmLogin;
@@ -3892,6 +3900,36 @@ crmLogin=function(e,p,c){ return _crmLogin(e,p,c).then(function(sess){ applySess
 function crmAccountRow(){
   var u=sessUser(); if(!u) return '';
   return '<div class="cfg-it"><span class="ico" style="background:var(--success-bg);color:var(--success)">'+ic('user')+'</span><div class="grow"><b style="display:block">Compte CRM : '+esc(u.nom||'connecté')+'</b><span class="muted" style="font-size:12.5px">'+(sessIsAdmin()?'Administrateur':sessIsTech()?'Agent terrain':'Profil '+esc(u.profil))+' · '+(CFG.crm.env==='prod'?'Production':'Test')+'</span></div><button class="link" id="plusLogout" style="color:var(--danger)">Se déconnecter</button></div>';
+}
+
+/* =========================================================
+   V22 — Mode réel net : vraie connexion uniquement, données réelles chargées d'office, démo signalée
+   ========================================================= */
+var DEMO_SCREENS={messages:1, chat:1, appels:1, ca:1, stats:1, equipe:1, techdetail:1, suivi:1, etiquetage:1, tableau:1, apercu:1, devis:1};
+function demoBanner(){
+  if(!sessUser()) return '';
+  if(DEMO_SCREENS[S.screen] || (S.screen==='accueil' && S.role==='admin')) return '<div class="demo-band">'+ic('late')+'<span><b>Pas encore relié au CRM.</b> '+(S.screen==='accueil'?'Les chiffres et l\'équipe de cet écran sont des données de démonstration.':'Les données de cet écran sont des données de démonstration.')+'</span></div>';
+  return '';
+}
+logoutFlow=function(){
+  var s=sheet('<h3>Se déconnecter ?</h3><p class="hint">'+(sessUser()?'Vous serez déconnecté du compte CRM « '+esc(sessUser().nom||'')+' ».':'Vous êtes en mode démonstration.')+' Les actions en attente d\'envoi restent sur le téléphone.</p><div class="btns"><button class="btn soft" data-close>Annuler</button><button class="btn" id="loOk" style="background:var(--danger);color:#fff">Se déconnecter</button></div>');
+  s.querySelector('#loOk').onclick=function(){ closeSheet(); CRM_SESSION=null; sessSave(); if(CRM_LIVE.on) backToDemo(); realLoginScreen(); };
+};
+function realLoginScreen(){
+  var ready = CFG.crm.mode!=='grok' && !!apiBase();
+  var el=document.createElement('div'); el.className='onb'; el.id='realLogin';
+  el.innerHTML='<div class="onb-in"><div class="onb-hero"><img src="logo.png" alt=""><span class="hx"></span></div><h2>Connexion</h2>'+
+    (ready?'<p class="muted">Connectez-vous avec votre compte du CRM Entreprise AR.</p><div class="card form" style="width:100%;text-align:left"><label class="field"><span>E-mail du CRM</span><input id="rlE" type="email" autocomplete="username"></label><label class="field"><span>Mot de passe</span><input id="rlP" type="password" autocomplete="current-password"></label><label class="field"><span>Code de double authentification (si demandé)</span><input id="rlC" inputmode="numeric" autocomplete="one-time-code"></label></div><div id="rlRes" style="width:100%"></div>'
+      :'<p class="muted">La connexion au CRM n\'est pas encore réglée sur ce téléphone. L\'administrateur la règle dans Connexion CRM (adresse du CRM).</p>')+
+    '</div><div class="onb-foot">'+(ready?'<button class="btn primary block" id="rlGo">Se connecter</button>':'')+'<button class="link" id="rlDemo">Continuer en mode démonstration</button></div>';
+  $('phone').appendChild(el);
+  function close(){ el.classList.add('out'); setTimeout(function(){ el.remove(); },300); }
+  el.querySelector('#rlDemo').onclick=function(){ close(); S.stack=[]; S.screen='accueil'; render(); toast('Mode démonstration : données fictives'); };
+  var go=el.querySelector('#rlGo'); if(go) go.onclick=function(){ var e=el.querySelector('#rlE').value.trim(), p=el.querySelector('#rlP').value, c=el.querySelector('#rlC').value.trim(), out=el.querySelector('#rlRes');
+    if(!e||!p){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez votre e-mail et votre mot de passe.</p>'; return; }
+    go.disabled=true; go.textContent='Connexion…';
+    crmLogin(e,p,c).then(function(sess){ close(); S.stack=[]; S.screen='accueil'; render(); toast('Connecté : '+(sess.user.nom||e)); liveLoad(); })
+      .catch(function(err){ go.disabled=false; go.textContent='Se connecter'; out.innerHTML='<p class="hint" style="color:var(--danger)"><b>Connexion refusée.</b> '+esc(String(err.message||err))+'</p>'; }); };
 }
 
 SCREENS.soon = function(){
@@ -4040,7 +4078,7 @@ window.addEventListener('resize', fitDev);
 (function(){ var d='iphone'; try{ d=localStorage.getItem('ar_dev')||'iphone'; }catch(e){} setDev(d); })();
 crmFeed(false);
 applySession(); render();
-if(!IN_PREVIEW && CRM_SESSION && CFG.crm.on && CFG.crm.mode!=='grok') setTimeout(function(){ liveLoad(); }, 900);
+if(!IN_PREVIEW && CRM_SESSION && CFG.crm.mode!=='grok') setTimeout(function(){ liveLoad(); }, 900);
 $('verNote').textContent='Version '+APP_VERSION;
 $('replayOnb').onclick=function(){ PERMS=null; try{ localStorage.removeItem(PKEY); }catch(e){} if(S.role!=='tech'){ S.role='tech'; } S.stack=[]; S.screen='accueil'; render(); var o=document.querySelector('.onb'); if(o) o.remove(); introBest(onboarding); };
 $('replayIntro').onclick=function(){ introBest(null); };
