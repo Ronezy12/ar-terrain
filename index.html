@@ -2987,7 +2987,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.37 · 10 nov. 2026';
+var APP_VERSION='1.0.38 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4748,6 +4748,33 @@ SCREENS.equipe=function(){ var h=_equipe36b(); if(!sessUser()) return h;
 if(!IN_PREVIEW && !sessUser()) $('phone').classList.add('locked');
 var _render37=render;
 render=function(){ if(sessUser()) $('phone').classList.remove('locked'); return _render37.apply(this, arguments); };
+/* =========================================================
+   V38 — Boutons rapides réglés par l'admin toujours visibles chez l'agent (aussi en mode simple),
+   et l'appli vérifie qu'elle a bien la dernière version
+   ========================================================= */
+var _techHome38=techHome;
+techHome=function(){
+  var h=_techHome38(); if(!simpleOn()) return h;
+  var q=CFG.quick.filter(function(x){ return x.on && ACTIONS[x.id]; }); if(!q.length) return h;
+  var block='<div class="sec"><h2>Actions rapides</h2></div><div class="card"><div class="rounds">'+q.map(function(x){ return rb(x.id); }).join('')+'</div></div>';
+  var i=h.lastIndexOf('</div>'); return i>0 ? h.slice(0,i)+block+h.slice(i) : h+block;
+};
+/* Dernière version : l'appli compare son numéro avec celui publié et se recharge si besoin */
+function checkVersion(){
+  if(IN_PREVIEW || !window.fetch) return;
+  fetch('version.json?t='+Date.now(), {cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).then(function(j){
+    if(!j || !j.version) return; var cur=String(APP_VERSION).split(' ')[0];
+    if(j.version!==cur && !sessionStorage.getItem('ar_reload_'+j.version)){
+      try{ sessionStorage.setItem('ar_reload_'+j.version,'1'); }catch(e){}
+      if(S.site || $('scrim') || BUSY_SCREENS[S.screen]){ toast('Nouvelle version '+j.version+' disponible : elle s\'installera à la prochaine ouverture'); return; }
+      toast('Mise à jour vers la version '+j.version+'…');
+      var go=function(){ location.reload(); };
+      if(navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function(reg){ if(reg) reg.update().catch(function(){}); setTimeout(go, 900); }); else setTimeout(go, 900);
+    }
+  }).catch(function(){});
+}
+setTimeout(checkVersion, 2500);
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) checkVersion(); });
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
