@@ -930,6 +930,7 @@ html,body{overscroll-behavior:none}
 .live-band{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);padding:2px 2px 0}.live-band svg{width:14px;height:14px;color:var(--success)}.live-band.on{color:var(--primary)}.spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;display:inline-block;animation:spin .8s linear infinite;color:var(--primary)}.spin.big{width:28px;height:28px;border-width:3px}@keyframes spin{to{transform:rotate(360deg)}}.ptr{position:absolute;left:50%;top:70px;z-index:40;transform:translate(-50%,0);opacity:0;width:36px;height:36px;border-radius:50%;background:var(--surface);box-shadow:0 4px 14px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .2s}
 .tabs-prev{display:flex;gap:4px;padding:8px;border-radius:22px;background:var(--surface);border:1px solid var(--line);margin-bottom:10px}.tabs-prev span{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:11px}.tabs-prev span:first-child{color:var(--primary)}.tabs-prev svg{width:20px;height:20px}.cfg-share{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--warning-bg,#FFF4E0);color:var(--ink-2);font-size:13px;line-height:1.4;margin-bottom:10px}.cfg-share.ok{background:var(--success-bg)}.cfg-share svg{width:18px;height:18px;flex:none}
 .phone.locked>header.bar,.phone.locked>#view,.phone.locked>#tabs,.phone.locked>#netbar{visibility:hidden}
+.home-prev{height:380px;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:var(--bg);position:relative;pointer-events:none}.home-prev-in{width:390px;transform:scale(.8);transform-origin:top left;position:absolute;left:0;top:0}.home-prev-in .live-band{display:none}
 </style>
 
 </head>
@@ -2987,7 +2988,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.38 · 10 nov. 2026';
+var APP_VERSION='1.0.39 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4775,6 +4776,43 @@ function checkVersion(){
 }
 setTimeout(checkVersion, 2500);
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) checkVersion(); });
+/* =========================================================
+   V39 — Mode simple / mode normal clairs : normal par défaut (avec les boutons rapides), simple vraiment épuré,
+   aperçu en direct de l'accueil agent dans Personnaliser
+   ========================================================= */
+techHome=_techHome38;
+(function(){ try{ if(!CFG.simpleV39){ CFG.simpleV39=true; CFG.simple=false; save(); } }catch(e){} })();
+function techHomePreview(simple){
+  var keepRole=S.role, keepSimple=CFG.simple, keepScreen=S.screen, h='';
+  try{ S.role='tech'; CFG.simple=simple; S.screen='accueil'; h=_techHome38(); }catch(e){ h=''; }
+  S.role=keepRole; CFG.simple=keepSimple; S.screen=keepScreen;
+  return '<div class="home-prev"><div class="home-prev-in">'+h+'</div></div>';
+}
+var _reglages39=SCREENS.reglages;
+SCREENS.reglages=function(){
+  var h=_reglages39(), on=CFG.simple!==false;
+  var prev='<div class="cfg-it" style="flex-direction:column;align-items:stretch;gap:8px"><b style="font-size:13.5px">Aperçu de l\'accueil agent · mode '+(on?'simple':'normal')+'</b><span class="muted" style="font-size:12.5px">'+(on?'Une grande carte qui guide la journée, sans boutons rapides.':'La carte du prochain RDV et vos boutons rapides.')+'</span>'+techHomePreview(on)+'</div>';
+  return h.replace(/(<input type="checkbox" id="admSimple"[^>]*><span><\/span><\/label><\/div>)/, '$1'+prev);
+};
+var _bind39=bind;
+bind=function(){ var r=_bind39.apply(this, arguments);
+  var as=$('admSimple'); if(as) as.onchange=function(){ CFG.simple=this.checked; save(); var y=V.scrollTop; render(); V.scrollTop=y; toast(this.checked?'Mode simple pour les agents'+(SET_SYNC==='ok'?'':' (sur ce téléphone en attendant le partage par le CRM)'):'Mode normal pour les agents'+(SET_SYNC==='ok'?'':' (sur ce téléphone en attendant le partage par le CRM)')); };
+  var st=$('simpleTog'); if(st) st.onchange=function(){ CFG.simple=this.checked; save(); tabKey=''; S.stack=[]; S.screen='accueil'; render(); toast(this.checked?'Mode simple : un seul bouton guide votre journée':'Mode normal : carte du RDV et boutons rapides'); };
+  return r; };
+/* Accueil normal avec un vrai compte : ne plante plus sans RDV, sans chiffres de démonstration */
+var _techHomeNormal39=_techHome;
+_techHome=function(){
+  if(!sessUser()) return _techHomeNormal39();
+  var rdvs=techRdv(), next=rdvs.filter(function(r){ return r.st!=='termine'; })[0]||rdvs[0];
+  var quick=CFG.quick.filter(function(q){ return q.on && ACTIONS[q.id] && (q.id!=='devis'||allowed('devis')) && (q.id!=='etiquetage'||allowed('etiquetage')); });
+  var qb=quick.length?'<div class="sec"><h2>Actions rapides</h2></div><div class="card"><div class="rounds">'+quick.map(function(q){ return rb(q.id); }).join('')+'</div></div>':'';
+  if(next){ var h=''; try{ h=_techHomeNormal39(); }catch(e){ h=''; }
+    if(h){ h=h.replace(/<div class="kpis">[\s\S]*?<\/div>(?=<div class="sec">)/,''); return h; } }
+  var date=TODAY.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  var out='<div class="pad"><div class="hello"><div><small>'+esc(date)+'</small><h1>Bonjour '+esc(firstName(''))+'</h1></div><span class="pill p-blue">0 RDV aujourd\'hui</span></div>';
+  out+='<div class="card empty-st">'+ic('cal')+'<b>Aucun RDV aujourd\'hui</b><span class="muted">Les RDV qui vous sont attribués dans le CRM apparaissent ici automatiquement.</span><button class="btn soft sm" data-go="planning" style="margin-top:6px">'+ic('cal')+'Voir le planning</button></div>';
+  return out+qb+'</div>';
+};
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
