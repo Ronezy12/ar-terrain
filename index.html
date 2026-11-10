@@ -925,6 +925,7 @@ html,body{overscroll-behavior:none}
 .demo-band b{color:inherit}
 .rl-adv{font-size:13px;color:var(--muted)}
 .rl-adv summary{cursor:pointer;padding:4px 0}
+.pos-ok,.pos-ko{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px}.pos-ok{background:var(--success-bg);color:var(--success)}.pos-ko{background:var(--danger-bg);color:var(--danger)}.pos-ok>svg,.pos-ko>svg{width:22px;height:22px;flex:none}.pos-ok b,.pos-ko b{display:block}.pos-ok .muted{color:inherit;opacity:.8}
 </style>
 
 </head>
@@ -2979,7 +2980,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.21 · 10 nov. 2026';
+var APP_VERSION='1.0.22 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3932,11 +3933,136 @@ function realLoginScreen(){
   el.querySelector('#rlDemo').onclick=function(){ close(); S.stack=[]; S.screen='accueil'; render(); toast('Mode démonstration : données fictives'); };
   var go=el.querySelector('#rlGo'); if(go) go.onclick=function(){ var e=el.querySelector('#rlE').value.trim(), p=el.querySelector('#rlP').value, c=el.querySelector('#rlC').value.trim(), out=el.querySelector('#rlRes');
     if(!e||!p){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez votre e-mail et votre mot de passe.</p>'; return; }
-    var uu=el.querySelector('#rlU'); if(uu){ var uv=uu.value.trim().replace(/\/+$/,''); if(!/^https:\/\//.test(uv)){ out.innerHTML='<p class="hint" style="color:var(--danger)">L\'adresse du CRM doit commencer par https://</p>'; return; } CFG.crm.urls[CFG.crm.env]=uv; CFG.crm.mode='api'; save(); }
+    var uu=el.querySelector('#rlU'); if(uu){ var uv=uu.value.trim().replace(/\/+$/,''); if(!/^(https:\/\/|http:\/\/localhost[:\/])/.test(uv+'/')){ out.innerHTML='<p class="hint" style="color:var(--danger)">L\'adresse du CRM doit commencer par https://</p>'; return; } CFG.crm.urls[CFG.crm.env]=uv; CFG.crm.mode='api'; save(); }
     go.disabled=true; go.textContent='Connexion…';
     crmLogin(e,p,c).then(function(sess){ close(); S.stack=[]; S.screen='accueil'; render(); toast('Connecté : '+(sess.user.nom||e)); liveLoad(); })
       .catch(function(err){ go.disabled=false; go.textContent='Se connecter'; out.innerHTML='<p class="hint" style="color:var(--danger)"><b>Connexion refusée.</b> '+esc(String(err.message||err))+'</p>'; }); };
 }
+
+/* =========================================================
+   V23 — Localisation réelle : état lu sur le téléphone, test de position, position jointe aux actions
+   ========================================================= */
+var IS_IOS=/iPhone|iPad|iPod/.test(navigator.userAgent), POS_HTML='', LAST_POS=null, WATCH_ID=null, LAST_SENT=0;
+function geoHelp(code){
+  if(code===1) return IS_IOS ? 'La localisation est refusée. Sur iPhone : Réglages › Confidentialité et sécurité › Service de localisation (activé) › Sites web Safari › « Lorsque l\'app est active ». Puis fermez et rouvrez l\'appli.'
+                             : 'La localisation est refusée. Sur Android : appui long sur l\'icône de l\'appli › Infos sur l\'appli › Autorisations › Position › « Autoriser seulement si l\'appli est en cours d\'utilisation ».';
+  if(code===2) return 'Position introuvable : activez le GPS (localisation) du téléphone et vérifiez le réseau.';
+  if(code===3) return 'Le GPS met trop de temps à répondre : réessayez près d\'une fenêtre ou dehors.';
+  return 'La localisation n\'est pas disponible sur ce navigateur.';
+}
+/* Demande la position ; cb(pos|null, codeErreur) */
+function getPos(cb, opts){
+  if(IN_PREVIEW || !navigator.geolocation){ cb(null, IN_PREVIEW?9:0); return; }
+  var done=false, to=setTimeout(function(){ if(!done){ done=true; cb(null,3); } }, (opts&&opts.timeout||12000)+500);
+  navigator.geolocation.getCurrentPosition(function(p){ if(done) return; done=true; clearTimeout(to); LAST_POS={lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), accuracy_m:Math.round(p.coords.accuracy), at:new Date().toISOString()}; PERMS=PERMS||{}; PERMS.loc='yes'; pSave(); cb(LAST_POS); },
+    function(e){ if(done) return; done=true; clearTimeout(to); if(e&&e.code===1){ PERMS=PERMS||{}; PERMS.loc='no'; pSave(); } cb(null, e?e.code:0); },
+    {enableHighAccuracy:true, timeout:(opts&&opts.timeout)||12000, maximumAge:(opts&&opts.maxAge)||30000});
+}
+/* Un GPS lent ou indisponible n'est plus compté comme « Autorisé » */
+var _askReal=askReal;
+askReal=function(P, cb){
+  if(P.k==='loc' && !IN_PREVIEW && navigator.geolocation){ getPos(function(pos, code){ cb(pos ? 'yes' : code===1 ? 'no' : 'later'); }, {timeout:15000, maxAge:600000}); return; }
+  _askReal(P, cb);
+};
+/* État réel lu sur le téléphone */
+function syncPerms(done){
+  PERMS=PERMS||{}; var jobs=[];
+  try{ if('Notification' in window) PERMS.notif = Notification.permission==='granted'?'yes':Notification.permission==='denied'?'no':(PERMS.notif||'later'); }catch(e){}
+  if(navigator.permissions && navigator.permissions.query){
+    jobs.push(navigator.permissions.query({name:'geolocation'}).then(function(r){ PERMS.loc = r.state==='granted'?'yes':r.state==='denied'?'no':(PERMS.loc==='yes'?'later':PERMS.loc||'later'); }).catch(function(){}));
+    jobs.push(navigator.permissions.query({name:'camera'}).then(function(r){ PERMS.cam = r.state==='granted'?'yes':r.state==='denied'?'no':PERMS.cam; }).catch(function(){}));
+  }
+  Promise.all(jobs).then(function(){ pSave(); done&&done(); });
+}
+/* Position jointe à « En route » et « Arrivé », puis suivi pendant le trajet (appli ouverte) */
+var _crmSendPos=crmSend;
+crmSend=function(code, fields){
+  if(code==='tech.on_the_way' || code==='tech.arrived'){
+    getPos(function(pos){ var f={}; for(var k in (fields||{})) f[k]=fields[k]; f.data=f.data||{}; if(pos) f.data.position={lat:pos.lat, lng:pos.lng, accuracy_m:pos.accuracy_m}; _crmSendPos(code, f); }, {timeout:8000, maxAge:60000});
+    if(code==='tech.on_the_way') startTripTracking(fields&&fields.appointment_id); else stopTripTracking();
+    return;
+  }
+  if(code==='intervention.completed') stopTripTracking();
+  return _crmSendPos(code, fields);
+};
+function startTripTracking(rid){
+  stopTripTracking(); if(IN_PREVIEW || !navigator.geolocation) return;
+  WATCH_ID=navigator.geolocation.watchPosition(function(p){
+    LAST_POS={lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), accuracy_m:Math.round(p.coords.accuracy), at:new Date().toISOString()};
+    if(Date.now()-LAST_SENT<30000) return; LAST_SENT=Date.now();
+    _crmSendPos('location.update', {appointment_id:rid||nextRid(), data:{lat:LAST_POS.lat, lng:LAST_POS.lng, accuracy_m:LAST_POS.accuracy_m, speed_kmh:p.coords.speed!=null?Math.round(p.coords.speed*3.6):null}});
+  }, function(){}, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
+}
+function stopTripTracking(){ if(WATCH_ID!=null && navigator.geolocation){ navigator.geolocation.clearWatch(WATCH_ID); } WATCH_ID=null; }
+/* Bouton « Tester ma position » dans Autorisations */
+function posTest(){
+  var out=$('posRes'); if(!out) return; out.innerHTML=POS_HTML='<p class="hint">Recherche de votre position…</p>';
+  getPos(function(pos, code){
+    if(pos) POS_HTML='<div class="pos-ok">'+ic('pin')+'<div><b>Position trouvée</b><div class="num" style="font-size:13px">'+pos.lat.toFixed(5)+', '+pos.lng.toFixed(5)+' · précision ± '+pos.accuracy_m+' m</div><div class="muted" style="font-size:12px">Elle sera jointe à « En route » et « Je suis arrivé ».</div></div></div>';
+    else POS_HTML='<div class="pos-ko">'+ic('late')+'<div><b>'+(code===9?'Indisponible dans l\'aperçu':'Position non disponible')+'</b><div style="font-size:13px;line-height:1.4">'+(code===9?'Testez sur l\'appli installée sur le téléphone.':esc(geoHelp(code)))+'</div></div></div>';
+    rerender();
+  }, {timeout:15000, maxAge:0});
+}
+/* Connecté avec un vrai compte du CRM : les actions partent au CRM sans l'interrupteur de démo.
+   C'est le CRM qui décide (technicien autorisé, mode test, correspondance des statuts). */
+var _crmActive23=crmActive;
+crmActive=function(code){ if(sessUser() && CFG.crm.mode!=='grok' && crmUrl() && CFG.crm.actions[code]!==false) return true; return _crmActive23(code); };
+/* « Je suis en route » : vrai client du prochain RDV, heure calculée, vrai WhatsApp / SMS */
+function intlTel(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(d.indexOf('+')===0) return d.slice(1); if(d.indexOf('00')===0) return d.slice(2); if(d.charAt(0)==='0') return '33'+d.slice(1); return d; }
+function civ(nom){ var n=String(nom||'').trim(); if(/^(mme|madame)\b/i.test(n)) return 'Madame '+n.replace(/^(mme\.?|madame)\s*/i,'').split(/\s+/)[0]; if(/^(m\.|mr|monsieur)\s/i.test(n)) return 'Monsieur '+n.replace(/^(m\.|mr\.?|monsieur)\s*/i,'').split(/\s+/)[0]; return n||'Madame, Monsieur'; }
+var _doAct23=doAct;
+doAct=function(id){
+  if(id!=='enroute') return _doAct23(id);
+  var nx=techRdv().filter(function(r){return r.st!=='termine';})[0];
+  if(!nx){ toast('Aucun RDV à venir aujourd\'hui'); return; }
+  var c=client(nx.id)||{}, now=new Date(), plus=function(m){ var d=new Date(now.getTime()+m*60000); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+  var etas=[['15 min',plus(15)],['30 min',plus(30)],[nx.rdv,nx.rdv]], sel=1, canal='wa';
+  var txt=function(){ return 'Bonjour '+civ(c.nom)+', votre électricien '+firstName(sessUser()?'':'Karim')+' de l\'Entreprise AR est en route. Arrivée prévue vers '+etas[sel][1]+'. À tout à l\'heure.'; };
+  var s=sheet('<h3>Prévenir '+(/^(mme|madame)\b/i.test(c.nom||'')?'la cliente':'le client')+'</h3><p class="hint">Message à '+esc(c.nom||nx.nom)+(c.tel?' · <span class="num">'+esc(c.tel)+'</span>':'')+'</p>'+
+    '<div class="seg" id="canal"><button class="on" data-c="wa">WhatsApp</button><button data-c="sms">SMS</button></div>'+
+    '<textarea id="msgtxt" rows="4" style="width:100%;border:1.5px solid var(--line-strong);border-radius:16px;padding:12px;background:var(--surface);font-size:15px;resize:none"></textarea>'+
+    '<div class="chips" id="etaC">'+etas.map(function(e,i){ return '<button class="chip'+(i===sel?' on':'')+'" data-i="'+i+'">Arrivée '+esc(e[0])+'</button>'; }).join('')+'</div>'+
+    '<button class="btn primary block" id="sendMsg">'+ic('send')+'Envoyer et partir</button><button class="btn soft block" id="noMsg">Partir sans prévenir</button>');
+  var ta=s.querySelector('#msgtxt'); ta.value=txt();
+  [].forEach.call(s.querySelectorAll('#canal button'),function(b){ b.onclick=function(){ canal=b.dataset.c; [].forEach.call(s.querySelectorAll('#canal button'),function(x){x.classList.toggle('on',x===b);}); }; });
+  [].forEach.call(s.querySelectorAll('#etaC .chip'),function(b){ b.onclick=function(){ sel=+b.dataset.i; [].forEach.call(s.querySelectorAll('#etaC .chip'),function(x){x.classList.toggle('on',x===b);}); ta.value=txt(); }; });
+  function leave(sent){ closeSheet(); var r=rdv(nx.rid); if(r) r.st='enroute'; live('route','est en route vers '+nx.nom,{eta:etas[sel][1]}); rerender();
+    if(!sent) toast('En route : le bureau est prévenu'); }
+  s.querySelector('#noMsg').onclick=function(){ leave(false); };
+  s.querySelector('#sendMsg').onclick=function(){
+    var msg=ta.value, tel=c.tel;
+    if(sessUser() && tel && !IN_PREVIEW){
+      var url=canal==='wa' ? 'https://wa.me/'+intlTel(tel)+'?text='+encodeURIComponent(msg) : 'sms:'+String(tel).replace(/\s/g,'')+(IS_IOS?'&':'?')+'body='+encodeURIComponent(msg);
+      leave(true); toast('En route : le bureau est prévenu'); setTimeout(function(){ location.href=url; }, 150); return;
+    }
+    leave(true); done(ACT_MSG.enroute, 'Message « en route »');
+  };
+};
+/* Écran Autorisations : état réel + test de position + aide Réglages */
+var _scrPerms23=SCREENS.perms, PERMS_SYNCED=false;
+SCREENS.perms=function(){
+  var h=_scrPerms23();
+  var box='<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="li"><span class="hi"><span class="ic mail">'+ic('pin')+'</span></span><div class="grow"><b style="display:block">Tester ma position</b><span class="muted" style="font-size:12.5px">Vérifie que le GPS répond vraiment sur ce téléphone.</span></div></div><button class="btn soft sm" id="posTest">'+ic('nav')+'Tester maintenant</button><div id="posRes">'+POS_HTML+'</div></div>';
+  return h.replace('<button class="btn soft block" id="pReplay">', box+'<button class="btn soft block" id="pReplay">');
+};
+var _bindPerms23=bindPerms;
+bindPerms=function(){
+  _bindPerms23();
+  if($('posTest')) $('posTest').onclick=posTest;
+  each('[data-pa="loc"]',function(b){ b.onclick=function(){
+    var P=PERM_LIST.filter(function(x){return x.k==='loc';})[0];
+    if(IN_PREVIEW){ askReal(P,function(v){ PERMS.loc=v; pSave(); rerender(); }); return; }
+    b.disabled=true; b.textContent='Recherche…';
+    getPos(function(pos, code){ PERMS.loc=pos?'yes':code===1?'no':(PERMS.loc||'later'); pSave(); rerender();
+      if(pos) toast('Localisation autorisée');
+      else sheet('<h3>Localisation</h3><p class="hint" style="line-height:1.5">'+esc(geoHelp(code))+'</p><button class="btn primary block" data-close>J\'ai compris</button>');
+    }, {timeout:15000, maxAge:0});
+  }; });
+  if(!PERMS_SYNCED){ PERMS_SYNCED=true; syncPerms(function(){ if(S.screen==='perms') rerender(); }); }
+};
+/* Relit l'état réel au démarrage et au retour dans l'appli */
+syncPerms();
+document.addEventListener('visibilitychange', function(){ if(!document.hidden){ PERMS_SYNCED=false; syncPerms(); } });
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
