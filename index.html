@@ -926,6 +926,7 @@ html,body{overscroll-behavior:none}
 .rl-adv{font-size:13px;color:var(--muted)}
 .rl-adv summary{cursor:pointer;padding:4px 0}
 .pos-ok,.pos-ko{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px}.pos-ok{background:var(--success-bg);color:var(--success)}.pos-ko{background:var(--danger-bg);color:var(--danger)}.pos-ok>svg,.pos-ko>svg{width:22px;height:22px;flex:none}.pos-ok b,.pos-ko b{display:block}.pos-ok .muted{color:inherit;opacity:.8}
+.ph{position:relative}.ph-up{position:absolute;right:6px;bottom:6px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;font-size:12px}.ph-up svg{width:14px;height:14px}.ph-up.ok{background:var(--success)}.ph-up.wait{background:var(--warning,#B26A00)}
 </style>
 
 </head>
@@ -1854,7 +1855,7 @@ function bindClient(){
   each('[data-qc]',function(b){ b.onclick=function(){ var t=$('cmt'); t.value=(t.value?t.value+' ':'')+b.dataset.qc+'.'; t.focus(); }; });
   each('[data-vnote]',function(b){ b.onclick=function(){ recordVoice(function(url,dur){ c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:'', audio:url, dur:dur, w:'À l\'instant'}); crmSend('note.added',{client_id:c.id, data:{audio:'file:note-vocale', duree_s:Math.round(dur)}}); rr(); done('Note vocale jointe à la fiche, le bureau peut l\'écouter','Note vocale'); }); }; });
   $('cmtOk').onclick=function(){ var v=$('cmt').value.trim(); if(!v){ toast('Écrivez un commentaire'); return; } c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:v, w:'À l\'instant'}); rr(); crmSend('note.added',{client_id:c.id, data:{texte:v}}); done('Commentaire publié, le bureau est prévenu', 'Commentaire'); };
-  $('addPh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Photo du '+new Date().toLocaleDateString('fr-FR'), src:rd.result, who:'Vous', w:'À l\'instant'}); crmSend('photo.added',{client_id:c.id, data:{fichier:'file:photo', legende:c.photos[0].cap}}); rr(); done('Photo ajoutée à la fiche', 'Photo'); }; rd.readAsDataURL(f); };
+  $('addPh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Photo du '+new Date().toLocaleDateString('fr-FR'), src:rd.result, who:'Vous', w:'À l\'instant'}); photoUpload(c, c.photos[0], (S.site&&S.site.rid)||null); rr(); done('Photo ajoutée à la fiche', 'Photo'); }; rd.readAsDataURL(f); };
   each('[data-ph]',function(b){ b.onclick=function(){ var i=+b.dataset.ph, p=c.photos[i];
     var s=sheet('<div class="ph big" style="'+(p.src?'background-image:url('+p.src+')':'background:linear-gradient(135deg,'+p.col+','+p.col+'cc)')+'">'+(p.src?'':ic('cam'))+'</div><input id="phCap" value="'+esc(p.cap)+'" aria-label="Légende" style="min-height:50px;border:1.5px solid var(--line-strong);border-radius:999px;padding:0 18px;background:var(--surface);font-size:16px"><div class="muted" style="font-size:13px">'+esc(p.who)+' · '+esc(p.w)+(p.src?'':' · photo d\'exemple')+'</div><div class="btns"><button class="btn danger sm" id="phDel">Supprimer</button><button class="btn primary sm" id="phOk">Enregistrer</button></div>');
     s.querySelector('#phOk').onclick=function(){ p.cap=s.querySelector('#phCap').value||p.cap; closeSheet(); rr(); };
@@ -2328,7 +2329,7 @@ function tile(icn,t,sub,attr,cls){ return '<button class="tile'+(cls?' '+cls:'')
 function bindChantier(){
   var r=rdv(S.arg||(S.site&&S.site.rid)), c=client(r.cid);
   each('[data-sp]',function(b){ b.onclick=function(){ $('sitePh').click(); }; });
-  $('sitePh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Sur chantier', src:rd.result, who:'Vous', w:'À l\'instant'}); crmSend('photo.added',{client_id:c.id, data:{fichier:'file:photo', legende:'Sur chantier'}}); rerender(); done('Photo ajoutée au chantier','Photo'); }; rd.readAsDataURL(f); };
+  $('sitePh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Sur chantier', src:rd.result, who:'Vous', w:'À l\'instant'}); photoUpload(c, c.photos[0], (S.site&&S.site.rid)||null); rerender(); done('Photo ajoutée au chantier','Photo'); }; rd.readAsDataURL(f); };
   each('[data-st]',function(b){ b.onclick=function(){ go('tableau', c.id); }; });
   each('[data-sd]',function(b){ b.onclick=function(){ S.dv=newDraft(); S.dv.client=c.id; go('devis'); }; });
   each('[data-scall]',function(b){ b.onclick=function(){ callNum(c.tel, c.nom); }; });
@@ -2983,7 +2984,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.28 · 10 nov. 2026';
+var APP_VERSION='1.0.29 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4385,6 +4386,53 @@ bindDiag=function(){ _bindDiag28(); var b=$('dgPush'); if(b) b.onclick=function(
 /* Badge : affiché sur la carte du compte */
 var _acct28=crmAccountRow;
 crmAccountRow=function(){ var h=_acct28(), u=sessUser(); if(!u) return h; var badge=u.badge||u.installator; return h.replace(' · CRM ', (badge?' · Badge n° '+esc(badge):'')+' · CRM '); };
+/* =========================================================
+   V29 — Photos envoyées pour de vrai au CRM (fichier compressé), file d'attente si le CRM ou le réseau ne répond pas
+   ========================================================= */
+var PH_DB=null;
+function phDb(){ if(PH_DB) return PH_DB; PH_DB=new Promise(function(res,rej){ try{ var r=indexedDB.open('ar_photos',1); r.onupgradeneeded=function(){ r.result.createObjectStore('q',{keyPath:'id'}); }; r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }catch(e){ rej(e); } }); return PH_DB; }
+function phStore(op, val){ return phDb().then(function(db){ return new Promise(function(res,rej){ var tx=db.transaction('q', op==='all'?'readonly':'readwrite'), st=tx.objectStore('q'), rq= op==='put'?st.put(val): op==='del'?st.delete(val): st.getAll(); rq.onsuccess=function(){ res(rq.result); }; rq.onerror=function(){ rej(rq.error); }; }); }); }
+/* Réduit la photo (1600 px max, JPEG) pour un envoi rapide en 4G */
+function phCompress(dataUrl){ return new Promise(function(res){ if(!/^data:image\//.test(dataUrl)) return res(dataUrl); var im=new Image(); im.onload=function(){ var M=1600, w=im.naturalWidth, h=im.naturalHeight, k=Math.min(1, M/Math.max(w,h)); var cv=document.createElement('canvas'); cv.width=Math.round(w*k); cv.height=Math.round(h*k); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height); try{ res(cv.toDataURL('image/jpeg',0.82)); }catch(e){ res(dataUrl); } }; im.onerror=function(){ res(dataUrl); }; im.src=dataUrl; }); }
+function dataUrlToBlob(u){ var m=u.match(/^data:([^;]+);base64,(.*)$/); if(!m) return new Blob([u]); var b=atob(m[2]), a=new Uint8Array(b.length); for(var i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return new Blob([a],{type:m[1]}); }
+var PH_ROUTE_MISSING=false;
+function phSend(item){
+  var fd=new FormData(); fd.append('client_id', item.client_id); if(item.appointment_id) fd.append('appointment_id', item.appointment_id); fd.append('legende', item.legende||''); fd.append('occurred_at', item.at); fd.append('event_id', item.id);
+  fd.append('photo', dataUrlToBlob(item.data), 'photo-'+item.id+'.jpg');
+  return fetch(apiBase()+'/api/v1/photos',{method:'POST', headers:{'Authorization':'Bearer '+crmKey(), 'Idempotency-Key':item.id}, body:fd})
+    .then(function(r){ return r.text().then(function(tx){ var j={}; try{ j=JSON.parse(tx); }catch(e){} return {status:r.status, ok:r.ok, json:j}; }); });
+}
+function photoUpload(c, ph, rid){
+  if(!sessUser() || c.crmId==null){ crmSend('photo.added',{client_id:c.id, data:{fichier:'file:photo', legende:ph.cap}}); return; }
+  var r=rid?rdv(rid):null;
+  ph.up='sending';
+  phCompress(ph.src).then(function(small){
+    ph.src=small;
+    var item={id:uuid(), client_id:c.crmId, appointment_id:(r&&r.crmId)||null, legende:ph.cap, at:isoNow(), data:small};
+    ph.qid=item.id;
+    phTry(item, ph, true);
+  });
+}
+function phTry(item, ph, first){
+  if(!netOk()){ phQueue(item, ph, 'Pas de réseau : la photo partira automatiquement au retour du réseau.', first); return Promise.resolve(false); }
+  return phSend(item).then(function(res){
+    if(res.ok){ PH_ROUTE_MISSING=false; if(ph) ph.up='ok'; phStore('del', item.id).catch(function(){}); if(first) toast('Photo envoyée au CRM'+(res.json&&res.json.test_mode?' (mode test)':'')); if(S.screen==='client'||S.screen==='chantier') rerender(); return true; }
+    if(res.status===404){ PH_ROUTE_MISSING=true; phQueue(item, ph, 'Photo gardée sur le téléphone : le CRM ne reçoit pas encore les photos de l\'appli. Elle partira dès que ce sera prêt.', first); return false; }
+    if(res.status===401){ phQueue(item, ph, 'Session expirée : la photo partira après reconnexion.', first); onTokenExpired(); return false; }
+    phQueue(item, ph, 'Le CRM a refusé la photo'+(res.json&&res.json.error?' : '+res.json.error:' (erreur '+res.status+')')+'. Elle reste sur le téléphone.', first); return false;
+  }).catch(function(){ phQueue(item, ph, 'Le CRM ne répond pas : la photo partira automatiquement plus tard.', first); return false; });
+}
+function phQueue(item, ph, msg, first){ if(ph) ph.up='queued'; phStore('put', item).catch(function(){}); if(first) toast(msg); if(S.screen==='client'||S.screen==='chantier') rerender(); }
+var PH_FLUSHING=false;
+function phFlush(){ if(PH_FLUSHING || !sessUser() || !netOk()) return; PH_FLUSHING=true;
+  phStore('all').then(function(list){ list=list||[]; var n=0; return list.reduce(function(pr,it){ return pr.then(function(){ return phTry(it, null, false).then(function(ok){ if(ok) n++; }); }); }, Promise.resolve()).then(function(){ if(n) toast(n+' photo'+(n>1?'s envoyées':' envoyée')+' au CRM'); }); })
+    .catch(function(){}).then(function(){ PH_FLUSHING=false; }); }
+window.addEventListener('online', function(){ setTimeout(phFlush, 2000); });
+var _liveLoad29=liveLoad;
+liveLoad=function(){ return _liveLoad29.apply(this, arguments).then(function(ok){ if(ok) setTimeout(phFlush, 1500); return ok; }); };
+/* Petit repère sur la vignette : envoyée / en attente */
+var _photoTile29=photoTile;
+photoTile=function(p,i){ var h=_photoTile29(p,i); if(!p.up) return h; var tag=p.up==='ok'?'<span class="ph-up ok">'+ic('check')+'</span>':p.up==='sending'?'<span class="ph-up">…</span>':'<span class="ph-up wait">'+ic('clock')+'</span>'; return h.replace(/<\/button>$/, tag+'</button>'); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';

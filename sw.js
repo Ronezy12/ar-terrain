@@ -1,5 +1,5 @@
 /* Service worker : l'appli s'ouvre et fonctionne sans réseau. */
-var CACHE = 'ar-terrain-v24';
+var CACHE = 'ar-terrain-v25';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.png', 'lib/data.js', 'lib/icons.js', 'lib/pdf.js', 'vendor/jspdf.umd.min.js', 'vendor/three.min.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); })); });
