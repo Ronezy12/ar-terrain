@@ -1118,7 +1118,7 @@ var DEFAULT_CFG = {
 };
 var KEY='ar_terrain_proto_v3';
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
-var CFG = (function(){ try{ var s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.tabs&&s.quick){ var d=clone(DEFAULT_CFG); Object.keys(d).forEach(function(k){ if(s[k]===undefined) s[k]=d[k]; }); if(s.crm){ var dc={on:false, env:'test', urls:{test:'',prod:''}, actions:{}, testers:['t1']}; Object.keys(dc).forEach(function(x){ if(s.crm[x]===undefined) s.crm[x]=dc[x]; }); }
+var CFG = (function(){ try{ var s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.tabs&&s.quick){ var d=clone(DEFAULT_CFG); Object.keys(d).forEach(function(k){ if(s[k]===undefined) s[k]=d[k]; }); if(s.crm){ var dc={on:false, env:'test', urls:{test:'',prod:''}, actions:{}, testers:['t1'], mode:'api', grok:{url:'', format:'per_tool', auth:'bearer', header:'X-Api-Key', map:{}}}; Object.keys(dc).forEach(function(x){ if(s.crm[x]===undefined) s.crm[x]=dc[x]; }); }
     ['techAccess','notif','avis'].forEach(function(k){ Object.keys(d[k]).forEach(function(x){ if(s[k][x]===undefined) s[k][x]=d[k][x]; }); }); return s; } }catch(e){} return clone(DEFAULT_CFG); })();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(CFG)); }catch(e){} applyLook(); }
 
@@ -2970,7 +2970,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.16 · 10 nov. 2026';
+var APP_VERSION='1.0.17 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3644,13 +3644,15 @@ SCREENS.crm = function(){
   var C=CFG.crm, on=Object.keys(C.actions).filter(function(k){return C.actions[k];}).length, total=Object.keys(CRM_LABEL).length;
   var h='<div class="pad"><p class="hint">Chaque action activée part vraiment au CRM crm26. Les actions coupées restent en démo, mais le journal montre le message qui serait envoyé. Cahier des charges : actions et statuts attendus.</p>';
   h+='<div class="card cfg"><div class="cfg-it"><span class="ico" style="'+(C.on?'background:var(--success-bg);color:var(--success)':'')+'">'+ic('bolt')+'</span><div class="grow"><b style="display:block">Connexion au CRM</b><span class="muted" style="font-size:12.5px">'+(C.on?on+' action'+(on>1?'s':'')+' sur '+total+' envoyée'+(on>1?'s':'')+' en réel':'Tout est en démo')+'</span></div><label class="tog"><input type="checkbox" id="crmOn"'+(C.on?' checked':'')+'><span></span></label></div></div>';
+  h+='<div class="fld"><div class="muted" style="font-size:13px;font-weight:700">Mode de connexion</div><div class="seg" id="crmMode"><button data-v="api" class="'+(C.mode!=='grok'?'on':'')+'">API du CRM</button><button data-v="grok" class="'+(C.mode==='grok'?'on':'')+'">Passerelle Grok bot</button></div></div>';
+  if(C.mode==='grok') h+='<p class="hint">Chaque action de l\'appli appelle directement l\'outil de Grok bot que vous lui associez, sans passer par l\'IA. Touchez « Outil » sous une action pour la régler.</p>';
   h+='<div class="seg" id="crmEnv"><button data-v="test" class="'+(C.env==='test'?'on':'')+'">Test</button><button data-v="prod" class="'+(C.env==='prod'?'on':'')+'">Production</button></div>';
   if(C.env==='prod') h+='<div class="netbar-g off" style="border-radius:16px">'+ic('late')+'<span class="grow">Production : les actions modifient les vraies fiches du CRM.</span></div>';
-  h+='<div class="card form"><label class="field"><span>URL de l\'API ('+(C.env==='test'?'test':'production')+')</span><input id="crmUrl" inputmode="url" placeholder="https://crm26.exemple.fr" value="'+esc(C.urls[C.env]||'')+'"></label><label class="field"><span>Clé d\'accès</span><input id="crmKey" type="password" placeholder="'+(crmKey()?'•••••••• (enregistrée)':'Fournie par JD Solutions')+'" autocomplete="off"></label><div class="btns"><button class="btn primary sm" id="crmSave">Enregistrer</button><button class="btn line sm" id="crmTest">'+ic('bolt')+'Tester la connexion</button></div><div id="crmTestRes"></div></div>';
+  if(C.mode==='grok') h+=grokForm(); else h+='<div class="card form"><label class="field"><span>URL de l\'API ('+(C.env==='test'?'test':'production')+')</span><input id="crmUrl" inputmode="url" placeholder="https://crm26.exemple.fr" value="'+esc(C.urls[C.env]||'')+'"></label><label class="field"><span>Clé d\'accès</span><input id="crmKey" type="password" placeholder="'+(crmKey()?'•••••••• (enregistrée)':'Fournie par JD Solutions')+'" autocomplete="off"></label><div class="btns"><button class="btn primary sm" id="crmSave">Enregistrer</button><button class="btn line sm" id="crmTest">'+ic('bolt')+'Tester la connexion</button></div><div id="crmTestRes"></div></div>';
   h+='<div class="sec"><h2>Techniciens testeurs</h2></div><p class="hint">Le réel ne s\'applique qu\'à eux. Les autres restent en démo.</p><div class="opts">'+TECHS.map(function(t){ var o=C.testers.indexOf(t.id)>=0; return '<button class="opt'+(o?' on':'')+'" data-tst="'+t.id+'">'+esc(t.nom)+'</button>'; }).join('')+'</div>';
   CRM_GROUPS.forEach(function(g,gi){
     var n=g[1].filter(function(a){return C.actions[a[0]];}).length;
-    h+='<div class="sec"><h2>'+esc(g[0])+'</h2><button class="link" data-grp="'+gi+'">'+(n===g[1].length?'Tout couper':'Tout activer')+'</button></div><div class="card cfg">'+g[1].map(function(a){ var o=!!C.actions[a[0]]; return '<div class="cfg-it'+(o?'':' off')+'"><div class="grow" style="min-width:0"><b style="display:block;font-size:14px">'+esc(a[1])+'</b><code class="muted" style="font-size:11.5px">'+a[0]+'</code></div><label class="tog"><input type="checkbox" data-act-crm="'+a[0]+'"'+(o?' checked':'')+' aria-label="'+esc(a[1])+'"><span></span></label></div>'; }).join('')+'</div>';
+    h+='<div class="sec"><h2>'+esc(g[0])+'</h2><button class="link" data-grp="'+gi+'">'+(n===g[1].length?'Tout couper':'Tout activer')+'</button></div><div class="card cfg">'+g[1].map(function(a){ var o=!!C.actions[a[0]]; return '<div class="cfg-it'+(o?'':' off')+'"><div class="grow" style="min-width:0"><b style="display:block;font-size:14px">'+esc(a[1])+'</b><code class="muted" style="font-size:11.5px">'+a[0]+'</code>'+(C.mode==='grok'?'<button class="link" data-gk="'+a[0]+'" style="display:block;font-size:12.5px;margin-top:3px">Outil : '+esc(grokMap(a[0]).tool)+(grokMap(a[0]).auto?' (par défaut)':'')+' ›</button>':'')+'</div><label class="tog"><input type="checkbox" data-act-crm="'+a[0]+'"'+(o?' checked':'')+' aria-label="'+esc(a[1])+'"><span></span></label></div>'; }).join('')+'</div>';
   });
   var errs=CRMLOG.filter(function(e){return e.mode==='error';}).length;
   h+='<div class="sec"><h2>Journal des échanges</h2><span class="muted num" style="font-size:12.5px">'+CRMLOG.length+(errs?' · <b style="color:var(--danger)">'+errs+' erreur'+(errs>1?'s':'')+'</b>':'')+(CRMQ.length?' · '+CRMQ.length+' en attente':'')+'</span></div>';
@@ -3661,17 +3663,18 @@ SCREENS.crm = function(){
 };
 function bindCrm(){
   var C=CFG.crm;
+  bindGrok();
   $('crmOn').onchange=function(){ C.on=this.checked; save(); refreshCrm(); toast(C.on?'Connexion CRM activée':'Tout repasse en démo'); };
   seg('crmEnv',function(v){ C.env=v; save(); refreshCrm(); });
-  $('crmSave').onclick=function(){ var u=$('crmUrl').value.trim(), k=$('crmKey').value.trim(); if(u && !/^https:\/\//.test(u)){ toast('L\'adresse doit commencer par https://'); return; } C.urls[C.env]=u; save(); if(k){ try{ localStorage.setItem(CRM_KEY_STORE+C.env,k); }catch(e){} } refreshCrm(); toast('Réglages CRM enregistrés'); };
-  $('crmTest').onclick=function(){ var out=$('crmTestRes'), u=crmUrl(); if(!u){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez d\'abord l\'URL de l\'API.</p>'; return; } out.innerHTML='<p class="hint">Test en cours…</p>'; var t0=Date.now();
+  if($('crmSave')) $('crmSave').onclick=function(){ var u=$('crmUrl').value.trim(), k=$('crmKey').value.trim(); if(u && !/^https:\/\//.test(u)){ toast('L\'adresse doit commencer par https://'); return; } C.urls[C.env]=u; save(); if(k){ try{ localStorage.setItem(CRM_KEY_STORE+C.env,k); }catch(e){} } refreshCrm(); toast('Réglages CRM enregistrés'); };
+  if($('crmTest')) $('crmTest').onclick=function(){ var out=$('crmTestRes'), u=crmUrl(); if(!u){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez d\'abord l\'URL de l\'API.</p>'; return; } out.innerHTML='<p class="hint">Test en cours…</p>'; var t0=Date.now();
     fetch(u+'/api/v1/health',{headers:{'Authorization':'Bearer '+crmKey()}}).then(function(r){ return r.text().then(function(tx){ out.innerHTML='<p class="hint" style="color:'+(r.ok?'var(--success)':'var(--danger)')+'"><b>'+(r.ok?'Connexion OK':'Réponse '+r.status)+'</b> en '+(Date.now()-t0)+' ms'+(tx?' · '+esc(tx.slice(0,120)):'')+'</p>'; }); })
     .catch(function(e){ out.innerHTML='<p class="hint" style="color:var(--danger)"><b>Pas de connexion.</b> '+(IN_PREVIEW?'L\'aperçu claude.ai bloque les appels externes : testez sur l\'appli installée. ':'Vérifiez l\'adresse, le réseau, et que le CRM autorise l\'appli (CORS). ')+esc(String(e&&e.message||e))+'</p>'; }); };
   each('[data-tst]',function(b){ b.onclick=function(){ var i=C.testers.indexOf(b.dataset.tst); if(i>=0) C.testers.splice(i,1); else C.testers.push(b.dataset.tst); save(); refreshCrm(); }; });
   each('[data-act-crm]',function(el){ el.onchange=function(){ C.actions[el.dataset.actCrm]=el.checked; save(); refreshCrm(); }; });
   each('[data-grp]',function(b){ b.onclick=function(){ var g=CRM_GROUPS[+b.dataset.grp][1], all=g.every(function(a){return C.actions[a[0]];}); g.forEach(function(a){ C.actions[a[0]]=!all; }); save(); refreshCrm(); }; });
   each('[data-log]',function(b){ b.onclick=function(){ var e=CRMLOG[+b.dataset.log], m=CRM_MODE[e.mode];
-    var s=sheet('<div class="row"><h3 class="grow">'+esc(CRM_LABEL[e.code]||e.code)+'</h3><span class="pill '+m[1]+'">'+m[0]+'</span></div><div class="muted num" style="font-size:13px">'+e.t+(e.status?' · réponse '+e.status:'')+(e.ms!=null?' · '+e.ms+' ms':'')+'</div><div class="muted" style="font-size:12.5px;font-weight:700">Envoyé · POST /api/v1/events</div><pre class="crmjson">'+esc(JSON.stringify(e.req,null,2))+'</pre>'+(e.res?'<div class="muted" style="font-size:12.5px;font-weight:700">Réponse du CRM</div><pre class="crmjson">'+esc(e.res)+'</pre>':'')+'<div class="btns">'+(e.mode==='error'?'<button class="btn primary sm" id="logRetry">Renvoyer</button>':'')+'<button class="btn soft sm" id="logCopy">'+ic('copy')+'Copier</button></div>');
+    var s=sheet('<div class="row"><h3 class="grow">'+esc(CRM_LABEL[e.code]||e.code)+'</h3><span class="pill '+m[1]+'">'+m[0]+'</span></div><div class="muted num" style="font-size:13px">'+e.t+(e.status?' · réponse '+e.status:'')+(e.ms!=null?' · '+e.ms+' ms':'')+'</div>'+(e.sent?'<div class="muted" style="font-size:12.5px;font-weight:700">Envoyé à la passerelle Grok bot · outil '+esc(e.sent.tool)+'</div><pre class="crmjson">'+esc('POST '+e.sent.url+'\n\n'+JSON.stringify(e.sent.body,null,2))+'</pre>':'<div class="muted" style="font-size:12.5px;font-weight:700">'+(CFG.crm.mode==='grok'?'Action (traduite pour la passerelle à l\'envoi)':'Envoyé · POST /api/v1/events')+'</div><pre class="crmjson">'+esc(JSON.stringify(e.req,null,2))+'</pre>')+''+(e.res?'<div class="muted" style="font-size:12.5px;font-weight:700">Réponse du CRM</div><pre class="crmjson">'+esc(e.res)+'</pre>':'')+'<div class="btns">'+(e.mode==='error'?'<button class="btn primary sm" id="logRetry">Renvoyer</button>':'')+'<button class="btn soft sm" id="logCopy">'+ic('copy')+'Copier</button></div>');
     var rt=s.querySelector('#logRetry'); if(rt) rt.onclick=function(){ closeSheet(); crmPost(e); };
     s.querySelector('#logCopy').onclick=function(){ var txt=JSON.stringify({requete:e.req, statut:e.status, reponse:e.res},null,2); try{ navigator.clipboard.writeText(txt).then(function(){ toast('Copié'); },function(){ toast('Copie refusée par le navigateur'); }); }catch(er){ toast('Copie impossible ici'); } }; }; });
   $('crmCopy').onclick=function(){ var txt=JSON.stringify(CRMLOG.map(function(e){ return {heure:e.t, action:e.code, mode:e.mode, statut:e.status, duree_ms:e.ms, requete:e.req, reponse:e.res}; }),null,2); try{ navigator.clipboard.writeText(txt).then(function(){ toast('Journal copié : collez-le dans un e-mail à JD Solutions'); },function(){ toast('Copie refusée par le navigateur'); }); }catch(er){ toast('Copie impossible ici'); } };
@@ -3685,6 +3688,99 @@ live=function(k, txt, extra){
   var map={route:'tech.on_the_way', late:'tech.delay', pay:'payment.recorded'};
   if(map[k]) crmSend(map[k], {appointment_id:nextRid(), data:{texte:txt, eta:extra&&extra.eta||null}});
 };
+
+/* =========================================================
+   V19 — Passerelle Grok bot : les actions de l'appli appellent directement les outils déjà programmés
+   ========================================================= */
+var CRM_STATUT={ 'appointment.accepted':'RDV pris par le technicien', 'appointment.confirmed':'RDV pris par le technicien', 'appointment.created':'RDV pris par le technicien', 'appointment.cancelled':'À placer',
+  'tech.on_the_way':'Technicien en route', 'tech.arrived':'Technicien sur place', 'intervention.completed':'Pose terminée', 'client.absent':'À rappeler', 'client.created':'À traiter',
+  'quote.created':'Devis à faire', 'quote.sent':'Devis envoyé', 'quote.signed':'Signé', 'call.logged':'NRP – message laissé' };
+var GROK_DEFAULTS={
+  status:['changer_statut','{"fiche": "{{client_ref}}", "statut": "{{statut_crm}}"}'],
+  note:['ajouter_commentaire','{"fiche": "{{client_ref}}", "texte": "{{texte}}"}'],
+  rdv:['creer_rdv','{"fiche": "{{client_ref}}", "technicien": "{{technicien}}", "date": "{{data.jour}}", "heure": "{{data.start}}", "duree_min": "{{data.duration_min}}"}']
+};
+function grokDefault(code){
+  if(/^(note\.added|message\.sent|review\.requested|tech\.delay|photo\.added|payment\.recorded|board\.saved)$/.test(code)) return GROK_DEFAULTS.note;
+  if(code==='appointment.created') return GROK_DEFAULTS.rdv;
+  return GROK_DEFAULTS.status;
+}
+if(!CFG.crm.mode) CFG.crm.mode='api';
+if(!CFG.crm.grok) CFG.crm.grok={url:'', format:'per_tool', auth:'bearer', header:'X-Api-Key', map:{}};
+function grokKey(){ try{ return localStorage.getItem('ar_grok_key')||''; }catch(e){ return ''; } }
+function grokMap(code){ var m=CFG.crm.grok.map[code]; if(m) return m; var d=grokDefault(code); return {tool:d[0], args:d[1], auto:true}; }
+/* Variables disponibles dans les paramètres : {{client_ref}}, {{statut_crm}}, {{texte}}… */
+function grokContext(ev){
+  var r=ev.appointment_id&&rdv(ev.appointment_id), cid=ev.client_id||(r&&r.cid), c=cid&&client(cid), t=tech(r?r.tech:ME)||tech(ME), d=ev.data||{};
+  var txt=d.texte||d.remarque||(ev.action==='tech.delay'?('Retard signalé : '+(d.texte||'')):'')||(ev.action==='intervention.completed'?('Pose terminée · réserve : '+(d.reserve||'aucune')+' · satisfaction '+(d.satisfaction||0)+'/5'):'')||(CRM_LABEL[ev.action]||ev.action);
+  return { action:ev.action, event_id:ev.event_id, heure:ev.occurred_at, appointment_id:ev.appointment_id||'', rdv_heure:r?r.h:'', client_id:cid||'', client_ref:c?c.ref:'', client_nom:c?c.nom:'', client_tel:c?c.tel:'', technicien:t?t.nom:'', statut_crm:CRM_STATUT[ev.action]||'', texte:txt, data:d };
+}
+function fillTpl(tpl, ctx){
+  return tpl.replace(/\{\{\s*([\w.]+)\s*\}\}/g, function(_, k){ var v=k.split('.').reduce(function(o,p){ return o==null?'':o[p]; }, ctx); if(v==null) v=''; if(typeof v==='object') v=JSON.stringify(v); return String(v).replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n'); });
+}
+function grokBuild(ev){
+  var g=CFG.crm.grok, m=grokMap(ev.action), ctx=grokContext(ev), args;
+  try{ args=JSON.parse(fillTpl(m.args||'{}', ctx)); }catch(e){ return {error:'Paramètres de l\'outil « '+m.tool+' » invalides (JSON) : '+e.message}; }
+  var base=(g.url||'').replace(/\/+$/,''), url, body;
+  if(g.format==='per_tool'){ url=base+'/'+encodeURIComponent(m.tool); body=args; }
+  else if(g.format==='single'){ url=base; body={tool:m.tool, arguments:args, event_id:ev.event_id}; }
+  else { url=base; body={action:ev.action, tool:m.tool, arguments:args, event:ev}; }
+  var headers={'Content-Type':'application/json','Idempotency-Key':ev.event_id};
+  if(g.auth==='bearer' && grokKey()) headers['Authorization']='Bearer '+grokKey();
+  if(g.auth==='header' && grokKey()) headers[g.header||'X-Api-Key']=grokKey();
+  return {url:url, body:body, headers:headers, tool:m.tool};
+}
+/* Envoi : API du CRM ou passerelle Grok bot selon le mode choisi */
+var _crmUrl=crmUrl;
+crmUrl=function(){ return CFG.crm.mode==='grok' ? (CFG.crm.grok.url||'').replace(/\/+$/,'') : _crmUrl(); };
+var _crmPost=crmPost;
+crmPost=function(entry){
+  if(CFG.crm.mode!=='grok') return _crmPost(entry);
+  var b=grokBuild(entry.req); entry.via='grok';
+  if(b.error){ entry.mode='error'; entry.res=b.error; refreshCrm(); return; }
+  entry.sent={url:b.url, body:b.body, tool:b.tool}; entry.mode='sending'; refreshCrm();
+  var t0=Date.now(), ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ if(ctl) ctl.abort(); },20000);
+  fetch(b.url,{method:'POST', headers:b.headers, body:JSON.stringify(b.body), signal:ctl?ctl.signal:undefined})
+    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if(!r.ok) toast('Passerelle : erreur '+r.status+' sur « '+CRM_LABEL[entry.code]+' »'); }); })
+    .catch(function(e){ clearTimeout(to); entry.ms=Date.now()-t0; entry.mode='error'; entry.res=(IN_PREVIEW?'Envoi bloqué par l\'aperçu claude.ai : testez sur l\'appli installée. ':'')+(e&&e.name==='AbortError'?'Pas de réponse en 20 s':String(e&&e.message||e)+' (adresse, réseau, ou autorisation CORS de la passerelle)'); refreshCrm(); });
+};
+function grokSheet(code){
+  var m=grokMap(code), g=CFG.crm.grok;
+  var sample={event_id:'exemple', action:code, occurred_at:isoNow(), technician_id:ME, appointment_id:'r1', client_id:'c1', data:{texte:'Exemple de texte', jour:1, start:'10:00', duration_min:60, reserve:'Aucune réserve', satisfaction:5}};
+  var s=sheet('<div class="row" style="align-items:flex-start"><div class="grow"><h3>'+esc(CRM_LABEL[code])+'</h3><code class="muted" style="font-size:12px">'+code+'</code></div><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div>'+
+    '<label class="field"><span>Outil de Grok bot à appeler</span><input id="gkTool" value="'+esc(m.tool)+'" placeholder="ex. changer_statut"></label>'+
+    '<label class="field"><span>Paramètres (JSON, avec variables)</span><textarea id="gkArgs" rows="5" class="tin" style="min-height:110px;padding:10px 12px;font:13px/1.45 ui-monospace,Menlo,monospace">'+esc(m.args)+'</textarea></label>'+
+    '<p class="hint">Variables : {{client_ref}} · {{client_nom}} · {{client_tel}} · {{statut_crm}} · {{texte}} · {{technicien}} · {{rdv_heure}} · {{heure}} · {{appointment_id}} · {{data.…}}. Statut prévu pour cette action : <b>'+esc(CRM_STATUT[code]||'aucun changement')+'</b>.</p>'+
+    '<div class="muted" style="font-size:12.5px;font-weight:700">Aperçu de l\'appel (exemple : Mme Garnier)</div><pre class="crmjson" id="gkPrev"></pre>'+
+    '<div class="btns"><button class="btn soft sm" id="gkReset">Valeurs par défaut</button><button class="btn primary sm" id="gkOk">'+ic('check')+'Enregistrer</button></div>');
+  s.querySelector('[data-close]').onclick=closeSheet;
+  function prev(){ var keep=CFG.crm.grok.map[code]; CFG.crm.grok.map[code]={tool:s.querySelector('#gkTool').value.trim()||'outil', args:s.querySelector('#gkArgs').value};
+    var b=grokBuild(sample); if(keep) CFG.crm.grok.map[code]=keep; else delete CFG.crm.grok.map[code];
+    s.querySelector('#gkPrev').textContent = b.error ? b.error : 'POST '+(b.url||'(adresse de la passerelle à saisir)')+'\n\n'+JSON.stringify(b.body,null,2); }
+  s.querySelector('#gkTool').oninput=prev; s.querySelector('#gkArgs').oninput=prev; prev();
+  s.querySelector('#gkReset').onclick=function(){ var d=grokDefault(code); s.querySelector('#gkTool').value=d[0]; s.querySelector('#gkArgs').value=d[1]; prev(); };
+  s.querySelector('#gkOk').onclick=function(){ var tool=s.querySelector('#gkTool').value.trim(), args=s.querySelector('#gkArgs').value; if(!tool){ toast('Indiquez le nom de l\'outil'); return; } try{ JSON.parse(fillTpl(args, grokContext(sample))); }catch(e){ toast('Paramètres invalides : '+e.message); return; } CFG.crm.grok.map[code]={tool:tool, args:args}; save(); closeSheet(); refreshCrm(); toast('Outil associé : '+tool); };
+}
+function grokForm(){
+  var g=CFG.crm.grok;
+  return '<div class="card form"><label class="field"><span>Adresse de la passerelle Grok bot</span><input id="gkUrl" inputmode="url" placeholder="https://… (webhook ou adresse des outils)" value="'+esc(g.url||'')+'"></label>'+
+    fld('Format d\'appel','<div class="opts">'+[['per_tool','Une adresse par outil'],['single','Adresse unique (outil + paramètres)'],['webhook','Webhook n8n, Make, Zapier']].map(function(x){return '<button class="opt sm'+(g.format===x[0]?' on':'')+'" data-gf="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>')+
+    fld('Authentification','<div class="opts">'+[['bearer','Jeton (Bearer)'],['header','Clé dans un en-tête'],['none','Aucune']].map(function(x){return '<button class="opt sm'+(g.auth===x[0]?' on':'')+'" data-ga="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>')+
+    (g.auth==='header'?'<label class="field"><span>Nom de l\'en-tête</span><input id="gkHdr" value="'+esc(g.header||'X-Api-Key')+'"></label>':'')+
+    (g.auth!=='none'?'<label class="field"><span>Clé de la passerelle</span><input id="gkKey" type="password" autocomplete="off" placeholder="'+(grokKey()?'•••••••• (enregistrée)':'Fournie par celui qui gère Grok bot')+'"></label>':'')+
+    '<div class="btns"><button class="btn primary sm" id="gkSave">Enregistrer</button><button class="btn line sm" id="gkTest">'+ic('bolt')+'Tester la passerelle</button></div><div id="gkTestRes"></div></div>';
+}
+function bindGrok(){
+  var g=CFG.crm.grok;
+  seg('crmMode',function(v){ CFG.crm.mode=v; save(); refreshCrm(); });
+  each('[data-gf]',function(b){ b.onclick=function(){ g.format=b.dataset.gf; save(); refreshCrm(); }; });
+  each('[data-ga]',function(b){ b.onclick=function(){ g.auth=b.dataset.ga; save(); refreshCrm(); }; });
+  each('[data-gk]',function(b){ b.onclick=function(){ grokSheet(b.dataset.gk); }; });
+  var sv=$('gkSave'); if(sv) sv.onclick=function(){ var u=$('gkUrl').value.trim(); if(u && !/^https:\/\//.test(u)){ toast('L\'adresse doit commencer par https://'); return; } g.url=u; var h=$('gkHdr'); if(h) g.header=h.value.trim()||'X-Api-Key'; var k=$('gkKey'); if(k && k.value.trim()){ try{ localStorage.setItem('ar_grok_key',k.value.trim()); }catch(e){} } save(); refreshCrm(); toast('Passerelle enregistrée'); };
+  var ts=$('gkTest'); if(ts) ts.onclick=function(){ var out=$('gkTestRes'), u=(g.url||'').replace(/\/+$/,''); if(!u){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez d\'abord l\'adresse.</p>'; return; } out.innerHTML='<p class="hint">Test en cours…</p>'; var t0=Date.now(), hd={}; if(g.auth==='bearer'&&grokKey()) hd.Authorization='Bearer '+grokKey(); if(g.auth==='header'&&grokKey()) hd[g.header||'X-Api-Key']=grokKey();
+    fetch(u,{method:'GET', headers:hd}).then(function(r){ out.innerHTML='<p class="hint" style="color:var(--success)"><b>Passerelle joignable</b> · réponse '+r.status+' en '+(Date.now()-t0)+' ms</p>'; })
+    .catch(function(e){ out.innerHTML='<p class="hint" style="color:var(--danger)"><b>Passerelle injoignable.</b> '+(IN_PREVIEW?'L\'aperçu claude.ai bloque les appels externes : testez sur l\'appli installée. ':'Vérifiez l\'adresse, le réseau, et que la passerelle autorise l\'appli (CORS). ')+esc(String(e&&e.message||e))+'</p>'; }); };
+}
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
