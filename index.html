@@ -918,6 +918,8 @@ html,body{overscroll-behavior:none}
 .pf-warn svg{width:14px;height:14px}
 .pf-foot .btn{flex:none;padding:0 20px}
 .pf-foot .btn:disabled{opacity:.4}
+/* ---------- V18 : connexion CRM ---------- */
+.crmjson{margin:0;max-height:220px;overflow:auto;background:var(--fill-2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink-2);white-space:pre-wrap;word-break:break-word}
 </style>
 
 </head>
@@ -1116,7 +1118,8 @@ var DEFAULT_CFG = {
 };
 var KEY='ar_terrain_proto_v3';
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
-var CFG = (function(){ try{ var s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.tabs&&s.quick){ var d=clone(DEFAULT_CFG); Object.keys(d).forEach(function(k){ if(s[k]===undefined) s[k]=d[k]; }); ['techAccess','notif','avis'].forEach(function(k){ Object.keys(d[k]).forEach(function(x){ if(s[k][x]===undefined) s[k][x]=d[k][x]; }); }); return s; } }catch(e){} return clone(DEFAULT_CFG); })();
+var CFG = (function(){ try{ var s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.tabs&&s.quick){ var d=clone(DEFAULT_CFG); Object.keys(d).forEach(function(k){ if(s[k]===undefined) s[k]=d[k]; }); if(s.crm){ var dc={on:false, env:'test', urls:{test:'',prod:''}, actions:{}, testers:['t1']}; Object.keys(dc).forEach(function(x){ if(s.crm[x]===undefined) s.crm[x]=dc[x]; }); }
+    ['techAccess','notif','avis'].forEach(function(k){ Object.keys(d[k]).forEach(function(x){ if(s[k][x]===undefined) s[k][x]=d[k][x]; }); }); return s; } }catch(e){} return clone(DEFAULT_CFG); })();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(CFG)); }catch(e){} applyLook(); }
 
 var S = { role:'tech', online:true, stack:[], screen:'accueil', arg:null, filtre:'all', q:'' };
@@ -1245,6 +1248,7 @@ function adminHome(){
      '<button class="rb w" data-go="messages"><span class="c">'+ic('wa')+'</span>WhatsApp</button>'+
      '<button class="rb o" data-go="stats"><span class="c">'+ic('star')+'</span>Avis Google</button>'+
      '<button class="rb n" data-go="notifs"><span class="c">'+ic('bell')+'</span>Annonce équipe</button>'+
+     '<button class="rb y" data-go="crm"><span class="c">'+ic('bolt')+'</span>Connexion CRM</button>'+
      '</div></div>';
   return h+'</div>';
 }
@@ -1329,6 +1333,7 @@ SCREENS.reglages = function(){
   h+='<div class="sec"><h2>Accès des techniciens</h2></div><div class="card cfg">'+[['planning','Planning'],['clients','Fiches clients'],['tousClients','Voir tous les clients (sinon seulement les siens)'],['devis','Créer et envoyer des devis'],['montants','Voir le montant des devis'],['prix','Voir les prix unitaires'],['appels','Journal d\'appels'],['messages','Messages et WhatsApp'],['etiquetage','Étiquetage des tableaux'],['ca','Chiffre d\'affaires']].map(function(x){
      var on=CFG.techAccess[x[0]]!==false; return '<div class="cfg-it'+(on?'':' off')+'"><b class="grow">'+esc(x[1])+'</b><label class="tog"><input type="checkbox" data-acc="'+x[0]+'"'+(on?' checked':'')+' aria-label="'+esc(x[1])+'"><span></span></label></div>'; }).join('')+'</div>';
 
+  h+='<div class="sec"><h2>Connexion au CRM</h2></div><button class="card li" data-go="crm" style="text-align:left;width:100%"><span class="hi"><span class="ic" style="background:'+(CFG.crm.on?'var(--success-bg);color:var(--success)':'var(--fill);color:var(--muted)')+'">'+ic('bolt')+'</span></span><div class="grow"><b style="display:block">Connexion CRM crm26</b><span class="muted" style="font-size:12.5px">'+(CFG.crm.on?'Activée · actions en réel':'Coupée · tout est en démo')+'</span></div>'+ic('chev').replace('<svg','<svg class="chev" style="width:18px;height:18px;color:var(--muted)"')+'</button>';
   h+='<div class="sec"><h2>Simplicité</h2></div><div class="card cfg"><div class="cfg-it"><span class="ico">'+ic('spark')+'</span><div class="grow"><b style="display:block">Mode simple pour les techniciens</b><span class="muted" style="font-size:12.5px">Accueil épuré, un seul bouton guide la journée (recommandé)</span></div><label class="tog"><input type="checkbox" id="admSimple"'+(CFG.simple!==false?' checked':'')+'><span></span></label></div><div class="cfg-it"><span class="ico">'+ic('bell')+'</span><div class="grow"><b style="display:block">Visite guidée au premier lancement</b><span class="muted" style="font-size:12.5px">Pour les nouveaux agents terrain</span></div><label class="tog"><input type="checkbox" id="admTour"'+(CFG.tour!==false?' checked':'')+'><span></span></label></div></div>';
   h+='<div class="sec"><h2>Motivation</h2></div><div class="card cfg"><div class="cfg-it"><span class="ico" style="background:var(--accent);color:#1D1D1F">'+ic('trophy')+'</span><div class="grow"><b style="display:block">Trophées et badges cachés</b><span class="muted" style="font-size:12.5px">5 touches sur le logo · badge débloqué à 100, 250, 500 interventions</span></div><label class="tog"><input type="checkbox" id="trOn"'+(CFG.trophees!==false?' checked':'')+'><span></span></label></div></div>';
   h+='<div class="sec"><h2>Autorisations des téléphones</h2></div><div class="card cfg">'+[['Localisation','Karim B.','Toujours','p-ok'],['Localisation','Julien M.','App active','p-warn'],['Notifications','Sofia L.','Refusé','p-bad']].map(function(x){return '<div class="cfg-it"><div class="grow"><b style="display:block;font-size:14px">'+x[1]+'</b><span class="muted" style="font-size:12.5px">'+x[0]+'</span></div><span class="pill '+x[3]+'">'+x[2]+'</span></div>';}).join('')+'</div><p class="hint">Apple et Google interdisent d\'obliger un utilisateur à accepter. Vous êtes prévenu ici quand un technicien refuse, et l\'appli lui rappelle pourquoi c\'est utile.</p>';
@@ -1474,7 +1479,7 @@ SCREENS.appels = function(){
 function bindAppels(){
   each('[data-af]',function(b){ b.onclick=function(){ S.af=b.dataset.af; render(); }; });
   var k=$('kmiss'); if(k) k.onclick=function(){ S.af='miss'; render(); };
-  each('[data-cb]',function(b){ b.onclick=function(){ APPELS[+b.dataset.cb].cb=true; MODULES.appels.badge=APPELS.filter(function(a){return a.st==='miss'&&!a.cb;}).length||0; render(); callNum(APPELS[+b.dataset.cb].num); }; });
+  each('[data-cb]',function(b){ b.onclick=function(){ APPELS[+b.dataset.cb].cb=true; MODULES.appels.badge=APPELS.filter(function(a){return a.st==='miss'&&!a.cb;}).length||0; render(); crmSend('call.logged',{data:{numero:APPELS[+b.dataset.cb].num, resultat:'rappel lancé'}}); callNum(APPELS[+b.dataset.cb].num); }; });
   each('[data-csms]',function(b){ b.onclick=function(){ toast('SMS « Suite à votre appel » envoyé (démo)'); }; });
   each('[data-cnew]',function(b){ b.onclick=function(){ toast('Fiche prospect créée avec le numéro pré-rempli (démo)'); }; });
 }
@@ -1500,7 +1505,7 @@ SCREENS.chat = function(i){
 };
 function bindChat(){
   var cv=CONVS[+S.arg]||CONVS[0];
-  function send(t){ if(!t) return; cv.msgs.push(['me',t,'À l\'instant',netOk()?1:0]); if(!netOk()){ QUEUE.push('Message WhatsApp'); netBar(); } render(); V.scrollTop=V.scrollHeight; }
+  function send(t){ if(!t) return; cv.msgs.push(['me',t,'À l\'instant',netOk()?1:0]); crmSend('message.sent',{client_id:cv.cid, data:{canal:'whatsapp', texte:t}}); if(!netOk()){ QUEUE.push('Message WhatsApp'); netBar(); } render(); V.scrollTop=V.scrollHeight; }
   each('[data-qr]',function(b){ b.onclick=function(){ send(b.dataset.qr); }; });
   $('ms').onclick=function(){ send($('mi').value.trim()); };
   $('mi').onkeydown=function(e){ if(e.key==='Enter') send(this.value.trim()); };
@@ -1709,13 +1714,13 @@ function rdvSheet(id){
   if(q('#sRoute')) q('#sRoute').onclick=function(){ r.st='enroute'; live('route','est en route vers '+c.nom,{eta:r.h}); closeSheet(); toast('« Je suis en route » envoyé à '+c.nom+' (démo)'); render(); };
   if(q('#sNav')) q('#sNav').onclick=function(){ navSheet(c); };
   q('#sFiche').onclick=function(){ closeSheet(); go('client', c.id); };
-  if(q('#sDel')) q('#sDel').onclick=function(){ var ix=RDVS.indexOf(r); RDVS.splice(ix,1); closeSheet(); rerender(); toastUndo('RDV annulé, le technicien est prévenu', function(){ RDVS.splice(ix,0,r); rerender(); }); };
+  if(q('#sDel')) q('#sDel').onclick=function(){ var ix=RDVS.indexOf(r); RDVS.splice(ix,1); crmSend('appointment.cancelled',{appointment_id:r.id, data:{motif:'Annulé par l\'admin'}}); closeSheet(); rerender(); toastUndo('RDV annulé, le technicien est prévenu', function(){ RDVS.splice(ix,0,r); rerender(); }); };
   [].forEach.call(sh.querySelectorAll('[data-rap]'),function(b){ b.onclick=function(){ r.rap=+b.dataset.rap; [].forEach.call(sh.querySelectorAll('[data-rap]'),function(x){x.classList.toggle('on',x===b);});
     if(r.rap){ toast('Rappel programmé : '+b.textContent.toLowerCase()); setTimeout(function(){ push('rappels','Rappel · RDV à '+r.h, c.nom+' · '+c.adr+', '+c.ville.replace(/^\d+\s/,''), null, {rid:r.id, ic:'mail'}); }, 3500); } else toast('Rappel supprimé'); }; });
-  [].forEach.call(sh.querySelectorAll('[data-tt]'),function(b){ b.onclick=function(){ r.tech=b.dataset.tt; closeSheet(); render(); toast('RDV attribué à '+tech(r.tech).nom+' : notification envoyée'); }; });
+  [].forEach.call(sh.querySelectorAll('[data-tt]'),function(b){ b.onclick=function(){ r.tech=b.dataset.tt; crmSend('appointment.updated',{appointment_id:r.id, data:{technician_id:r.tech}}); closeSheet(); render(); toast('RDV attribué à '+tech(r.tech).nom+' : notification envoyée'); }; });
 }
 function validRdv(id){
-  var r=rdv(id), c=client(r.cid); r.st='confirme'; live('valid','a validé le RDV de '+c.nom+' ('+r.h+')'); closeSheet(); rerender();
+  var r=rdv(id), c=client(r.cid); crmSend('appointment.confirmed',{appointment_id:id}); r.st='confirme'; live('valid','a validé le RDV de '+c.nom+' ('+r.h+')'); closeSheet(); rerender();
   done('RDV validé : le bureau et '+c.nom.split(' ').slice(0,2).join(' ')+' sont prévenus (démo)', 'Validation du RDV');
 }
 function planForm(){
@@ -1803,7 +1808,7 @@ function sendFlow(cid, fromDevis){
     [].forEach.call(s.querySelectorAll('[data-cn]'),function(b){ b.onclick=function(){ canal=b.dataset.cn; mi=0; edited=null; fill(); }; });
     [].forEach.call(s.querySelectorAll('[data-mi]'),function(b){ b.onclick=function(){ mi=+b.dataset.mi; edited=null; fill(); }; });
     s.querySelector('#stx').oninput=function(){ edited=this.value; };
-    s.querySelector('#go').onclick=function(){ c.hist.unshift([canal==='wa'?'wa':canal==='mail'?'mail':'sms', sel.length+' devis envoyé'+(sel.length>1?'s':'')+' par '+CAN[canal][0], 'À l\'instant']); closeSheet(); if(S.screen==='client') rerender(); if(!netOk()){ done('', 'Envoi au client'); return; } toastUndo('Envoyé par '+CAN[canal][0]+' (démo)', function(){ c.hist.shift(); if(S.screen==='client') rerender(); }); };
+    s.querySelector('#go').onclick=function(){ (function(){ var picked=sel.map(function(i){return devs[i];}); if(fromDevis && picked.some(function(x){return x.ref==='Nouveau';})) crmSend('quote.created',{client_id:c.id, data:{titre:S.dv.titre, lignes:S.dv.lignes.length, total_ttc:totals(S.dv).ttc}}); crmSend('quote.sent',{client_id:c.id, data:{devis:picked.map(function(x){return x.ref;}), canal:canal, destinataire:CAN[canal][3], texte:edited!=null?edited:txt()}}); })(); c.hist.unshift([canal==='wa'?'wa':canal==='mail'?'mail':'sms', sel.length+' devis envoyé'+(sel.length>1?'s':'')+' par '+CAN[canal][0], 'À l\'instant']); closeSheet(); if(S.screen==='client') rerender(); if(!netOk()){ done('', 'Envoi au client'); return; } toastUndo('Envoyé par '+CAN[canal][0]+' (démo)', function(){ c.hist.shift(); if(S.screen==='client') rerender(); }); };
   }
   fill();
 }
@@ -1836,9 +1841,9 @@ function bindClient(){
   each('[data-valid]',function(b){ b.onclick=function(){ validRdv(b.dataset.valid); }; });
   each('[data-rdv]',function(b){ b.onclick=function(){ rdvSheet(b.dataset.rdv); }; });
   each('[data-qc]',function(b){ b.onclick=function(){ var t=$('cmt'); t.value=(t.value?t.value+' ':'')+b.dataset.qc+'.'; t.focus(); }; });
-  each('[data-vnote]',function(b){ b.onclick=function(){ recordVoice(function(url,dur){ c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:'', audio:url, dur:dur, w:'À l\'instant'}); rr(); done('Note vocale jointe à la fiche, le bureau peut l\'écouter','Note vocale'); }); }; });
-  $('cmtOk').onclick=function(){ var v=$('cmt').value.trim(); if(!v){ toast('Écrivez un commentaire'); return; } c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:v, w:'À l\'instant'}); rr(); done('Commentaire publié, le bureau est prévenu', 'Commentaire'); };
-  $('addPh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Photo du '+new Date().toLocaleDateString('fr-FR'), src:rd.result, who:'Vous', w:'À l\'instant'}); rr(); done('Photo ajoutée à la fiche', 'Photo'); }; rd.readAsDataURL(f); };
+  each('[data-vnote]',function(b){ b.onclick=function(){ recordVoice(function(url,dur){ c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:'', audio:url, dur:dur, w:'À l\'instant'}); crmSend('note.added',{client_id:c.id, data:{audio:'file:note-vocale', duree_s:Math.round(dur)}}); rr(); done('Note vocale jointe à la fiche, le bureau peut l\'écouter','Note vocale'); }); }; });
+  $('cmtOk').onclick=function(){ var v=$('cmt').value.trim(); if(!v){ toast('Écrivez un commentaire'); return; } c.notes.unshift({who:S.role==='admin'?'Ahmed':tech(ME).nom.split(' ')[0]+' '+tech(ME).nom.split(' ')[1][0]+'.', role:S.role==='admin'?'Admin':'Poseur', txt:v, w:'À l\'instant'}); rr(); crmSend('note.added',{client_id:c.id, data:{texte:v}}); done('Commentaire publié, le bureau est prévenu', 'Commentaire'); };
+  $('addPh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Photo du '+new Date().toLocaleDateString('fr-FR'), src:rd.result, who:'Vous', w:'À l\'instant'}); crmSend('photo.added',{client_id:c.id, data:{fichier:'file:photo', legende:c.photos[0].cap}}); rr(); done('Photo ajoutée à la fiche', 'Photo'); }; rd.readAsDataURL(f); };
   each('[data-ph]',function(b){ b.onclick=function(){ var i=+b.dataset.ph, p=c.photos[i];
     var s=sheet('<div class="ph big" style="'+(p.src?'background-image:url('+p.src+')':'background:linear-gradient(135deg,'+p.col+','+p.col+'cc)')+'">'+(p.src?'':ic('cam'))+'</div><input id="phCap" value="'+esc(p.cap)+'" aria-label="Légende" style="min-height:50px;border:1.5px solid var(--line-strong);border-radius:999px;padding:0 18px;background:var(--surface);font-size:16px"><div class="muted" style="font-size:13px">'+esc(p.who)+' · '+esc(p.w)+(p.src?'':' · photo d\'exemple')+'</div><div class="btns"><button class="btn danger sm" id="phDel">Supprimer</button><button class="btn primary sm" id="phOk">Enregistrer</button></div>');
     s.querySelector('#phOk').onclick=function(){ p.cap=s.querySelector('#phCap').value||p.cap; closeSheet(); rr(); };
@@ -1866,7 +1871,7 @@ function bindNotifs(){
 /* ---------- Barre du bas : pastille animée + glisser ---------- */
 var tabKey='', lastActive=null;
 function tabOrder(){ return tabsFor().concat(['plus']); }
-function activeTab(){ var t=tabsFor(), cur=S.screen; var parent={client:'clients', techdetail:'equipe', reglages:'plus', chat:'messages', notifs:'plus', profil:'plus', tableau:'etiquetage', apercu:'etiquetage', chantier:'planning', fin:'planning', stats:'plus', perms:'plus', trophees:'plus', suivi:'accueil'}[cur]||cur; return t.indexOf(parent)>=0?parent:'plus'; }
+function activeTab(){ var t=tabsFor(), cur=S.screen; var parent={client:'clients', techdetail:'equipe', reglages:'plus', chat:'messages', notifs:'plus', profil:'plus', tableau:'etiquetage', apercu:'etiquetage', chantier:'planning', fin:'planning', stats:'plus', perms:'plus', trophees:'plus', suivi:'accueil', crm:'plus'}[cur]||cur; return t.indexOf(parent)>=0?parent:'plus'; }
 function renderTabs(){
   var nav=$('tabs'), t=tabsFor(), act=activeTab();
   var key=S.role+'|'+t.join(',')+'|'+t.map(function(m){return MODULES[m].badge||0;}).join(',');
@@ -1944,7 +1949,8 @@ function used0(r){ return r.devices.reduce(function(a,d){ return a+(Number(d.w)|
 function counts(p){ var n=0,diff=0; p.rows.forEach(function(r){ r.devices.forEach(function(d){ if(d.type==='vide') return; n++; if(d.type==='diff'||d.type==='dd') diff++; }); }); return {rows:p.rows.length,n:n,diff:diff}; }
 function eic(name){ return name ? EICONS.svg(name) : ''; }
 function typeTxt(d){ var t=DATA.TYPES[d.type]||DATA.TYPES.autre; return (d.type==='diff'||d.type==='dd') ? t.court+' '+(d.sub||'A') : t.court; }
-function touch(p){ p.updatedAt=Date.now(); tSave(); }
+var boardTm=null;
+function touch(p){ p.updatedAt=Date.now(); tSave(); clearTimeout(boardTm); boardTm=setTimeout(function(){ crmSend('board.saved',{client_id:p.id, data:{coffret:p.coffret, rangees:p.rows.length, appareils:counts(p).n}}); },1500); }
 
 /* Liste des chantiers */
 SCREENS.etiquetage = function(){
@@ -2186,7 +2192,7 @@ function interventionPopup(id){
   $('ipLater').onclick=function(){ closeSheet(); toast('Intervention à confirmer : elle reste dans votre planning'); };
 }
 function acceptIntervention(id){
-  var r=rdv(id); r.st='confirme'; live('accept','a accepté l\'intervention chez '+client(r.cid).nom); MODULES.planning.badge=Math.max(0,(MODULES.planning.badge||1)-1)||0;
+  var r=rdv(id); crmSend('appointment.accepted',{appointment_id:id}); r.st='confirme'; live('accept','a accepté l\'intervention chez '+client(r.cid).nom); MODULES.planning.badge=Math.max(0,(MODULES.planning.badge||1)-1)||0;
   NOTIFS.forEach(function(n){ if(n.assign===id) n.lu=true; }); bellDot(); renderTabs();
   S.pday=r.d; if(S.screen==='planning'||S.screen==='accueil'||S.screen==='client') rerender();
   done('Intervention acceptée : ajoutée au planning, le bureau est prévenu', 'Acceptation d\'intervention');
@@ -2283,7 +2289,7 @@ function retardSheet(){
 
 /* ---------- 1. Mode chantier ---------- */
 function arrive(rid){
-  var r=rdv(rid); r.st='surplace'; live('site','est arrivé chez '+client(r.cid).nom); S.site={rid:rid, t0:Date.now()-((S.siteDemoOffset||0))};
+  var r=rdv(rid); crmSend('tech.arrived',{appointment_id:rid, data:{position:null}}); r.st='surplace'; live('site','est arrivé chez '+client(r.cid).nom); S.site={rid:rid, t0:Date.now()-((S.siteDemoOffset||0))};
   closeSheet(); done('Arrivée enregistrée à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' : le bureau est prévenu', 'Arrivée sur chantier'); go('chantier', rid);
 }
 function elapsed(){ if(!S.site) return '00:00'; var s=Math.floor((Date.now()-S.site.t0)/1000); return String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Math.floor(s/60)%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
@@ -2310,7 +2316,7 @@ function tile(icn,t,sub,attr,cls){ return '<button class="tile'+(cls?' '+cls:'')
 function bindChantier(){
   var r=rdv(S.arg||(S.site&&S.site.rid)), c=client(r.cid);
   each('[data-sp]',function(b){ b.onclick=function(){ $('sitePh').click(); }; });
-  $('sitePh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Sur chantier', src:rd.result, who:'Vous', w:'À l\'instant'}); rerender(); done('Photo ajoutée au chantier','Photo'); }; rd.readAsDataURL(f); };
+  $('sitePh').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ c.photos.unshift({cap:'Sur chantier', src:rd.result, who:'Vous', w:'À l\'instant'}); crmSend('photo.added',{client_id:c.id, data:{fichier:'file:photo', legende:'Sur chantier'}}); rerender(); done('Photo ajoutée au chantier','Photo'); }; rd.readAsDataURL(f); };
   each('[data-st]',function(b){ b.onclick=function(){ go('tableau', c.id); }; });
   each('[data-sd]',function(b){ b.onclick=function(){ S.dv=newDraft(); S.dv.client=c.id; go('devis'); }; });
   each('[data-scall]',function(b){ b.onclick=function(){ callNum(c.tel, c.nom); }; });
@@ -2318,8 +2324,8 @@ function bindChantier(){
   each('[data-sc]',function(b){ b.onclick=function(){ var s=sheet('<h3>Commentaire pour le bureau</h3><div class="opts">'+['Accès difficile','Matériel manquant','Prévoir 2e passage','Client absent'].map(function(x){return '<button class="opt sm" data-q="'+x+'">'+x+'</button>';}).join('')+'</div><div class="row" style="align-items:flex-end"><textarea id="siteCmt" rows="4" placeholder="Écrivez ou dictez…" style="flex:1;min-width:0;border:1.5px solid var(--line-strong);border-radius:20px;padding:12px;background:var(--surface);font-size:15px;resize:none"></textarea>'+micBtn('siteCmt')+voiceBtn('siteCmt')+'</div><button class="btn primary block" id="scOk">Publier</button>');
     [].forEach.call(s.querySelectorAll('[data-q]'),function(x){ x.onclick=function(){ var t=s.querySelector('#siteCmt'); t.value=(t.value?t.value+' ':'')+x.dataset.q+'.'; }; });
     [].forEach.call(s.querySelectorAll('[data-mic]'),function(x){ x.onclick=function(){ dictate('siteCmt'); }; });
-    [].forEach.call(s.querySelectorAll('[data-vnote]'),function(x){ x.onclick=function(){ recordVoice(function(url,dur){ c.notes.unshift({who:'Karim B.', role:'Poseur', txt:'', audio:url, dur:dur, w:'À l\'instant'}); closeSheet(); rerender(); done('Note vocale jointe au chantier','Note vocale'); }); }; });
-    s.querySelector('#scOk').onclick=function(){ var v=s.querySelector('#siteCmt').value.trim(); if(!v){ toast('Écrivez ou dictez un commentaire'); return; } c.notes.unshift({who:'Karim B.', role:'Poseur', txt:v, w:'À l\'instant'}); closeSheet(); rerender(); done('Commentaire publié','Commentaire'); }; }; });
+    [].forEach.call(s.querySelectorAll('[data-vnote]'),function(x){ x.onclick=function(){ recordVoice(function(url,dur){ c.notes.unshift({who:'Karim B.', role:'Poseur', txt:'', audio:url, dur:dur, w:'À l\'instant'}); crmSend('note.added',{client_id:c.id, data:{audio:'file:note-vocale', duree_s:Math.round(dur)}}); closeSheet(); rerender(); done('Note vocale jointe au chantier','Note vocale'); }); }; });
+    s.querySelector('#scOk').onclick=function(){ var v=s.querySelector('#siteCmt').value.trim(); if(!v){ toast('Écrivez ou dictez un commentaire'); return; } c.notes.unshift({who:'Karim B.', role:'Poseur', txt:v, w:'À l\'instant'}); crmSend('note.added',{client_id:c.id, data:{texte:v}}); closeSheet(); rerender(); done('Commentaire publié','Commentaire'); }; }; });
   $('goFin').onclick=function(){ S.fin={rid:r.id, step:1, travaux:{}, reserve:'Aucune réserve', note:'', sig:null, nom:c.nom, stars:0, ok:false, pay:null, avis:CFG.avis.on, rapport:true}; go('fin', r.id); };
 }
 
@@ -2373,7 +2379,7 @@ function bindFin(){
   var fr=$('fRap'); if(fr) fr.onchange=function(){ F.rapport=this.checked; };
   var fa=$('fAvis'); if(fa) fa.onchange=function(){ F.avis=this.checked; rr(); };
   var fe=$('fEnd'); if(fe) fe.onclick=function(){
-    r.st='termine'; S.site=null; live('done','a terminé chez '+c.nom+' · rapport signé'+(F.pay&&F.pay.amount?' · payé':'')); var avis=F.avis, nm=c.nom; c.hist.unshift(['ok','Intervention clôturée, rapport signé'+(F.rapport?' envoyé':''),'À l\'instant']); if(avis) c.hist.unshift(['sms','Demande d\'avis Google programmée','À l\'instant']);
+    crmSend('intervention.completed',{appointment_id:r.id, data:{travaux:Object.keys(F.travaux).filter(function(k){return F.travaux[k];}).length, reserve:F.reserve, remarque:F.note, satisfaction:F.stars, signataire:F.nom, signature:F.sig?'file:signature.png':null, photos:c.photos.filter(function(p){return p.avant||p.apres;}).length, duree_sur_place:elapsed(), paiement:F.pay}}); if(F.avis) crmSend('review.requested',{client_id:c.id, data:{delai:CFG.avis.delai}}); r.st='termine'; S.site=null; live('done','a terminé chez '+c.nom+' · rapport signé'+(F.pay&&F.pay.amount?' · payé':'')); var avis=F.avis, nm=c.nom; c.hist.unshift(['ok','Intervention clôturée, rapport signé'+(F.rapport?' envoyé':''),'À l\'instant']); if(avis) c.hist.unshift(['sms','Demande d\'avis Google programmée','À l\'instant']);
     S.fin=null; S.stack=[]; S.screen='accueil'; S.arg=null; render();
     done('Intervention clôturée'+(F.rapport?' : rapport envoyé au client':'')+', le bureau est prévenu','Clôture d\'intervention');
     TROPHY.count++; var nb=BADGES.filter(function(b){return !b.sp&&b.n===TROPHY.count;})[0]; if(nb && CFG.trophees!==false) setTimeout(function(){ unlockBadge(nb); },1100);
@@ -2964,7 +2970,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.15 · 9 nov. 2026';
+var APP_VERSION='1.0.16 · 10 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3269,7 +3275,7 @@ function newClientForm(){
   ], 'Créer la fiche', function(v){
     var n=CLIENTS.length+1, id='c'+Date.now().toString(36);
     var c={id:id, nom:(v.civ==='Société'?'':v.civ+' ')+v.nom, tel:v.tel, mail:v.mail, adr:v.adr, ville:v.ville, type:v.type, statut:'new', tech:S.role==='admin'?'':ME, rdv:'', duree:'', ref:'AR-2611-'+String(30+n).padStart(3,'0'), devis:[], hist:[['ok','Fiche créée depuis l\'appli','À l\'instant']]};
-    CLIENTS.unshift(c); closeSheet(); go('client', id); done('Fiche client créée et envoyée au CRM','Nouveau client');
+    CLIENTS.unshift(c); crmSend('client.created',{data:{nom:c.nom, telephone:c.tel, email:c.mail, adresse:c.adr, ville:c.ville, type_chantier:c.type}}); closeSheet(); go('client', id); done('Fiche client créée et envoyée au CRM','Nouveau client');
   });
 }
 function newTechForm(){
@@ -3584,13 +3590,100 @@ planForm = function(){
     s.querySelector('#pfRap').onclick=function(){ f.showRap=!f.showRap; draw(); };
     var ok=s.querySelector('#pfOk'); if(ok) ok.onclick=function(){
       var tid=f.tech||f.techPick, c=client(f.cid), id='r'+Date.now();
-      RDVS.push({id:id, cid:f.cid, tech:tid, d:f.d, h:min2hm(f.start), dur:f.dur, st:'aconf', rap:f.rap, note:''}); S.pday=f.d; closeSheet(); render();
+      RDVS.push({id:id, cid:f.cid, tech:tid, d:f.d, h:min2hm(f.start), dur:f.dur, st:'aconf', rap:f.rap, note:''}); crmSend('appointment.created',{client_id:f.cid, data:{technician_id:tid, jour:f.d, start:min2hm(f.start), duration_min:f.dur, reminder_min:f.rap}}); S.pday=f.d; closeSheet(); render();
       done('RDV planifié pour '+tech(tid).nom+' : '+dayLabel(f.d).toLowerCase()+' à '+min2hm(f.start),'Planification');
       setTimeout(function(){ push('planning','Nouveau RDV · '+dayLabel(f.d).toLowerCase()+' '+min2hm(f.start), c.nom+' · notification reçue par '+tech(tid).nom.split(' ')[0], ['planning'], {ic:'mail'}); },1200);
     };
   }
   draw();
   setTimeout(function(){ var n=s.querySelector('#pfq'); if(n) n.focus(); },120);
+};
+
+/* =========================================================
+   V18 — Connexion CRM : interrupteurs par action, journal des échanges, envoi réel
+   ========================================================= */
+var CRM_GROUPS=[
+  ['RDV et planning',[['appointment.accepted','Accepter une intervention'],['appointment.confirmed','Valider un RDV'],['appointment.created','Planifier un RDV'],['appointment.updated','Réattribuer ou décaler un RDV'],['appointment.cancelled','Annuler un RDV']]],
+  ['Trajet et chantier',[['tech.on_the_way','Je suis en route'],['tech.delay','Prévenir d\'un retard'],['tech.arrived','Je suis arrivé'],['location.update','Position pendant le trajet'],['intervention.completed','Fin d\'intervention'],['client.absent','Client absent']]],
+  ['Clients et devis',[['client.created','Nouveau client'],['note.added','Commentaire ou note vocale'],['photo.added','Photo ou vidéo'],['quote.created','Devis créé'],['quote.sent','Devis envoyé'],['quote.signed','Devis signé']]],
+  ['Messages, paiements, appels',[['message.sent','Message WhatsApp, SMS, e-mail'],['payment.recorded','Paiement SumUp'],['call.logged','Appel rappelé'],['board.saved','Tableau électrique'],['review.requested','Demande d\'avis Google']]]
+];
+var CRM_LABEL={}; CRM_GROUPS.forEach(function(g){ g[1].forEach(function(a){ CRM_LABEL[a[0]]=a[1]; }); });
+if(!CFG.crm) CFG.crm={on:false, env:'test', urls:{test:'',prod:''}, actions:{}, testers:['t1']};
+var CRM_KEY_STORE='ar_crm_key_';
+function crmKey(){ try{ return localStorage.getItem(CRM_KEY_STORE+CFG.crm.env)||''; }catch(e){ return ''; } }
+function crmUrl(){ return (CFG.crm.urls[CFG.crm.env]||'').replace(/\/+$/,''); }
+var CRMLOG=[], CRMQ=[];
+function uuid(){ try{ if(crypto.randomUUID) return crypto.randomUUID(); }catch(e){} return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){ var r=Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); }); }
+function isoNow(){ var d=new Date(), o=-d.getTimezoneOffset(), s=o>=0?'+':'-', p=function(n){return String(Math.floor(Math.abs(n))).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())+s+p(o/60)+':'+p(o%60); }
+function crmActive(code){ if(!CFG.crm.on || !CFG.crm.actions[code] || !crmUrl()) return false; if(S.role!=='admin' && CFG.crm.testers.indexOf(ME)<0) return false; return true; }
+/* Envoie une action au CRM (ou la note en démo si l'interrupteur est coupé) */
+function crmSend(code, fields){
+  var ev={event_id:uuid(), action:code, occurred_at:isoNow(), technician_id:S.role==='admin'?'admin':ME};
+  for(var k in (fields||{})) ev[k]=fields[k];
+  var entry={id:ev.event_id, t:nowHM(), code:code, req:ev, mode:'demo', status:null, ms:null, res:null};
+  CRMLOG.unshift(entry); if(CRMLOG.length>150) CRMLOG.pop();
+  if(!crmActive(code)){ refreshCrm(); return; }
+  if(!netOk()){ entry.mode='queued'; CRMQ.push(entry); refreshCrm(); return; }
+  crmPost(entry);
+}
+function crmPost(entry){
+  entry.mode='sending'; refreshCrm();
+  var t0=Date.now(), ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ if(ctl) ctl.abort(); },10000);
+  fetch(crmUrl()+'/api/v1/events',{method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+crmKey(),'Idempotency-Key':entry.id}, body:JSON.stringify(entry.req), signal:ctl?ctl.signal:undefined})
+    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if(!r.ok) toast('CRM : erreur '+r.status+' sur « '+CRM_LABEL[entry.code]+' »'); }); })
+    .catch(function(e){ clearTimeout(to); entry.ms=Date.now()-t0; entry.mode='error'; entry.res=(IN_PREVIEW?'Envoi bloqué par l\'aperçu claude.ai : testez sur l\'appli installée. ':'')+(e&&e.name==='AbortError'?'Pas de réponse en 10 s':String(e&&e.message||e)); refreshCrm(); });
+}
+window.addEventListener('online',function(){ setTimeout(function(){ var q=CRMQ.splice(0); q.forEach(crmPost); },1500); });
+function refreshCrm(){ if(S.screen==='crm'){ var y=V.scrollTop; render(); V.scrollTop=y; } }
+var CRM_MODE={demo:['Démo · non envoyé','p-gray'], queued:['En attente (hors ligne)','p-warn'], sending:['Envoi…','p-blue'], ok:['Envoyé','p-ok'], error:['Erreur','p-bad']};
+
+SCREENS.crm = function(){
+  if(S.role!=='admin') return '<div class="pad"><div class="card">Réservé à l\'administrateur.</div></div>';
+  TITLES.crm='Connexion CRM';
+  var C=CFG.crm, on=Object.keys(C.actions).filter(function(k){return C.actions[k];}).length, total=Object.keys(CRM_LABEL).length;
+  var h='<div class="pad"><p class="hint">Chaque action activée part vraiment au CRM crm26. Les actions coupées restent en démo, mais le journal montre le message qui serait envoyé. Cahier des charges : actions et statuts attendus.</p>';
+  h+='<div class="card cfg"><div class="cfg-it"><span class="ico" style="'+(C.on?'background:var(--success-bg);color:var(--success)':'')+'">'+ic('bolt')+'</span><div class="grow"><b style="display:block">Connexion au CRM</b><span class="muted" style="font-size:12.5px">'+(C.on?on+' action'+(on>1?'s':'')+' sur '+total+' envoyée'+(on>1?'s':'')+' en réel':'Tout est en démo')+'</span></div><label class="tog"><input type="checkbox" id="crmOn"'+(C.on?' checked':'')+'><span></span></label></div></div>';
+  h+='<div class="seg" id="crmEnv"><button data-v="test" class="'+(C.env==='test'?'on':'')+'">Test</button><button data-v="prod" class="'+(C.env==='prod'?'on':'')+'">Production</button></div>';
+  if(C.env==='prod') h+='<div class="netbar-g off" style="border-radius:16px">'+ic('late')+'<span class="grow">Production : les actions modifient les vraies fiches du CRM.</span></div>';
+  h+='<div class="card form"><label class="field"><span>URL de l\'API ('+(C.env==='test'?'test':'production')+')</span><input id="crmUrl" inputmode="url" placeholder="https://crm26.exemple.fr" value="'+esc(C.urls[C.env]||'')+'"></label><label class="field"><span>Clé d\'accès</span><input id="crmKey" type="password" placeholder="'+(crmKey()?'•••••••• (enregistrée)':'Fournie par JD Solutions')+'" autocomplete="off"></label><div class="btns"><button class="btn primary sm" id="crmSave">Enregistrer</button><button class="btn line sm" id="crmTest">'+ic('bolt')+'Tester la connexion</button></div><div id="crmTestRes"></div></div>';
+  h+='<div class="sec"><h2>Techniciens testeurs</h2></div><p class="hint">Le réel ne s\'applique qu\'à eux. Les autres restent en démo.</p><div class="opts">'+TECHS.map(function(t){ var o=C.testers.indexOf(t.id)>=0; return '<button class="opt'+(o?' on':'')+'" data-tst="'+t.id+'">'+esc(t.nom)+'</button>'; }).join('')+'</div>';
+  CRM_GROUPS.forEach(function(g,gi){
+    var n=g[1].filter(function(a){return C.actions[a[0]];}).length;
+    h+='<div class="sec"><h2>'+esc(g[0])+'</h2><button class="link" data-grp="'+gi+'">'+(n===g[1].length?'Tout couper':'Tout activer')+'</button></div><div class="card cfg">'+g[1].map(function(a){ var o=!!C.actions[a[0]]; return '<div class="cfg-it'+(o?'':' off')+'"><div class="grow" style="min-width:0"><b style="display:block;font-size:14px">'+esc(a[1])+'</b><code class="muted" style="font-size:11.5px">'+a[0]+'</code></div><label class="tog"><input type="checkbox" data-act-crm="'+a[0]+'"'+(o?' checked':'')+' aria-label="'+esc(a[1])+'"><span></span></label></div>'; }).join('')+'</div>';
+  });
+  var errs=CRMLOG.filter(function(e){return e.mode==='error';}).length;
+  h+='<div class="sec"><h2>Journal des échanges</h2><span class="muted num" style="font-size:12.5px">'+CRMLOG.length+(errs?' · <b style="color:var(--danger)">'+errs+' erreur'+(errs>1?'s':'')+'</b>':'')+(CRMQ.length?' · '+CRMQ.length+' en attente':'')+'</span></div>';
+  h+= CRMLOG.length ? '<div class="list">'+CRMLOG.slice(0,40).map(function(e,i){ var m=CRM_MODE[e.mode]; return '<button class="card li crmlog" data-log="'+i+'" style="text-align:left;width:100%;padding:10px 12px"><span class="num muted" style="font-size:12px;width:40px;flex:none">'+e.t+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block;font-size:13.5px">'+esc(CRM_LABEL[e.code]||e.code)+'</b><code class="muted ell" style="display:block;font-size:11px">'+e.code+(e.status?' · '+e.status:'')+(e.ms!=null?' · '+e.ms+' ms':'')+'</code></div><span class="pill '+m[1]+'" style="font-size:11px">'+m[0]+'</span></button>'; }).join('')+'</div>'
+    : '<div class="card muted" style="font-size:13.5px">Aucun échange pour l\'instant. Faites une action dans l\'appli (par exemple « Je suis arrivé ») : elle apparaît ici.</div>';
+  h+='<div class="btns"><button class="btn soft sm" id="crmCopy">'+ic('copy')+'Copier le journal pour JD Solutions</button><button class="btn soft sm" id="crmClear">Vider</button></div></div>';
+  return h;
+};
+function bindCrm(){
+  var C=CFG.crm;
+  $('crmOn').onchange=function(){ C.on=this.checked; save(); refreshCrm(); toast(C.on?'Connexion CRM activée':'Tout repasse en démo'); };
+  seg('crmEnv',function(v){ C.env=v; save(); refreshCrm(); });
+  $('crmSave').onclick=function(){ var u=$('crmUrl').value.trim(), k=$('crmKey').value.trim(); if(u && !/^https:\/\//.test(u)){ toast('L\'adresse doit commencer par https://'); return; } C.urls[C.env]=u; save(); if(k){ try{ localStorage.setItem(CRM_KEY_STORE+C.env,k); }catch(e){} } refreshCrm(); toast('Réglages CRM enregistrés'); };
+  $('crmTest').onclick=function(){ var out=$('crmTestRes'), u=crmUrl(); if(!u){ out.innerHTML='<p class="hint" style="color:var(--danger)">Indiquez d\'abord l\'URL de l\'API.</p>'; return; } out.innerHTML='<p class="hint">Test en cours…</p>'; var t0=Date.now();
+    fetch(u+'/api/v1/health',{headers:{'Authorization':'Bearer '+crmKey()}}).then(function(r){ return r.text().then(function(tx){ out.innerHTML='<p class="hint" style="color:'+(r.ok?'var(--success)':'var(--danger)')+'"><b>'+(r.ok?'Connexion OK':'Réponse '+r.status)+'</b> en '+(Date.now()-t0)+' ms'+(tx?' · '+esc(tx.slice(0,120)):'')+'</p>'; }); })
+    .catch(function(e){ out.innerHTML='<p class="hint" style="color:var(--danger)"><b>Pas de connexion.</b> '+(IN_PREVIEW?'L\'aperçu claude.ai bloque les appels externes : testez sur l\'appli installée. ':'Vérifiez l\'adresse, le réseau, et que le CRM autorise l\'appli (CORS). ')+esc(String(e&&e.message||e))+'</p>'; }); };
+  each('[data-tst]',function(b){ b.onclick=function(){ var i=C.testers.indexOf(b.dataset.tst); if(i>=0) C.testers.splice(i,1); else C.testers.push(b.dataset.tst); save(); refreshCrm(); }; });
+  each('[data-act-crm]',function(el){ el.onchange=function(){ C.actions[el.dataset.actCrm]=el.checked; save(); refreshCrm(); }; });
+  each('[data-grp]',function(b){ b.onclick=function(){ var g=CRM_GROUPS[+b.dataset.grp][1], all=g.every(function(a){return C.actions[a[0]];}); g.forEach(function(a){ C.actions[a[0]]=!all; }); save(); refreshCrm(); }; });
+  each('[data-log]',function(b){ b.onclick=function(){ var e=CRMLOG[+b.dataset.log], m=CRM_MODE[e.mode];
+    var s=sheet('<div class="row"><h3 class="grow">'+esc(CRM_LABEL[e.code]||e.code)+'</h3><span class="pill '+m[1]+'">'+m[0]+'</span></div><div class="muted num" style="font-size:13px">'+e.t+(e.status?' · réponse '+e.status:'')+(e.ms!=null?' · '+e.ms+' ms':'')+'</div><div class="muted" style="font-size:12.5px;font-weight:700">Envoyé · POST /api/v1/events</div><pre class="crmjson">'+esc(JSON.stringify(e.req,null,2))+'</pre>'+(e.res?'<div class="muted" style="font-size:12.5px;font-weight:700">Réponse du CRM</div><pre class="crmjson">'+esc(e.res)+'</pre>':'')+'<div class="btns">'+(e.mode==='error'?'<button class="btn primary sm" id="logRetry">Renvoyer</button>':'')+'<button class="btn soft sm" id="logCopy">'+ic('copy')+'Copier</button></div>');
+    var rt=s.querySelector('#logRetry'); if(rt) rt.onclick=function(){ closeSheet(); crmPost(e); };
+    s.querySelector('#logCopy').onclick=function(){ var txt=JSON.stringify({requete:e.req, statut:e.status, reponse:e.res},null,2); try{ navigator.clipboard.writeText(txt).then(function(){ toast('Copié'); },function(){ toast('Copie refusée par le navigateur'); }); }catch(er){ toast('Copie impossible ici'); } }; }; });
+  $('crmCopy').onclick=function(){ var txt=JSON.stringify(CRMLOG.map(function(e){ return {heure:e.t, action:e.code, mode:e.mode, statut:e.status, duree_ms:e.ms, requete:e.req, reponse:e.res}; }),null,2); try{ navigator.clipboard.writeText(txt).then(function(){ toast('Journal copié : collez-le dans un e-mail à JD Solutions'); },function(){ toast('Copie refusée par le navigateur'); }); }catch(er){ toast('Copie impossible ici'); } };
+  $('crmClear').onclick=function(){ CRMLOG.length=0; refreshCrm(); };
+}
+/* Branche les actions existantes de l'appli sur le CRM */
+function nextRid(){ if(S.site) return S.site.rid; var n=techRdv().filter(function(r){return r.st!=='termine';})[0]; return n?n.rid:null; }
+var _live=live;
+live=function(k, txt, extra){
+  _live(k, txt, extra);
+  var map={route:'tech.on_the_way', late:'tech.delay', pay:'payment.recorded'};
+  if(map[k]) crmSend(map[k], {appointment_id:nextRid(), data:{texte:txt, eta:extra&&extra.eta||null}});
 };
 
 SCREENS.soon = function(){
@@ -3656,6 +3749,7 @@ function bind(){
   if(S.screen==='chantier') bindChantier();
   if(S.screen==='fin') bindFin();
   if(S.screen==='stats') bindStats();
+  if(S.screen==='crm') bindCrm();
   if(S.screen==='perms') bindPerms();
   if(S.screen==='trophees') bindTrophees();
   each('[data-mic]',function(b){ b.onclick=function(e){ e.preventDefault(); dictate(b.dataset.mic); }; });
@@ -3713,7 +3807,7 @@ function mv(arr,i,d){ var j=i+d; if(j<0||j>=arr.length) return; var t=arr[i]; ar
 function setRole(r){ S.role=r; S.stack=[]; S.screen='accueil'; S.arg=null; render(); toast(r==='admin'?'Vous voyez l\'appli en tant qu\'admin':'Vous voyez l\'appli en tant que technicien'); }
 $('rolePill').onclick=function(){ setRole(S.role==='admin'?'tech':'admin'); };
 [].forEach.call(document.querySelectorAll('#sideRole button'),function(b){ b.onclick=function(){ setRole(b.dataset.r); }; });
-var JUMP=[['Accueil','accueil'],['Fiche client','client','c1'],['Clients','clients'],['Planning','planning'],['Nouveau devis','devis'],['Appels','appels'],['Messages','messages'],['Étiquetage','etiquetage'],['Chiffre d\'affaires (admin)','ca','',true],['Équipe (admin)','equipe','',true],['Personnaliser (admin)','reglages','',true],['Mode chantier','chantier','r1'],['Fin d\'intervention','fin','r1'],['Tableau électrique','tableau','c1'],['Tableau de bord (admin)','stats','',true],['Aperçu étiquettes','apercu','c1'],['Suivi en direct (admin)','suivi','t1',true],['Visite guidée','__tour'],['Autorisations','perms'],['Trophées (caché)','trophees'],['Notifications','notifs'],['Mon profil','profil'],['Plus','plus']];
+var JUMP=[['Accueil','accueil'],['Fiche client','client','c1'],['Clients','clients'],['Planning','planning'],['Nouveau devis','devis'],['Appels','appels'],['Messages','messages'],['Étiquetage','etiquetage'],['Chiffre d\'affaires (admin)','ca','',true],['Équipe (admin)','equipe','',true],['Personnaliser (admin)','reglages','',true],['Mode chantier','chantier','r1'],['Fin d\'intervention','fin','r1'],['Tableau électrique','tableau','c1'],['Tableau de bord (admin)','stats','',true],['Aperçu étiquettes','apercu','c1'],['Suivi en direct (admin)','suivi','t1',true],['Connexion CRM (admin)','crm','',true],['Visite guidée','__tour'],['Autorisations','perms'],['Trophées (caché)','trophees'],['Notifications','notifs'],['Mon profil','profil'],['Plus','plus']];
 $('jump').innerHTML=JUMP.map(function(j,i){return '<button data-j="'+i+'">'+esc(j[0])+'</button>';}).join('');
 [].forEach.call(document.querySelectorAll('#jump button'),function(b){ b.onclick=function(){ var j=JUMP[+b.dataset.j]; if(j[1]==='__tour'){ S.role='tech'; S.stack=[]; S.screen='accueil'; render(); setTimeout(function(){ runTour(null); },350); return; } if(j[3]&&S.role!=='admin'){S.role='admin';} S.stack=[]; go(j[1], j[2]||null, false); }; });
 
