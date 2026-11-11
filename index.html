@@ -3026,7 +3026,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.44 · 11 nov. 2026';
+var APP_VERSION='1.0.45 · 11 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5004,10 +5004,10 @@ var DQ_ROOMS=[
 var DQ_ALL=/forfait|main d.?\s?[œo]e?uvre|d[ée]placement|d[ée]pose|petite fourniture|fourniture/i;
 var DQ_KITS_CRM=null;
 function dqState(){ if(!S.dq) S.dq={mode:'piece', room:null, q:'', cat:'tout'}; return S.dq; }
-function dqItems(){ return CATALOGUE.map(function(c,i){ return {id:'c'+(c[5]!=null?c[5]:i), idx:i, cat:c[0], name:c[1], u:c[2], pu:+c[3]||0, tva:+c[4]||20, ref:c[6]||''}; }); }
+function dqItems(){ return CATALOGUE.map(function(c,i){ return {id:'c'+(c[5]!=null?c[5]:i), idx:i, cat:c[0], name:c[1], u:c[2], pu:+c[3]||0, tva:(c[4]!=null&&c[4]!=='')?+c[4]:20, ref:c[6]||''}; }); }
 function dqKits(){
   var out=[]; (DQ_KITS_CRM||[]).forEach(function(k){ out.push(k); });
-  FAVORIS.forEach(function(f,i){ out.push({id:'f'+i, name:f.nom, lignes:f.lignes, src:'local'}); });
+  if(CATALOGUE_SRC!=='crm') FAVORIS.forEach(function(f,i){ out.push({id:'f'+i, name:f.nom, lignes:f.lignes, src:'local'}); });
   return out;
 }
 function dqInRoom(name, cat, room){ if(!room) return true; var ty=dqTypeOf(room), R=dqTypeDef(ty); if(!R) return true; var t=name+' '+cat; if(DQ_ALL.test(t)) return true; if(ty!=='tableau' && DQ_ROOMS[0].re.test(t)) return false; return R.re.test(t); }
@@ -5079,6 +5079,7 @@ SCREENS.devis=function(){
     var its=(st.mode==='cat' && st.cat==='Kits')?[]:items.filter(function(it){ if(!match(it.name+' '+it.cat+' '+it.ref)) return false; if(st.mode==='piece') return q ? true : dqInRoom(it.name, it.cat, room); if(st.cat==='Habituels') return !!favs[it.id]; return st.cat==='tout' || st.cat===it.cat; });
     if(st.mode==='piece' && room && !q && !its.length) its=items;
     its.sort(function(a,b){ return (favs[b.id]?1:0)-(favs[a.id]?1:0); });
+    var more=0; if(its.length>60){ more=its.length-60; its=its.slice(0,60); }
     var title=q ? (ks.length+its.length)+' résultat'+((ks.length+its.length)>1?'s':'')+' · kits et matériel' : (room?'Kits puis matériel de la pièce':(st.cat==='tout'?'Tout le catalogue':st.cat));
     h+='<div class="sec"><h2>'+esc(title)+'</h2>'+(CATALOGUE_SRC==='crm'?'<span class="muted" style="font-size:12px">Catalogue du CRM</span>':'')+'</div>';
     if(!ks.length && !its.length) h+='<div class="card empty-st">'+ic('search')+'<b>Rien trouvé</b><span class="muted">Essayez un autre mot ou une référence.</span></div>';
@@ -5089,6 +5090,7 @@ SCREENS.devis=function(){
       h+='<div class="dq-row" data-hold="item" data-id="'+esc(it.id)+'"><span class="dq-ic">'+ic('bolt')+'</span><button class="dq-name" data-dqtap="'+esc(it.id)+'"><b>'+esc(it.name)+'</b><small>'+esc([it.ref, st.mode==='cat'?'':it.cat, money?eur(it.pu)+' HT':'', favs[it.id]?'habituel':''].filter(Boolean).join(' · ')||it.cat)+'</small></button>'+
         (qn?'<div class="dq-step"><button data-dqminus="'+esc(it.id)+'" aria-label="Moins">−</button><b class="num">'+qn+'</b><button class="on" data-dqplus="'+esc(it.id)+'" aria-label="Plus">+</button></div>':'<button class="dq-add" data-dqplus="'+esc(it.id)+'" aria-label="Ajouter">'+ic('plus')+'</button>')+'</div>'; });
     h+='</div>';
+    if(more) h+='<p class="hint" style="text-align:center">'+more+' autres articles : tapez un mot ou une référence pour les trouver.</p>';
   }
   h+='<div class="dq-bar"><button class="dq-cart" id="dqCart"><span class="dq-cic">'+ic('doc')+'<b class="num">'+pieces+'</b></span><span class="grow" style="min-width:0;text-align:left"><b style="display:block">Voir le devis</b><small class="ell" style="display:block">'+(d.lignes.length?d.lignes.length+' ligne'+(d.lignes.length>1?'s':'')+' · '+pieces+' pièce'+(pieces>1?'s':'')+(money?' · '+eur(totals(d).ttc)+' TTC':' · sans prix'):'Aucun article')+'</small></span><span class="dq-go">Vérifier</span></button></div>';
   return h+'</div>';
@@ -5200,6 +5202,64 @@ function loadCrmKits(){ if(IN_PREVIEW || !sessUser()) return; apiCall('GET','kit
   if(S.screen==='devis') dqRerender(); }).catch(function(){}); }
 var _liveLoad42=liveLoad;
 liveLoad=function(){ return _liveLoad42.apply(this, arguments).then(function(ok){ if(ok && !DQ_KITS_CRM) loadCrmKits(); return ok; }); };
+
+/* =========================================================
+   V45 — Réglages partagés validés (un format inattendu du CRM ne casse plus « Personnaliser »),
+   réparation des réglages abîmés, catalogue complet du CRM (toutes les pages, références, catégories)
+   ========================================================= */
+function cfgValidQuick(v){ return Array.isArray(v) && v.length && v.every(function(q){ return q && typeof q==='object' && ACTIONS[q.id] && typeof q.on==='boolean'; }); }
+function cfgValidTabs(v){ var ok=function(a){ return Array.isArray(a) && a.length && a.every(function(m){ return typeof m==='string' && MODULES[m]; }); }; return v && typeof v==='object' && ok(v.tech) && ok(v.admin); }
+function cfgSanitize(app){
+  var out={};
+  if(cfgValidTabs(app.tabs)) out.tabs=app.tabs;
+  if(cfgValidQuick(app.quick)) out.quick=app.quick;
+  if(app.techAccess && typeof app.techAccess==='object' && !Array.isArray(app.techAccess)) out.techAccess=app.techAccess;
+  if(typeof app.simple==='boolean') out.simple=app.simple;
+  if(['pill','soft','square'].indexOf(app.shape)>=0) out.shape=app.shape;
+  if(['normal','gants'].indexOf(app.size)>=0) out.size=app.size;
+  if(typeof app.tour==='boolean') out.tour=app.tour;
+  if(app.notif && typeof app.notif==='object' && !Array.isArray(app.notif)) out.notif=app.notif;
+  return out;
+}
+/* Réparation des réglages déjà abîmés sur le téléphone */
+(function(){ var fix=false, D=clone(DEFAULT_CFG);
+  if(!cfgValidQuick(CFG.quick)){ CFG.quick=D.quick; fix=true; }
+  if(!cfgValidTabs(CFG.tabs)){ CFG.tabs=D.tabs; CFG.liveTabsInit=false; fix=true; }
+  if(!CFG.techAccess || typeof CFG.techAccess!=='object'){ CFG.techAccess=D.techAccess; fix=true; }
+  if(!CFG.notif || typeof CFG.notif!=='object'){ CFG.notif=D.notif; fix=true; }
+  if(['pill','soft','square'].indexOf(CFG.shape)<0){ CFG.shape=D.shape; fix=true; }
+  if(['normal','gants'].indexOf(CFG.size)<0){ CFG.size=D.size; fix=true; }
+  if(!CFG.quick.some(function(q){ return q.id==='position'; })){ CFG.quick.splice(2,0,{id:'position',on:true}); fix=true; }
+  if(fix) save(); })();
+/* Lecture des réglages partagés : seules les valeurs au bon format sont appliquées */
+pullSettings=function(){
+  if(IN_PREVIEW || !sessUser()) return Promise.resolve(false);
+  return apiCall('GET','settings').then(function(r){
+    if(!r.ok){ if(SET_SYNC==='?') SET_SYNC='local'; return false; }
+    SET_SYNC='ok'; var app=(r.json&&(r.json.app||r.json.settings||r.json.config))||null; if(!app) return false;
+    var good=cfgSanitize(app), keys=Object.keys(good); if(!keys.length) return false;
+    var before=JSON.stringify(settingsPayload()); SET_APPLYING=true;
+    keys.forEach(function(k){ CFG[k]=good[k]; }); if(good.tabs) CFG.liveTabsInit=true; save(); SET_APPLYING=false;
+    if(JSON.stringify(settingsPayload()).replace(/"updated_at":"[^"]*"/,'')!==before.replace(/"updated_at":"[^"]*"/,'')){ tabKey=''; if(S.screen!=='reglages') rerender(); }
+    return true; }).catch(function(){ return false; });
+};
+/* Catalogue complet du CRM : toutes les pages (100 articles par page), références et catégories */
+function dqCatLabel(c){ c=String(c||'').trim(); if(!c) return 'Autres'; c=c.replace(/^EGLAIRAGE$/i,'ÉCLAIRAGE'); return c.charAt(0)+c.slice(1).toLowerCase(); }
+loadCrmCatalogue=function(){
+  if(IN_PREVIEW || !sessUser()) return;
+  var all=[], per=100;
+  function page(n){ return apiCall('GET','catalogue?page='+n+'&par_page='+per).then(function(r){
+    if(!r.ok) return null; var J=r.json||{}, L=Array.isArray(J)?J:(J.articles||J.catalogue||J.produits||J.items||J.data||[]);
+    all=all.concat(L); var pages=+J.pages||1; if(n<pages && n<40) return page(n+1); return all; }); }
+  page(1).then(function(L){
+    if(!L || !L.length) return;
+    var rows=L.filter(function(a){ return (a.type||'produit')!=='kit'; }).map(function(a){ return [dqCatLabel(pick(a,['categorie','famille','category'])), String(pick(a,['libelle','designation','nom','label','name'])||'Article').trim(), pick(a,['unite','unit'])||'u', +pick(a,['prix_ht','prix','price','pu_ht'])||0, (a.tva!=null&&a.tva!=='')?+a.tva:20, pick(a,['id','id_produit','ref','reference']), pick(a,['reference','ref'])||'']; });
+    CATALOGUE.length=0; rows.forEach(function(x){ CATALOGUE.push(x); }); CATALOGUE_SRC='crm';
+    if(S.screen==='devis') dqRerender();
+  }).catch(function(){});
+};
+/* Pièces : éclairage reconnu aussi par la catégorie du CRM */
+DQ_ROOMS.forEach(function(r){ if(['chambre','sejour','cuisine','sdb','exterieur'].indexOf(r.id)>=0) r.re=new RegExp(r.re.source+'|[ée]clairage|eglairage|luminaire|plafonnier|hublot', 'i'); });
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
