@@ -931,6 +931,7 @@ html,body{overscroll-behavior:none}
 .tabs-prev{display:flex;gap:4px;padding:8px;border-radius:22px;background:var(--surface);border:1px solid var(--line);margin-bottom:10px}.tabs-prev span{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:11px}.tabs-prev span:first-child{color:var(--primary)}.tabs-prev svg{width:20px;height:20px}.cfg-share{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--warning-bg,#FFF4E0);color:var(--ink-2);font-size:13px;line-height:1.4;margin-bottom:10px}.cfg-share.ok{background:var(--success-bg)}.cfg-share svg{width:18px;height:18px;flex:none}
 .phone.locked>header.bar,.phone.locked>#view,.phone.locked>#tabs,.phone.locked>#netbar{visibility:hidden}
 .home-prev{height:380px;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:var(--bg);position:relative;pointer-events:none}.home-prev-in{width:390px;transform:scale(.8);transform-origin:top left;position:absolute;left:0;top:0}.home-prev-in .live-band{display:none}
+.kpis3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.kpis3 .card{padding:14px 12px;display:flex;flex-direction:column;gap:2px}.kpis3 b{font-size:24px;line-height:1.1}.kpis3 small{color:var(--muted);font-size:12.5px;line-height:1.3}.trk-live{display:flex;flex-direction:column;gap:10px;border:1.5px solid var(--line)}.live-map{border-radius:18px;overflow:hidden;border:1px solid var(--line);height:260px;margin:10px 0}.live-map iframe{width:100%;height:100%;border:0}
 </style>
 
 </head>
@@ -2988,7 +2989,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.39 · 10 nov. 2026';
+var APP_VERSION='1.0.40 · 11 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3832,6 +3833,8 @@ function toDate(v){ if(!v) return null; if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.t
 function dayOffset(d){ var a=new Date(TODAY); a.setHours(0,0,0,0); var b=new Date(d); b.setHours(0,0,0,0); return Math.round((b-a)/864e5); }
 function apptStatus(s){ s=String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); if(/a confirmer|attente|a placer|nouveau|a traiter/.test(s)) return 'aconf'; if(/confirm|valid|accept|pris/.test(s)) return 'confirme'; if(/route/.test(s)) return 'enroute'; if(/place|arriv/.test(s)) return 'surplace'; if(/termin|fini|clos|done/.test(s)) return 'termine'; return 'aconf'; }
 var LIVE_DAYS=30, CRM_DIAG=null;
+/* Dernière position du technicien jointe au RDV par le CRM (si disponible) */
+function apptPos(a){ var p=a&&(a.position||a.derniere_position||a.last_position||a.position_technicien); if(!p && a && a.lat!=null && a.lng!=null) p=a; if(!p) return null; var lat=+(p.lat||p.latitude), lng=+(p.lng||p.lon||p.longitude); if(!isFinite(lat)||!isFinite(lng)||(!lat&&!lng)) return null; return {lat:lat, lng:lng, acc:+(p.accuracy_m||p.precision||0)||null, at:p.at||p.date||p.updated_at||p.horodatage||null, speed:p.speed_kmh!=null?+p.speed_kmh:null}; }
 function parisHM(d){ try{ return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'}); }catch(e){ return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); } }
 /* Date de début d'un RDV, quel que soit le nom des champs envoyés par le CRM (date et heure ensemble ou séparées) */
 function apptStart(a){
@@ -3856,7 +3859,7 @@ function liveLoad(){
     var cids={};
     var rdvs=list.map(function(a,i){ var start=apptStart(a); if(!start) return null;
       var cid=pick(a,['id_contact','contact_id','client_id']); cids[cid]=a;
-      return {id:'crm-rdv-'+pick(a,['id_rdv','id','appointment_id']), crmId:pick(a,['id_rdv','id','appointment_id']), cid:'crm-c-'+cid, tech:ME, d:dayOffset(start), h:parisHM(start), ts:start.getTime(), dur:+pick(a,['duree','duration','duration_min','duree_min'])||60, st:apptStatus(pick(a,['statut','status','etat'])), rap:30, note:pick(a,['note','commentaire','remarque'])||'', tname:pick(a,['installateur','nom_installateur','technicien','nom_technicien','installator','nom_installator','tech_nom'])||''}; }).filter(Boolean);
+      return {id:'crm-rdv-'+pick(a,['id_rdv','id','appointment_id']), crmId:pick(a,['id_rdv','id','appointment_id']), cid:'crm-c-'+cid, tech:ME, d:dayOffset(start), h:parisHM(start), ts:start.getTime(), dur:+pick(a,['duree','duration','duration_min','duree_min'])||60, st:apptStatus(pick(a,['statut','status','etat'])), rap:30, note:pick(a,['note','commentaire','remarque'])||'', tname:pick(a,['installateur','nom_installateur','technicien','nom_technicien','installator','nom_installator','tech_nom'])||'', pos:apptPos(a)}; }).filter(Boolean);
     CRM_DIAG.kept=rdvs.length;
     var ids=Object.keys(cids).filter(function(x){ return x && x!=='null'; });
     return Promise.all(ids.map(function(id){ return apiCall('GET','clients/'+encodeURIComponent(id)).then(function(cr){ return {id:id, a:cids[id], c:cr.ok?(cr.json&&(cr.json.client||cr.json.contact||cr.json))||{}:{} }; }).catch(function(){ return {id:id, a:cids[id], c:{}}; }); }))
@@ -4813,6 +4816,110 @@ _techHome=function(){
   out+='<div class="card empty-st">'+ic('cal')+'<b>Aucun RDV aujourd\'hui</b><span class="muted">Les RDV qui vous sont attribués dans le CRM apparaissent ici automatiquement.</span><button class="btn soft sm" data-go="planning" style="margin-top:6px">'+ic('cal')+'Voir le planning</button></div>';
   return out+qb+'</div>';
 };
+/* =========================================================
+   V40 — Fonctions admin réelles : Équipe avec chiffres du jour, fiche Technicien, Suivi en direct (position transmise au CRM)
+   ========================================================= */
+delete LIVE_HIDE.suivi;
+var ST_LBL={aconf:'À confirmer', confirme:'Confirmé', enroute:'En route', surplace:'Sur place', termine:'Terminé'};
+function cityOf(c){ return String((c&&c.ville)||'').replace(/^\d{5}\s*/,'') || (c&&c.adr)||''; }
+function techToday(t){ return RDVS.filter(function(r){ return r.tech===t.id && r.d===0; }).sort(function(a,b){ return a.h<b.h?-1:1; }); }
+function techNow(t){
+  var today=techToday(t), road=today.filter(function(r){ return r.st==='enroute'; })[0], site=today.filter(function(r){ return r.st==='surplace'; })[0];
+  if(!road) road=RDVS.filter(function(r){ return r.tech===t.id && r.st==='enroute'; })[0];
+  if(site){ var c=client(site.cid)||{}; return {k:'site', lbl:'Sur chantier', cls:'p-blue', dot:'#3D6BFF', txt:'Chez '+(c.nom||'client')+(cityOf(c)?', '+cityOf(c):''), r:site}; }
+  if(road){ var c2=client(road.cid)||{}; return {k:'road', lbl:'En route', cls:'p-warn', dot:'#F2B33D', txt:'En route vers '+(cityOf(c2)||c2.nom||'le client'), r:road}; }
+  var nx=today.filter(function(r){ return r.st!=='termine'; })[0];
+  if(nx) return {k:'ok', lbl:'Disponible', cls:'p-ok', dot:'#3BB273', txt:'Prochain RDV à '+nx.h+(cityOf(client(nx.cid))?' · '+cityOf(client(nx.cid)):''), r:null};
+  return {k:'free', lbl:today.length?'Journée finie':'Sans RDV', cls:'p-gray', dot:'#8E8E93', txt:today.length?'Tous ses RDV du jour sont terminés':'Aucun RDV aujourd\'hui', r:null};
+}
+function teamList(){ return TECHS.filter(function(t){ return t.id!==ME || RDVS.some(function(r){ return r.tech===ME; }); }).filter(function(t){ return t.team || RDVS.some(function(r){ return r.tech===t.id; }); }); }
+function agoTxt(at){ if(!at) return ''; var d=new Date(String(at).replace(' ','T')); if(isNaN(d)) return ''; var m=Math.round((Date.now()-d)/60000); return m<1?'à l\'instant':m<60?'il y a '+m+' min':'il y a '+Math.floor(m/60)+' h'+(m%60?String(m%60).padStart(2,'0'):''); }
+function techAvatar(t, st){ return '<span class="av" style="position:relative">'+esc(initials(t.nom))+(st?'<i style="position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:'+st.dot+';border:2px solid var(--surface)"></i>':'')+'</span>'; }
+/* ---- Équipe ---- */
+SCREENS.equipe=function(){
+  if(!sessUser()) return _equipe36();
+  TITLES.equipe='Équipe';
+  var list=teamList(), now=list.map(techNow), act=now.filter(function(x){ return x.k==='road'||x.k==='site'; }).length;
+  var all=RDVS.filter(function(r){ return r.d===0; }), done=all.filter(function(r){ return r.st==='termine'; }).length, free=now.filter(function(x){ return x.k==='free'; }).length;
+  var h='<div class="pad"><div class="kpis3"><div class="card"><b class="num">'+act+'</b><small>en activité</small></div><div class="card"><b class="num">'+done+' / '+all.length+'</b><small>RDV terminés</small></div><div class="card"><b class="num">'+free+'</b><small>sans RDV en cours</small></div></div>';
+  if(TEAM_SRC!=='crm') h+='<div class="cfg-share">'+ic('late')+'<span>Seuls les techniciens qui ont des RDV apparaissent : la liste complète attend le CRM (route des techniciens).</span></div>';
+  if(!list.length) h+='<div class="card empty-st">'+ic('team')+'<b>Aucun technicien</b><span class="muted">Aucun RDV attribué dans le CRM sur la période.</span></div>';
+  h+='<div class="list">'+list.map(function(t,i){ var st=now[i], td=techToday(t), dn=td.filter(function(r){ return r.st==='termine'; }).length;
+    return '<button class="card li" data-tech="'+esc(t.id)+'" style="text-align:left;width:100%">'+techAvatar(t,st)+'<div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(t.nom)+'</b><span class="muted ell" style="display:block;font-size:13px">'+esc(st.txt)+'</span></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="pill '+st.cls+'">'+st.lbl+'</span><small class="muted num">'+dn+' / '+td.length+' RDV</small></div></button>'; }).join('')+'</div>';
+  h+='<button class="btn primary block" id="eqAdd">'+ic('plus')+'Ajouter un technicien</button></div>';
+  return h;
+};
+/* ---- Fiche technicien ---- */
+var _techdetail40=SCREENS.techdetail;
+SCREENS.techdetail=function(id){
+  if(!sessUser()) return _techdetail40(id);
+  TITLES.techdetail='Technicien';
+  var t=tech(id||S.arg); if(!t) return '<div class="pad"><div class="card">Technicien introuvable.</div></div>';
+  var st=techNow(t), td=techToday(t), dn=td.filter(function(r){ return r.st==='termine'; }).length;
+  var wk=RDVS.filter(function(r){ return r.tech===t.id && r.d>=0 && r.d<7; }), wkDone=RDVS.filter(function(r){ return r.tech===t.id && r.d<=0 && r.d>-7 && r.st==='termine'; }).length;
+  var h='<div class="pad"><div class="head"><span class="av lg">'+esc(initials(t.nom))+'</span><h2>'+esc(t.nom)+'</h2><span class="muted">'+esc(t.role||'Agent terrain')+(t.badge?' · badge n° '+esc(t.badge):'')+'</span><span class="pill '+st.cls+'">'+st.lbl+' · '+esc(st.txt)+'</span></div>';
+  h+='<div class="rounds"><button class="rb" id="tdCall"><span class="c">'+ic('phone')+'</span>Appeler</button><button class="rb w" id="tdWa"><span class="c">'+ic('wa')+'</span>WhatsApp</button><button class="rb y" id="tdFollow"'+(st.r?'':' style="opacity:.45"')+'><span class="c">'+ic('route')+'</span>Suivre</button><button class="rb" id="tdRights"><span class="c">'+ic('shield')+'</span>Droits</button></div>';
+  h+='<div class="kpis3"><div class="card"><b class="num">'+dn+' / '+td.length+'</b><small>RDV du jour</small></div><div class="card"><b class="num">'+wk.length+'</b><small>RDV sur 7 jours</small></div><div class="card"><b class="num">'+wkDone+'</b><small>terminés sur 7 jours</small></div></div>';
+  h+='<div class="sec"><h2>Activité du jour</h2></div>';
+  h+= td.length ? '<div class="card cfg">'+td.map(function(r){ var c=client(r.cid)||{}; var ico=r.st==='termine'?'check':r.st==='surplace'?'wrench':r.st==='enroute'?'nav':'clock'; var col=r.st==='termine'?'var(--success)':r.st==='surplace'?'var(--primary)':r.st==='enroute'?'#E0A030':'var(--muted)';
+      return '<div class="cfg-it" data-open="'+esc(r.cid)+'" style="cursor:pointer"><span class="ico" style="color:'+col+'">'+ic(ico)+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block;font-size:14.5px">'+esc(c.nom||'Client')+'</b><span class="muted" style="font-size:12.5px">'+esc(r.h)+' → '+esc(fin(r))+(cityOf(c)?' · '+esc(cityOf(c)):'')+'</span></div><span class="pill p-gray">'+(ST_LBL[r.st]||'')+'</span></div>'; }).join('')+'</div>'
+    : '<div class="card empty-st">'+ic('cal')+'<b>Aucun RDV aujourd\'hui</b></div>';
+  var next=RDVS.filter(function(r){ return r.tech===t.id && r.d>0; }).sort(function(a,b){ return a.d-b.d||(a.h<b.h?-1:1); }).slice(0,5);
+  if(next.length) h+='<div class="sec"><h2>Prochains jours</h2></div><div class="card cfg">'+next.map(function(r){ var c=client(r.cid)||{}; var d=new Date(TODAY.getTime()+r.d*864e5).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'}); return '<div class="cfg-it" data-open="'+esc(r.cid)+'" style="cursor:pointer"><b class="num" style="min-width:70px;font-size:13px">'+esc(d)+' '+esc(r.h)+'</b><span class="grow ell">'+esc(c.nom||'Client')+'</span><span class="pill p-gray">'+(ST_LBL[r.st]||'')+'</span></div>'; }).join('')+'</div>';
+  return h+'</div>';
+};
+/* ---- Suivi en direct ---- */
+var _suivi40=SCREENS.suivi;
+SCREENS.suivi=function(tid){
+  if(!sessUser()) return _suivi40(tid);
+  TITLES.suivi='Suivi en direct';
+  var t=tech(tid||S.arg)||{nom:'Technicien'}, st=techNow(t), r=st.r;
+  if(!r) return '<div class="pad"><div class="card empty-st">'+ic('route')+'<b>'+esc(t.nom)+' n\'est pas en route</b><span class="muted">Le suivi s\'affiche dès qu\'il appuie sur « Je suis en route ».</span></div></div>';
+  var c=client(r.cid)||{}, mins=Math.round((rdvTs(r)-Date.now())/60000), p=r.pos;
+  var h='<div class="pad"><div class="card trk-live"><div class="li" style="padding:0">'+techAvatar(t,st)+'<div class="grow" style="min-width:0"><b style="display:block">'+esc(t.nom)+(st.k==='road'?' est en route':' est sur place')+'</b><span class="muted" style="font-size:13px">'+(st.k==='road'?'vers ':'chez ')+esc(c.nom||'le client')+(cityOf(c)?' · '+esc(cityOf(c)):'')+'</span></div><div style="text-align:right"><b class="num" style="font-size:20px;display:block">'+(st.k==='road'?etaTxt(mins):'sur place')+'</b><small class="muted">RDV à '+esc(r.h)+'</small></div></div></div>';
+  if(p){
+    var d=0.006, bbox=[p.lng-d,p.lat-d*0.7,p.lng+d,p.lat+d*0.7].map(function(x){ return x.toFixed(5); }).join('%2C');
+    h+='<div class="live-map"><iframe title="Carte" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+p.lat.toFixed(5)+'%2C'+p.lng.toFixed(5)+'"></iframe></div>';
+    h+='<p class="hint">Dernière position '+(agoTxt(p.at)||'reçue')+(p.acc?' · précision ± '+Math.round(p.acc)+' m':'')+(p.speed!=null?' · '+p.speed+' km/h':'')+'. Actualisation automatique toutes les 30 s.</p>';
+    h+='<button class="btn primary block" id="svMaps" data-ll="'+p.lat+','+p.lng+'">'+ic('route')+'Ouvrir dans Google Maps</button>';
+  } else h+='<div class="cfg-share">'+ic('late')+'<span>Position pas encore disponible : le CRM doit enregistrer la position envoyée par l\'appli et la renvoyer avec le RDV.</span></div>';
+  h+='<div class="card cfg"><div class="cfg-it"><span class="grow muted">Destination</span><b style="text-align:right;font-size:14px">'+esc([c.adr, c.ville].filter(Boolean).join(', ')||'—')+'</b></div><div class="cfg-it"><span class="grow muted">Statut</span><b>'+(ST_LBL[r.st]||'')+'</b></div></div>';
+  h+='<div class="btns"><button class="btn soft" id="svCall">'+ic('phone')+'Appeler '+esc(firstNameOf(t.nom))+'</button><button class="btn soft" data-open="'+esc(r.cid)+'">Fiche client</button></div></div>';
+  return h;
+};
+function etaTxt(m){ if(m<=0) return 'à l\'heure'; if(m<60) return m+' min'; var h=Math.floor(m/60), r=m%60; return 'dans '+h+' h'+(r?String(r).padStart(2,'0'):''); }
+function firstNameOf(n){ return String(n||'').trim().split(/\s+/)[0]||''; }
+var _bindSuivi40=bindSuivi;
+bindSuivi=function(){ if(!sessUser()) return _bindSuivi40(); };
+/* ---- Accueil admin : bloc « Suivi en direct » ---- */
+var _liveAdminHome40=liveAdminHome;
+liveAdminHome=function(){
+  var h=_liveAdminHome40(), live=teamList().map(function(t){ return {t:t, st:techNow(t)}; }).filter(function(x){ return x.st.k==='road'||x.st.k==='site'; });
+  if(!live.length) return h;
+  var blk='<div class="sec"><h2>Suivi en direct</h2></div>'+live.map(function(x){ var r=x.st.r, c=client(r.cid)||{}, mins=Math.round((rdvTs(r)-Date.now())/60000), road=x.st.k==='road';
+    return '<div class="card trk-live" style="border-color:'+(road?'#E0B04A':'var(--line)')+'"><div class="li" style="padding:0">'+techAvatar(x.t,x.st)+'<div class="grow" style="min-width:0"><b style="display:block">'+esc(x.t.nom)+(road?' est en route':' est sur place')+'</b><span class="muted ell" style="display:block;font-size:13px">'+(road?'vers ':'chez ')+esc(c.nom||'')+(cityOf(c)?' · '+esc(cityOf(c)):'')+'</span></div><div style="text-align:right"><b class="num" style="display:block">'+(road?etaTxt(mins):'sur place')+'</b><small class="muted">RDV '+esc(r.h)+'</small></div></div>'+(r.pos?'<small class="muted">Position '+esc(agoTxt(r.pos.at)||'reçue')+'</small>':'')+'<button class="btn primary block sm" data-suivi="'+esc(x.t.id)+'">'+ic('route')+'Voir en direct</button></div>'; }).join('');
+  return h.replace('<div class="sec"><h2>Aujourd\'hui</h2>', blk+'<div class="sec"><h2>Aujourd\'hui</h2>');
+};
+/* ---- Boutons ---- */
+var _bind40=bind;
+bind=function(){ var r=_bind40.apply(this, arguments);
+  if(!sessUser()) return r;
+  var add=$('eqAdd'); if(add) add.onclick=function(){ sheet('<h3>Ajouter un technicien</h3><p class="hint" style="line-height:1.5">Les comptes se créent dans le CRM : nouvel utilisateur avec le profil « Agent terrain » et son numéro de badge. Il apparaîtra ici automatiquement à la prochaine actualisation et pourra se connecter à l\'appli avec son e-mail et son mot de passe du CRM.</p><button class="btn primary block" data-close>J\'ai compris</button>'); };
+  if(S.screen==='techdetail'){ var t=tech(S.arg)||{};
+    var c1=$('tdCall'); if(c1) c1.onclick=function(){ callNum(t.tel, t.nom); };
+    var w=$('tdWa'); if(w) w.onclick=function(){ if(!t.tel){ toast('Pas de numéro pour ce technicien'); return; } location.href='https://wa.me/'+intlTel(t.tel); };
+    var f=$('tdFollow'); if(f) f.onclick=function(){ if(!techNow(t).r){ toast(t.nom+' n\'est pas en route en ce moment'); return; } go('suivi', t.id); };
+    var dr=$('tdRights'); if(dr) dr.onclick=function(){ S.cfgRole='tech'; go('reglages'); };
+  }
+  if(S.screen==='suivi'){ var t2=tech(S.arg)||{};
+    var m=$('svMaps'); if(m) m.onclick=function(){ location.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(m.dataset.ll); };
+    var sc=$('svCall'); if(sc) sc.onclick=function(){ callNum(t2.tel, t2.nom); };
+  }
+  return r; };
+/* Bandeau démo retiré de ces écrans, actualisation automatique incluse */
+var _demoBanner40=demoBanner;
+demoBanner=function(){ if(sessUser() && (S.screen==='techdetail'||S.screen==='suivi')) return ''; return _demoBanner40(); };
+rerenderSoft=function(){ if(document.querySelector('#scrim') || ['accueil','planning','clients','equipe','techdetail','suivi'].indexOf(S.screen)<0) return; var y=V.scrollTop; render(); V.scrollTop=y; };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
