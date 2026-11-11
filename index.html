@@ -934,6 +934,7 @@ html,body{overscroll-behavior:none}
 .kpis3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.kpis3 .card{padding:14px 12px;display:flex;flex-direction:column;gap:2px}.kpis3 b{font-size:24px;line-height:1.1}.kpis3 small{color:var(--muted);font-size:12.5px;line-height:1.3}.trk-live{display:flex;flex-direction:column;gap:10px;border:1.5px solid var(--line)}.live-map{border-radius:18px;overflow:hidden;border:1px solid var(--line);height:260px;margin:10px 0}.live-map iframe{width:100%;height:100%;border:0}
 /* Anti-débordement : les textes longs se coupent au lieu d'élargir l'écran */
 #view{overflow-x:hidden}.tl .b,.tl .b .card,.row>.grow,.li>.grow,.card .grow,.grow{min-width:0}.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.pill{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+.cfg-it>span.grow.muted{flex:0 0 auto;max-width:48%}.cfg-it>span.grow.muted+b{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;text-align:right}
 </style>
 
 </head>
@@ -2991,7 +2992,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.41 · 11 nov. 2026';
+var APP_VERSION='1.0.42 · 11 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4884,8 +4885,12 @@ SCREENS.suivi=function(tid){
     h+='<div class="live-map"><iframe title="Carte" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+p.lat.toFixed(5)+'%2C'+p.lng.toFixed(5)+'"></iframe></div>';
     h+='<p class="hint">Dernière position '+(agoTxt(p.at)||'reçue')+(p.acc?' · précision ± '+Math.round(p.acc)+' m':'')+(p.speed!=null?' · '+p.speed+' km/h':'')+'. Actualisation automatique toutes les 30 s.</p>';
     h+='<button class="btn primary block" id="svMaps" data-ll="'+p.lat+','+p.lng+'">'+ic('route')+'Ouvrir dans Google Maps</button>';
-  } else h+='<div class="cfg-share">'+ic('late')+'<span>Position pas encore disponible : le CRM doit enregistrer la position envoyée par l\'appli et la renvoyer avec le RDV.</span></div>';
-  h+='<div class="card cfg"><div class="cfg-it"><span class="grow muted">Destination</span><b style="text-align:right;font-size:14px">'+esc([c.adr, c.ville].filter(Boolean).join(', ')||'—')+'</b></div><div class="cfg-it"><span class="grow muted">Statut</span><b>'+(ST_LBL[r.st]||'')+'</b></div></div>';
+  } else {
+    h+='<div class="live-map"><iframe title="Destination" loading="lazy" referrerpolicy="no-referrer" src="https://maps.google.com/maps?q='+encodeURIComponent(fullAddr(c))+'&z=14&output=embed"></iframe></div>';
+    h+='<p class="hint">La carte montre la destination. La position en direct du technicien s\'affichera ici dès que le CRM la transmettra. En attendant, demandez-la-lui : il l\'envoie en un appui.</p>';
+    h+='<button class="btn primary block" id="svAsk">'+ic('wa')+'Demander sa position à '+esc(firstNameOf(t.nom))+'</button>';
+  }
+  h+='<div class="card cfg"><div class="cfg-it" style="flex-direction:column;align-items:flex-start;gap:2px"><span class="muted" style="font-size:13px">Destination</span><b style="font-size:14.5px;line-height:1.35;overflow-wrap:anywhere">'+esc(fullAddr(c)||'—')+'</b></div><div class="cfg-it"><span class="grow muted">Statut</span><b>'+(ST_LBL[r.st]||'')+'</b></div></div>';
   h+='<div class="btns"><button class="btn soft" id="svCall">'+ic('phone')+'Appeler '+esc(firstNameOf(t.nom))+'</button><button class="btn soft" data-open="'+esc(r.cid)+'">Fiche client</button></div></div>';
   return h;
 };
@@ -4922,6 +4927,27 @@ bind=function(){ var r=_bind40.apply(this, arguments);
 var _demoBanner40=demoBanner;
 demoBanner=function(){ if(sessUser() && (S.screen==='techdetail'||S.screen==='suivi')) return ''; return _demoBanner40(); };
 rerenderSoft=function(){ if(document.querySelector('#scrim') || ['accueil','planning','clients','equipe','techdetail','suivi'].indexOf(S.screen)<0) return; var y=V.scrollTop; render(); V.scrollTop=y; };
+/* Adresse complète sans doublon (le CRM met souvent déjà « CP Ville » dans l'adresse) */
+function fullAddr(c){ c=c||{}; var a=String(c.adr||'').trim(), v=String(c.ville||'').trim(); if(!a) return v; if(!v) return a; var vn=v.replace(/^\d{5}\s*/,'').toLowerCase(); return a.toLowerCase().indexOf(vn)>=0 ? a : a+', '+v; }
+/* Position envoyée par l'agent en un appui (WhatsApp, SMS… au choix), en attendant le suivi par le CRM */
+ACTIONS.position={label:'Envoyer ma position', icon:'pin', cls:'g'};
+(function(){ try{ if(!CFG.quick.some(function(q){ return q.id==='position'; })){ CFG.quick.splice(2,0,{id:'position',on:true}); save(); } }catch(e){} })();
+function sharePosition(){
+  toast('Recherche de votre position…');
+  getPos(function(pos, code){
+    if(!pos){ sheet('<h3>Position</h3><p class="hint" style="line-height:1.5">'+esc(code===9?'Indisponible dans l\'aperçu : testez sur le téléphone.':geoHelp(code))+'</p><button class="btn primary block" data-close>J\'ai compris</button>'); return; }
+    var link='https://maps.google.com/?q='+pos.lat.toFixed(6)+','+pos.lng.toFixed(6), nx=null; try{ var id=nextRid(); nx=id?rdv(id):null; }catch(e){}
+    var c=nx?client(nx.cid):null, txt='Ma position ('+parisHM(new Date())+', précision ± '+pos.accuracy_m+' m)'+(c?' · en route vers '+c.nom+(cityOf(c)?', '+cityOf(c):''):'')+' : '+link;
+    if(navigator.share){ navigator.share({title:'Ma position', text:txt}).catch(function(){}); }
+    else location.href='https://wa.me/?text='+encodeURIComponent(txt);
+  }, {timeout:15000, maxAge:30000});
+}
+var _doAct41=doAct;
+doAct=function(id){ if(id==='position') return sharePosition(); return _doAct41(id); };
+var _bind41=bind;
+bind=function(){ var r=_bind41.apply(this, arguments);
+  var ask=$('svAsk'); if(ask) ask.onclick=function(){ var t=tech(S.arg)||{}; var msg='Bonjour '+firstNameOf(t.nom)+', peux-tu m\'envoyer ta position ? Dans l\'appli AR Terrain : bouton « Envoyer ma position ».'; location.href=(t.tel?'https://wa.me/'+intlTel(t.tel):'https://wa.me/')+'?text='+encodeURIComponent(msg); };
+  return r; };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
