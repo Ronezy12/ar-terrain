@@ -969,6 +969,24 @@ html,body{overscroll-behavior:none}
 .dq-cartlist{display:flex;flex-direction:column;gap:4px;max-height:46vh;overflow-y:auto}
 @media (min-width:700px){.dq-rooms{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}}
 .dq-qin{width:64px;height:48px;border:none;background:transparent;text-align:center;font:inherit;font-size:21px;font-weight:700;color:var(--ink);-moz-appearance:textfield}.dq-qin::-webkit-inner-spin-button,.dq-qin::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.dq-room-add{border-style:dashed;color:var(--primary)}
+/* Transitions de pages et sensation d'appui */
+@keyframes pgPush{from{transform:translateX(48px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+@keyframes pgPop{from{transform:translateX(-48px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+@keyframes ttlIn{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
+@keyframes rip{from{transform:scale(0);opacity:.28}to{transform:scale(1);opacity:0}}
+main.pg-push{animation:pgPush .34s cubic-bezier(.2,.9,.25,1) both}
+main.pg-pop{animation:pgPop .34s cubic-bezier(.2,.9,.25,1) both}
+.ttl.ttl-in{animation:ttlIn .3s ease-out both}
+.rip-clip{overflow:hidden}
+.rip{position:absolute;border-radius:50%;background:currentColor;pointer-events:none;transform:scale(0);animation:rip .55s ease-out forwards;z-index:0}
+.card.li,button.card,.dq-row,.dq-room,.cfg-it[data-go],.chip,.opt,.kpi,.dq-cart,.dq-add,.rb .c{transition:transform .14s cubic-bezier(.3,.7,.4,1),filter .14s,box-shadow .14s}
+.card.li:active,button.card:active,.dq-room:active,.kpi:active,.dq-cart:active{transform:scale(.97);filter:brightness(.97)}
+.dq-row:active,.cfg-it[data-go]:active{filter:brightness(.96)}
+.chip:active,.opt:active,.dq-add:active,.rb:active .c{transform:scale(.92)}
+.btn{transition:transform .14s cubic-bezier(.3,.7,.4,1),filter .14s,box-shadow .14s}
+.btn:active{transform:scale(.95);filter:brightness(.93)}
+.btn.primary:active{box-shadow:0 2px 8px rgba(29,63,191,.25) inset}
+@media (prefers-reduced-motion: reduce){main.pg-push,main.pg-pop,.ttl.ttl-in{animation:none}.rip{display:none}}
 </style>
 
 </head>
@@ -3026,7 +3044,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.45 · 11 nov. 2026';
+var APP_VERSION='1.0.46 · 11 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5260,6 +5278,44 @@ loadCrmCatalogue=function(){
 };
 /* Pièces : éclairage reconnu aussi par la catégorie du CRM */
 DQ_ROOMS.forEach(function(r){ if(['chambre','sejour','cuisine','sdb','exterieur'].indexOf(r.id)>=0) r.re=new RegExp(r.re.source+'|[ée]clairage|eglairage|luminaire|plafonnier|hublot', 'i'); });
+
+/* =========================================================
+   V46 — Sensation d'appui et transitions de pages : onde au toucher, léger enfoncement, petite vibration (Android),
+   page suivante qui glisse depuis la droite, retour qui glisse depuis la gauche
+   ========================================================= */
+var MOTION_OK=!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+var NAV_DIR=null;
+var _go46=go;
+go=function(){ NAV_DIR='push'; return _go46.apply(this, arguments); };
+var _back46=back;
+back=function(){ NAV_DIR='pop'; return _back46.apply(this, arguments); };
+$('back').onclick=function(){ back(); };
+var _render46=render;
+render=function(){
+  var before=S._key, dir=NAV_DIR; NAV_DIR=null;
+  var r=_render46.apply(this, arguments);
+  if(MOTION_OK && dir && S._key!==before){
+    var cls=dir==='push'?'pg-push':'pg-pop'; V.classList.remove('pg-push','pg-pop','in-r','in-l'); void V.offsetWidth; V.classList.add(cls);
+    var hd=document.querySelector('.ttl'); if(hd){ hd.classList.remove('ttl-in'); void hd.offsetWidth; hd.classList.add('ttl-in'); }
+    clearTimeout(render._t); render._t=setTimeout(function(){ V.classList.remove('pg-push','pg-pop'); }, 420);
+  }
+  return r;
+};
+/* Onde au toucher sur les boutons, cartes et lignes */
+(function(){
+  var SEL='.btn,.card.li,button.card,.dq-row,.dq-room,.dq-cart,.cfg-it[data-go],.cfg-it[id],.rb .c,.chip,.opt,.kpi,.tl .card,.dayit,.next .mini button,.dq-add';
+  document.addEventListener('pointerdown', function(e){
+    if(!MOTION_OK || e.button>0) return;
+    var t=e.target.closest && e.target.closest(SEL); if(!t || !$('phone').contains(t) || t.disabled) return;
+    var host=t.matches('.rb .c')?t:t, cs=getComputedStyle(host);
+    if(cs.position==='static') host.style.position='relative';
+    if(cs.overflow!=='hidden' && !host.classList.contains('rip-clip')) host.classList.add('rip-clip');
+    var rc=host.getBoundingClientRect(), size=Math.max(rc.width, rc.height)*2.2, sp=document.createElement('span');
+    sp.className='rip'; sp.style.width=sp.style.height=size+'px'; sp.style.left=(e.clientX-rc.left-size/2)+'px'; sp.style.top=(e.clientY-rc.top-size/2)+'px';
+    host.appendChild(sp); setTimeout(function(){ sp.remove(); }, 600);
+    try{ if(navigator.vibrate && !t.closest('.dq-row')) navigator.vibrate(6); }catch(err){}
+  }, {passive:true});
+})();
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
