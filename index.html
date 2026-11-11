@@ -968,6 +968,7 @@ html,body{overscroll-behavior:none}
 .dq-go{height:44px;padding:0 16px;border-radius:14px;background:var(--primary);display:flex;align-items:center;font-weight:700;flex:none}
 .dq-cartlist{display:flex;flex-direction:column;gap:4px;max-height:46vh;overflow-y:auto}
 @media (min-width:700px){.dq-rooms{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}}
+.dq-qin{width:64px;height:48px;border:none;background:transparent;text-align:center;font:inherit;font-size:21px;font-weight:700;color:var(--ink);-moz-appearance:textfield}.dq-qin::-webkit-inner-spin-button,.dq-qin::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.dq-room-add{border-style:dashed;color:var(--primary)}
 </style>
 
 </head>
@@ -3025,7 +3026,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.43 · 11 nov. 2026';
+var APP_VERSION='1.0.44 · 11 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5009,10 +5010,43 @@ function dqKits(){
   FAVORIS.forEach(function(f,i){ out.push({id:'f'+i, name:f.nom, lignes:f.lignes, src:'local'}); });
   return out;
 }
-function dqInRoom(name, cat, room){ if(!room) return true; var R=DQ_ROOMS.filter(function(r){ return r.id===room; })[0]; if(!R) return true; var t=name+' '+cat; return R.re.test(t) || DQ_ALL.test(t); }
+function dqInRoom(name, cat, room){ if(!room) return true; var ty=dqTypeOf(room), R=dqTypeDef(ty); if(!R) return true; var t=name+' '+cat; if(DQ_ALL.test(t)) return true; if(ty!=='tableau' && DQ_ROOMS[0].re.test(t)) return false; return R.re.test(t); }
 function dqKitRoom(k){ var t=k.name+' '+(k.lignes||[]).map(function(l){ return l.des; }).join(' '); var best=null; DQ_ROOMS.forEach(function(r){ if(!best && r.re.test(k.name)) best=r.id; }); if(!best) DQ_ROOMS.forEach(function(r){ if(!best && r.re.test(t)) best=r.id; }); return best; }
 function dqFavs(){ CFG.devisFavs=CFG.devisFavs||{}; return CFG.devisFavs; }
-function dqRoomLabel(id){ var r=DQ_ROOMS.filter(function(x){ return x.id===id; })[0]; return r?r.label:'Sans pièce'; }
+/* Pièces du devis : modifiables (plusieurs chambres, renommer, retirer) */
+function dqRooms(){ var d=dqDraft(); if(!d.rooms) d.rooms=DQ_ROOMS.map(function(r){ return {id:r.id, type:r.id, label:r.label}; }); return d.rooms; }
+function dqTypeDef(t){ return DQ_ROOMS.filter(function(x){ return x.id===t; })[0]; }
+function dqTypeOf(id){ var r=dqRooms().filter(function(x){ return x.id===id; })[0]; return r?r.type:id; }
+function dqFirstOfType(t){ var r=dqRooms().filter(function(x){ return x.type===t; })[0]; return r?r.id:null; }
+function dqRoomLabel(id){ if(!id) return 'Sans pièce'; var r=dqRooms().filter(function(x){ return x.id===id; })[0]; return r?r.label:'Sans pièce'; }
+function dqAddRoom(type){ var rooms=dqRooms(), def=dqTypeDef(type)||{label:'Pièce'}, same=rooms.filter(function(r){ return r.type===type; });
+  if(same.length===1 && same[0].label===def.label) same[0].label=def.label+' 1';
+  var n=same.length+1, id=type+'-'+Date.now().toString(36), last=-1; rooms.forEach(function(r,i){ if(r.type===type) last=i; });
+  rooms.splice(last>=0?last+1:rooms.length, 0, {id:id, type:type, label:def.label+(same.length?' '+n:'')}); return id; }
+function dqRoomSheet(id){
+  var d=dqDraft(), rooms=dqRooms(), r=rooms.filter(function(x){ return x.id===id; })[0]; if(!r) return;
+  var used=d.lignes.filter(function(l){ return l.room===id; }).length;
+  var s=sheet('<h3>'+esc(r.label)+'</h3><label class="field"><span>Nom de la pièce</span><input id="rmName" value="'+esc(r.label)+'" autocomplete="off"></label>'+
+    '<div class="btns"><button class="btn soft" id="rmDup">'+ic('plus')+'Ajouter une autre '+esc((dqTypeDef(r.type)||{label:'pièce'}).label.toLowerCase())+'</button><button class="btn danger" id="rmDel">'+ic('x')+'Retirer</button></div>'+
+    (used?'<p class="hint">'+used+' ligne'+(used>1?'s':'')+' dans cette pièce. Si vous la retirez, elles passent en « Sans pièce ».</p>':'')+
+    '<button class="btn primary block" id="rmOk">Enregistrer</button>');
+  s.querySelector('#rmOk').onclick=function(){ var v=s.querySelector('#rmName').value.trim(); if(v) r.label=v; closeSheet(); dqRerender(); };
+  s.querySelector('#rmDup').onclick=function(){ var nid=dqAddRoom(r.type); closeSheet(); dqRerender(); toast(dqRoomLabel(nid)+' ajoutée'); };
+  s.querySelector('#rmDel').onclick=function(){ d.lignes.forEach(function(l){ if(l.room===id) l.room=null; }); d.rooms=rooms.filter(function(x){ return x.id!==id; }); if(dqState().room===id) dqState().room=null; closeSheet(); dqRerender(); toast('Pièce retirée'); };
+}
+function dqAddRoomSheet(){
+  var s=sheet('<h3>Ajouter une pièce</h3><p class="hint">Par exemple une deuxième chambre. Vous pourrez la renommer ensuite.</p><div class="dq-rooms">'+DQ_ROOMS.map(function(t){ return '<button class="dq-room" data-addtype="'+t.id+'" style="min-height:76px"><span class="dq-ri">'+ic(t.ic)+'</span><b>'+esc(t.label)+'</b></button>'; }).join('')+'</div>');
+  [].forEach.call(s.querySelectorAll('[data-addtype]'),function(b){ b.onclick=function(){ var nid=dqAddRoom(b.dataset.addtype); closeSheet(); dqState().room=nid; dqRerender(); toast(dqRoomLabel(nid)+' ajoutée'); }; });
+}
+function dqFreeLineSheet(after){
+  var d=dqDraft(), st=dqState(), room=st.room||null, q=1;
+  var s=sheet('<h3>Ligne libre</h3><label class="field"><span>Texte de la ligne</span><input id="flTxt" placeholder="Ex. Remplacement prise salle de bain" autocomplete="off"></label><label class="field"><span>Quantité</span><input id="flQ" type="number" inputmode="decimal" min="0.5" step="0.5" value="1"></label>'+
+    '<b>Pièce</b><div class="dq-chips">'+[{id:null,label:'Sans pièce'}].concat(dqRooms()).map(function(r){ return '<button class="chip'+(room===r.id?' on':'')+'" data-flr="'+(r.id||'')+'">'+esc(r.label)+'</button>'; }).join('')+'</div>'+
+    '<button class="btn primary block" id="flOk">Ajouter la ligne</button>');
+  [].forEach.call(s.querySelectorAll('[data-flr]'),function(b){ b.onclick=function(){ room=b.dataset.flr||null; [].forEach.call(s.querySelectorAll('[data-flr]'),function(x){ x.classList.toggle('on',x===b); }); }; });
+  s.querySelector('#flOk').onclick=function(){ var t=s.querySelector('#flTxt').value.trim(); if(!t){ toast('Écrivez le texte de la ligne'); return; } q=Math.max(0.5, parseFloat(String(s.querySelector('#flQ').value).replace(',','.'))||1); var snap=dqSnap(d); d.lignes.push({des:t, u:'u', qty:q, pu:0, tva:20, room:room, libre:true}); closeSheet(); dqRerender(); if(after) setTimeout(after,50); dqUndoToast('Ligne ajoutée', d, snap); };
+  setTimeout(function(){ var i=s.querySelector('#flTxt'); if(i) i.focus(); }, 200);
+}
 function dqDraft(){ if(!S.dv) S.dv=newDraft(); if(S.dv && !client(S.dv.client) && CLIENTS[0]) S.dv.client=CLIENTS[0].id; return S.dv; }
 function dqFind(d, des, room){ for(var i=0;i<d.lignes.length;i++){ var l=d.lignes[i]; if(l.des===des && (l.room||null)===(room||null)) return i; } return -1; }
 function dqAddLine(d, src, room, q){ var i=dqFind(d, src.des, room); if(i>=0){ d.lignes[i].qty=r2(+d.lignes[i].qty+q); return; } d.lignes.push({des:src.des, u:src.u||'u', qty:q, pu:+src.pu||0, tva:+src.tva||20, room:room||null, ref:src.ref||null}); }
@@ -5036,11 +5070,12 @@ SCREENS.devis=function(){
   if(st.room) h+='<button class="link dq-back" id="dqBack">'+ic('back')+'Toutes les pièces</button>';
   h+='</div>';
   if(showRooms){
-    h+='<div class="sec"><h2>Où êtes-vous ?</h2></div><div class="dq-rooms">'+DQ_ROOMS.map(function(r){ return '<button class="dq-room" data-dqroom="'+r.id+'"><span class="dq-ri">'+ic(r.ic)+'</span>'+(count[r.id]?'<b class="dq-badge num">'+count[r.id]+'</b>':'')+'<b>'+esc(r.label)+'</b></button>'; }).join('')+'</div>';
-    h+='<p class="hint">Appui court : ajouter. Appui long : quantité, pièce et habituels.</p>';
+    h+='<div class="sec"><h2>Où êtes-vous ?</h2></div><div class="dq-rooms">'+dqRooms().map(function(r){ var t=dqTypeDef(r.type)||{ic:'home'}; return '<button class="dq-room" data-dqroom="'+esc(r.id)+'" data-hold="room" data-id="'+esc(r.id)+'"><span class="dq-ri">'+ic(t.ic)+'</span>'+(count[r.id]?'<b class="dq-badge num">'+count[r.id]+'</b>':'')+'<b>'+esc(r.label)+'</b></button>'; }).join('')+
+      '<button class="dq-room dq-room-add" id="dqAddRoom"><span class="dq-ri">'+ic('plus')+'</span><b>Ajouter une pièce</b></button></div>';
+    h+='<p class="hint">Appui court : ajouter. Appui long : quantité, pièce, texte et habituels. Appui long sur une pièce : la renommer, en ajouter une autre (chambre 2…) ou la retirer.</p>';
   } else {
     var room=st.mode==='piece'?st.room:null;
-    var ks=kits.filter(function(k){ if(!match(k.name)) return false; if(st.mode==='piece') return !room || !!q || dqKitRoom(k)===room; if(st.cat==='Habituels') return !!favs[k.id]; return st.cat==='tout' || st.cat==='Kits'; });
+    var ks=kits.filter(function(k){ if(!match(k.name)) return false; if(st.mode==='piece') return !room || !!q || dqKitRoom(k)===dqTypeOf(room); if(st.cat==='Habituels') return !!favs[k.id]; return st.cat==='tout' || st.cat==='Kits'; });
     var its=(st.mode==='cat' && st.cat==='Kits')?[]:items.filter(function(it){ if(!match(it.name+' '+it.cat+' '+it.ref)) return false; if(st.mode==='piece') return q ? true : dqInRoom(it.name, it.cat, room); if(st.cat==='Habituels') return !!favs[it.id]; return st.cat==='tout' || st.cat===it.cat; });
     if(st.mode==='piece' && room && !q && !its.length) its=items;
     its.sort(function(a,b){ return (favs[b.id]?1:0)-(favs[a.id]?1:0); });
@@ -5062,23 +5097,27 @@ function dqKitById(id){ return dqKits().filter(function(k){ return k.id===id; })
 function dqItemById(id){ return dqItems().filter(function(k){ return k.id===id; })[0]; }
 function dqLongSheet(o){
   var st=dqState(), d=dqDraft(), isKit=!!o.kit, k=isKit?dqKitById(o.kit):null, it=isKit?null:dqItemById(o.item), favs=dqFavs(), fid=isKit?k.id:it.id;
-  var q=o.q||1, room=o.room!==undefined?o.room:(st.room||(isKit?dqKitRoom(k):null)), money=canSeeMoney();
+  var q=o.q||1, room=o.room!==undefined?o.room:(st.room||(isKit?dqFirstOfType(dqKitRoom(k)):null)), money=canSeeMoney(), lib=o.fromIdx!=null?d.lignes[o.fromIdx].des:null;
+  function keepLib(){ var i=document.getElementById('lpLib'); if(i) lib=i.value; var n=document.getElementById('lpQ'); if(n){ var v=parseFloat(String(n.value).replace(',','.')); if(v>0) q=r2(v); } }
   function draw(){
     var s=sheet('<div class="muted" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">'+(isKit?'Kit · ajouté d\'un coup':esc(it.cat))+'</div><h3 style="margin:0">'+esc(isKit?k.name:it.name)+'</h3>'+
+      (lib!=null?'<label class="field"><span>Texte de la ligne (modifiable)</span><input id="lpLib" value="'+esc(lib)+'" autocomplete="off"></label>':'')+
       (isKit?'<div class="card cfg" style="padding:0">'+(k.lignes||[]).map(function(l){ return '<div class="cfg-it"><b class="num" style="color:var(--primary);min-width:34px">'+r2(l.qty*q)+'×</b><span class="grow">'+esc(l.des)+'</span></div>'; }).join('')+'</div>':'<p class="hint" style="margin:0">'+(money?eur(it.pu)+' HT l\'unité':'Prix calculé par le bureau')+'</p>')+
-      '<div class="row" style="justify-content:space-between"><b>Quantité</b><div class="dq-step big"><button id="lpM" aria-label="Moins">−</button><b class="num">'+q+'</b><button class="on" id="lpP" aria-label="Plus">+</button></div></div>'+
+      '<div class="row" style="justify-content:space-between"><b>Quantité</b><div class="dq-step big"><button id="lpM" aria-label="Moins">−</button><input id="lpQ" class="dq-qin num" type="number" inputmode="decimal" min="0.5" step="0.5" value="'+q+'" aria-label="Quantité"><button class="on" id="lpP" aria-label="Plus">+</button></div></div>'+
       '<div class="dq-qq">'+[1,2,3,5,10].map(function(n){ return '<button class="chip'+(q===n?' on':'')+'" data-lpq="'+n+'">×'+n+'</button>'; }).join('')+'</div>'+
-      '<b>Pièce</b><div class="dq-chips">'+[{id:null,label:'Sans pièce'}].concat(DQ_ROOMS).map(function(r){ return '<button class="chip'+(room===r.id?' on':'')+'" data-lpr="'+(r.id||'')+'">'+esc(r.label)+'</button>'; }).join('')+'</div>'+
+      '<b>Pièce</b><div class="dq-chips">'+[{id:null,label:'Sans pièce'}].concat(dqRooms()).map(function(r){ return '<button class="chip'+(room===r.id?' on':'')+'" data-lpr="'+(r.id||'')+'">'+esc(r.label)+'</button>'; }).join('')+'</div>'+
       '<div class="btns"><button class="btn soft" id="lpFav">'+ic('star')+(favs[fid]?'Retirer des habituels':'Ajouter aux habituels')+'</button>'+(o.fromIdx!=null?'<button class="btn danger" id="lpDel">'+ic('x')+'Retirer</button>':'')+'</div>'+
       '<button class="btn primary block" id="lpGo">'+(o.fromIdx!=null?'Mettre à jour':(isKit?'Ajouter le kit ×'+q:'Ajouter ×'+q))+'</button>');
-    s.querySelector('#lpM').onclick=function(){ q=Math.max(1,q-1); draw(); };
-    s.querySelector('#lpP').onclick=function(){ q=q+1; draw(); };
-    [].forEach.call(s.querySelectorAll('[data-lpq]'),function(b){ b.onclick=function(){ q=+b.dataset.lpq; draw(); }; });
-    [].forEach.call(s.querySelectorAll('[data-lpr]'),function(b){ b.onclick=function(){ room=b.dataset.lpr||null; draw(); }; });
-    s.querySelector('#lpFav').onclick=function(){ if(favs[fid]) delete favs[fid]; else favs[fid]=1; save(); draw(); };
+    s.querySelector('#lpM').onclick=function(){ keepLib(); q=Math.max(1,r2(q-1)); draw(); };
+    s.querySelector('#lpP').onclick=function(){ keepLib(); q=r2(q+1); draw(); };
+    s.querySelector('#lpQ').oninput=function(){ var v=parseFloat(String(this.value).replace(',','.')); if(v>0){ q=r2(v); var g=s.querySelector('#lpGo'); if(g && o.fromIdx==null) g.textContent=(isKit?'Ajouter le kit ×':'Ajouter ×')+q; } };
+    [].forEach.call(s.querySelectorAll('[data-lpq]'),function(b){ b.onclick=function(){ keepLib(); q=+b.dataset.lpq; draw(); }; });
+    [].forEach.call(s.querySelectorAll('[data-lpr]'),function(b){ b.onclick=function(){ keepLib(); room=b.dataset.lpr||null; draw(); }; });
+    s.querySelector('#lpFav').onclick=function(){ keepLib(); if(favs[fid]) delete favs[fid]; else favs[fid]=1; save(); draw(); };
     var del=s.querySelector('#lpDel'); if(del) del.onclick=function(){ var snap=dqSnap(d); d.lignes.splice(o.fromIdx,1); closeSheet(); if(o.after) o.after(); dqRerender(); dqUndoToast('Ligne retirée', d, snap); };
     s.querySelector('#lpGo').onclick=function(){ var snap=dqSnap(d);
-      if(o.fromIdx!=null){ var l=d.lignes[o.fromIdx]; l.qty=q; l.room=room; var j=-1; d.lignes.forEach(function(x,ix){ if(ix!==o.fromIdx && x.des===l.des && (x.room||null)===(room||null)) j=ix; }); if(j>=0){ d.lignes[j].qty=r2(+d.lignes[j].qty+q); d.lignes.splice(o.fromIdx,1); } }
+      keepLib();
+      if(o.fromIdx!=null){ var l=d.lignes[o.fromIdx]; l.qty=q; l.room=room; if(lib!=null && lib.trim()) l.des=lib.trim(); var j=-1; d.lignes.forEach(function(x,ix){ if(ix!==o.fromIdx && x.des===l.des && (x.room||null)===(room||null)) j=ix; }); if(j>=0){ d.lignes[j].qty=r2(+d.lignes[j].qty+q); d.lignes.splice(o.fromIdx,1); } }
       else if(isKit){ for(var t=0;t<q;t++) (k.lignes||[]).forEach(function(l){ dqAddLine(d, l, room, +l.qty||1); }); }
       else dqAddLine(d, dqItemLine(it), room, q);
       closeSheet(); if(o.after) o.after(); dqRerender(); dqUndoToast((isKit?'Kit « '+k.name+' »':it.name)+' ×'+q+' · '+dqRoomLabel(room), d, snap); };
@@ -5086,13 +5125,14 @@ function dqLongSheet(o){
   draw();
 }
 function dqCartSheet(){
-  var d=dqDraft(), admin=S.role==='admin', money=canSeeMoney(), groups={}, order=DQ_ROOMS.map(function(r){ return r.id; }).concat(['none']);
+  var d=dqDraft(), admin=S.role==='admin', money=canSeeMoney(), groups={}, order=dqRooms().map(function(r){ return r.id; }).concat(['none']);
   d.lignes.forEach(function(l,i){ var k=l.room||'none'; (groups[k]=groups[k]||[]).push(i); });
   var pieces=d.lignes.reduce(function(a,l){ return a+(+l.qty||0); },0);
   var html='<div class="row" style="justify-content:space-between"><div><h3 style="margin:0">Vérifier le devis</h3><small class="muted">'+d.lignes.length+' ligne'+(d.lignes.length>1?'s':'')+' · '+pieces+' pièce'+(pieces>1?'s':'')+(money?' · '+eur(totals(d).ttc)+' TTC':' · sans prix')+'</small></div><button class="link" data-close>+ Ajouter</button></div>';
   if(!d.lignes.length) html+='<p class="hint" style="text-align:center">Aucun article pour l\'instant.</p>';
   html+='<div class="dq-cartlist">'+order.filter(function(k){ return groups[k]; }).map(function(k){ return '<div class="muted" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:6px 2px">'+esc(dqRoomLabel(k==='none'?null:k))+'</div><div class="dq-list">'+groups[k].map(function(i){ var l=d.lignes[i];
       return '<div class="dq-row" data-hold="line" data-idx="'+i+'"><span class="dq-name"><b>'+esc(l.des)+'</b><small>'+esc([l.ref, money?eur(l.pu)+' HT':''].filter(Boolean).join(' · ')||l.u)+'</small></span><div class="dq-step"><button data-cm="'+i+'" aria-label="Moins">−</button><b class="num">'+l.qty+'</b><button class="on" data-cp="'+i+'" aria-label="Plus">+</button></div></div>'; }).join('')+'</div>'; }).join('')+'</div>';
+  html+='<button class="btn line block" id="dqFree">'+ic('pen')+'Ajouter une ligne libre</button>';
   html+='<div class="btns"><button class="btn soft" id="dqPhotos">'+ic('cam')+'Photos du chantier</button><button class="btn soft" data-mic="dqNote">'+ic('mic')+'Remarque</button></div><textarea id="dqNote" rows="2" placeholder="Remarque pour le bureau (facultatif)" style="width:100%;border:1.5px solid var(--line-strong);border-radius:14px;padding:10px 12px;background:var(--surface);color:var(--ink);font:inherit;resize:none">'+esc(d.note||'')+'</textarea>';
   if(admin) html+='<button class="btn line block" id="dqDetail">'+ic('euro')+'Conditions, remise, acomptes et PDF</button>';
   html+='<button class="btn primary block" id="dqSend"'+(d.lignes.length?'':' disabled')+'>'+ic('send')+(admin?'Finaliser et envoyer au client':'Envoyer au bureau pour chiffrage')+'</button>';
@@ -5103,6 +5143,7 @@ function dqCartSheet(){
   [].forEach.call(s.querySelectorAll('[data-cm]'),function(b){ b.onclick=function(){ var i=+b.dataset.cm, l=d.lignes[i]; if(+l.qty<=1){ var snap=dqSnap(d); d.lignes.splice(i,1); redraw(); dqUndoToast('Ligne retirée', d, snap); } else { l.qty=r2(+l.qty-1); redraw(); } }; });
   dqBindHold(s, function(el){ var i=+el.dataset.idx, l=d.lignes[i], it=dqItems().filter(function(x){ return x.name===l.des; })[0]; keep(); if(!it){ it={id:'line'+i, name:l.des, cat:'Article', u:l.u, pu:l.pu, tva:l.tva, ref:l.ref}; }
     dqLongSheetLine(i, l, it); });
+  var fr=s.querySelector('#dqFree'); if(fr) fr.onclick=function(){ keep(); closeSheet(); dqFreeLineSheet(function(){ dqCartSheet(); }); };
   var dt=s.querySelector('#dqDetail'); if(dt) dt.onclick=function(){ keep(); closeSheet(); go('devisdetail'); };
   var ph=s.querySelector('#dqPhotos'); if(ph) ph.onclick=function(){ keep(); closeSheet(); var c=client(d.client); if(c) go('client', c.id); };
   s.querySelector('#dqNote').oninput=keep;
@@ -5143,7 +5184,8 @@ bindDevis=function(){
   var ca=$('dqCart'); if(ca) ca.onclick=dqCartSheet;
   var pc=$('dqClient'); if(pc) pc.onclick=function(){ var list=CLIENTS.slice(0,40); sheet('<h3>Pour quel client ?</h3><div class="list">'+list.map(function(x){ return '<button class="card li" data-pc="'+esc(x.id)+'" style="text-align:left;width:100%"><span class="av">'+esc(initials(x.nom))+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(x.nom)+'</b><small class="muted">'+esc(cityOf(x)||'')+'</small></div></button>'; }).join('')+'</div>');
     [].forEach.call(document.querySelectorAll('[data-pc]'),function(x){ x.onclick=function(){ d.client=x.dataset.pc; closeSheet(); dqRerender(); }; }); };
-  dqBindHold(V, function(el){ if(el.dataset.hold==='kit') dqLongSheet({kit:el.dataset.id, q:1}); else if(el.dataset.hold==='item'){ var it=dqItemById(el.dataset.id), i=dqFind(d, it.name, room); dqLongSheet({item:it.id, q:i>=0?+d.lignes[i].qty:1, room:room, fromIdx:i>=0?i:null}); } });
+  var ar=$('dqAddRoom'); if(ar) ar.onclick=dqAddRoomSheet;
+  dqBindHold(V, function(el){ if(el.dataset.hold==='room'){ dqRoomSheet(el.dataset.id); return; } if(el.dataset.hold==='kit') dqLongSheet({kit:el.dataset.id, q:1}); else if(el.dataset.hold==='item'){ var it=dqItemById(el.dataset.id), i=dqFind(d, it.name, room); dqLongSheet({item:it.id, q:i>=0?+d.lignes[i].qty:1, room:room, fromIdx:i>=0?i:null}); } });
   each('[data-mic]',function(b){ b.onclick=function(e){ e.preventDefault(); if(typeof dictate==='function') dictate(b.dataset.mic); }; });
 };
 var _bind42=bind;
