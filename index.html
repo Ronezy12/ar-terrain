@@ -3044,7 +3044,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.46 · 11 nov. 2026';
+var APP_VERSION='1.0.47 · 11 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5461,6 +5461,29 @@ $('vExit').onclick=function(){ setVideo(false); };
 document.addEventListener('keydown',function(e){ if(e.key==='Escape' && document.body.classList.contains('video')) setVideo(false); });
 window.addEventListener('resize', fitDev);
 (function(){ var d='iphone'; try{ d=localStorage.getItem('ar_dev')||'iphone'; }catch(e){} setDev(d); })();
+/* =========================================================
+   V47 — Un écran qui plante ne bloque plus : réparation automatique des réglages et nouvel essai,
+   sinon message clair avec bouton « Réparer » (au lieu de rester sur l'écran précédent)
+   ========================================================= */
+function cfgRepairAll(){ var D=clone(DEFAULT_CFG); ['tabs','quick','techAccess','notif','shape','size','simple','tour'].forEach(function(k){ CFG[k]=clone(D[k]); }); CFG.liveTabsInit=false; CFG.tabsV36=false; CFG.simpleV39=true; CFG.simple=false; if(!CFG.quick.some(function(q){ return q.id==='position'; })) CFG.quick.splice(2,0,{id:'position',on:true}); save(); tabKey=''; }
+Object.keys(SCREENS).forEach(function(name){
+  var fn=SCREENS[name]; if(typeof fn!=='function' || fn._safe) return;
+  var safe=function(arg){
+    try{ return fn.apply(this, arguments); }
+    catch(e){
+      if(!safe._retried){ safe._retried=true; try{ cfgRepairAll(); var h=fn.apply(this, arguments); safe._retried=false; setTimeout(function(){ toast('Réglages de l\'appli réparés sur ce téléphone'); }, 300); return h; }catch(e2){ e=e2; } }
+      safe._retried=false;
+      try{ console.error(e); }catch(x){}
+      return '<div class="pad"><div class="card empty-st">'+ic('late')+'<b>Cet écran n\'a pas pu s\'ouvrir</b><span class="muted" style="word-break:break-word">'+esc(String(e&&e.message||e))+' · écran « '+esc(name)+' » · version '+esc(String(APP_VERSION).split(' ')[0])+'</span><button class="btn primary sm" id="scrRepair" style="margin-top:8px">Réparer les réglages de l\'appli</button><span class="muted" style="font-size:12.5px">Si ça continue, faites une capture de cet écran et envoyez-la.</span></div></div>';
+    }
+  };
+  safe._safe=true; SCREENS[name]=safe;
+});
+var _bind47=bind;
+bind=function(){ var r; try{ r=_bind47.apply(this, arguments); }catch(e){ try{ console.error(e); }catch(x){} }
+  var rp=$('scrRepair'); if(rp) rp.onclick=function(){ cfgRepairAll(); render(); toast('Réglages réparés'); };
+  return r; };
+
 crmFeed(false);
 applySession(); render();
 if(!IN_PREVIEW && CRM_SESSION && CFG.crm.mode!=='grok') setTimeout(function(){ liveLoad().then(function(){ LIVE_SEEN=liveIds(); }); }, 900);
