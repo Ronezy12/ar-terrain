@@ -352,11 +352,11 @@ function ic(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 var S={ route:'pilotage', appts:[], loaded:false, loading:false, loadedAt:0, err:null, clients:{}, range:14,
   iv:{view:'today', q:'', tech:'', st:'', sort:'start', dir:1, sel:{}, open:null, tab:'det'},
   settings:null, draft:null, setLoaded:false, role:'tech', health:null, version:null, ruleSel:0, navOpen:false, pal:false, palQ:'', palI:0 };
-var PAGES={pilotage:'Tableau de bord', interventions:'Interventions', studio:'Studio de l\'appli', automatisations:'Automatisations', equipe:'Équipe et droits', maintenance:'Déploiements et maintenance'};
+var PAGES={pilotage:'Tableau de bord', interventions:'Interventions', studio:'Studio de l\'appli', automatisations:'Automatisations', equipe:'Équipe et droits', retours:'Retours des utilisateurs', maintenance:'Déploiements et maintenance'};
 var NAV=[
   ['Pilotage', [['pilotage','Tableau de bord','home'],['interventions','Interventions','list'],['#carte','Carte en direct','map']]],
   ['Commercial', [['#clients','Clients','users'],['#devis','Devis','doc'],['#paiements','Paiements','card']]],
-  ['Appli mobile', [['studio','Studio de l\'appli','layout'],['automatisations','Automatisations','bolt'],['#modeles','Modèles de messages','msg'],['equipe','Équipe et droits','shield']]],
+  ['Appli mobile', [['studio','Studio de l\'appli','layout'],['automatisations','Automatisations','bolt'],['retours','Retours des utilisateurs','msg'],['equipe','Équipe et droits','shield'],['#modeles','Modèles de messages','doc']]],
   ['Système', [['maintenance','Déploiements','rocket'],['#journal','Journal d\'audit','clock'],['#claude','Assistant Claude','spark']]]
 ];
 
@@ -395,21 +395,21 @@ function loadClient(cid){
 }
 
 /* ---------- Données : réglages de l'appli ---------- */
-var SET_FIELDS=['tabs','quick','techAccess','simple','shape','size','tour','notif','pay','avis','maint'];
+var SET_FIELDS=['tabs','quick','techAccess','simple','shape','size','tour','notif','pay','avis','maint','fb'];
 var MODULES={accueil:'Accueil', planning:'Planning', clients:'Clients', devis:'Devis', etiquetage:'Étiquetage', equipe:'Équipe'};
 var MOD_DESC={accueil:'Prochain RDV et actions rapides', planning:'Tournée, frise et carte', clients:'Fiches, photos et commentaires', devis:'Devis rapide par pièce', etiquetage:'Tableaux électriques', equipe:'Suivi des techniciens (admin)'};
 var ACTIONS={enroute:'Je suis en route', arrive:'Je suis arrivé', retard:'Prévenir d\'un retard', appeler:'Appeler le client', itineraire:'Itinéraire', photo:'Photo chantier', devis:'Nouveau devis', etiquetage:'Étiquetage', signature:'Faire signer', whatsapp:'WhatsApp', fin:'Fin d\'intervention', materiel:'Matériel', bureau:'Appeler le bureau'};
 var DEF={ tabs:{tech:['accueil','planning','clients','etiquetage'], admin:['accueil','planning','equipe','clients']},
   quick:Object.keys(ACTIONS).map(function(k,i){ return {id:k, on:i<9}; }),
   techAccess:{planning:true, clients:true, tousClients:false, devis:true, montants:true, etiquetage:true, prix:true},
-  simple:false, shape:'pill', size:'normal', pay:{key:'', appId:''}, avis:{on:true, delai:'2h', lien:''}, maint:{on:false, msg:'L\'appli est en maintenance pour quelques minutes. Vos photos et notes sont gardées sur le téléphone.', until:''} };
+  simple:false, shape:'pill', size:'normal', pay:{key:'', appId:''}, avis:{on:true, delai:'2h', lien:''}, fb:{cid:''}, maint:{on:false, msg:'L\'appli est en maintenance pour quelques minutes. Vos photos et notes sont gardées sur le téléphone.', until:''} };
 function clone(o){ return o===undefined?undefined:JSON.parse(JSON.stringify(o)); }
 function withDefaults(app){ var o=clone(app||{}); Object.keys(DEF).forEach(function(k){ if(o[k]===undefined || o[k]===null) o[k]=clone(DEF[k]); });
   if(!o.tabs || typeof o.tabs!=='object' || Array.isArray(o.tabs)) o.tabs=clone(DEF.tabs); ['tech','admin'].forEach(function(r){ if(!Array.isArray(o.tabs[r])) o.tabs[r]=clone(DEF.tabs[r]); o.tabs[r]=o.tabs[r].filter(function(m){ return MODULES[m]; }).slice(0,4); });
   if(!Array.isArray(o.quick) || !o.quick.every(function(q){ return q && typeof q==='object' && q.id; })) o.quick=clone(DEF.quick);
   Object.keys(ACTIONS).forEach(function(k){ if(!o.quick.some(function(q){ return q.id===k; })) o.quick.push({id:k, on:false}); }); o.quick=o.quick.filter(function(q){ return ACTIONS[q.id]; });
   if(typeof o.techAccess!=='object' || !o.techAccess) o.techAccess=clone(DEF.techAccess);
-  if(typeof o.pay!=='object' || !o.pay) o.pay=clone(DEF.pay); if(typeof o.avis!=='object' || !o.avis) o.avis=clone(DEF.avis); if(typeof o.maint!=='object' || !o.maint) o.maint=clone(DEF.maint);
+  if(typeof o.pay!=='object' || !o.pay) o.pay=clone(DEF.pay); if(typeof o.avis!=='object' || !o.avis) o.avis=clone(DEF.avis); if(typeof o.maint!=='object' || !o.maint) o.maint=clone(DEF.maint); if(typeof o.fb!=='object' || !o.fb) o.fb=clone(DEF.fb);
   return o; }
 function loadSettings(){
   return api('GET','settings').then(function(r){
@@ -458,7 +458,7 @@ function render(){
   var side='<aside class="side'+(S.navOpen?' on':'')+'" aria-label="Menu"><div class="brand"><span class="logo">AR</span><span><b>Entreprise AR</b><small>Console AR Terrain</small></span></div>'+
     '<button class="search" data-act="pal">'+ic('search')+'<span>Rechercher…</span><span class="kbd">Ctrl K</span></button><nav class="nav">'+
     NAV.map(function(g){ return '<div class="nav-g"><span>'+g[0]+'</span>'+g[1].map(function(it){ var soon=it[0].charAt(0)==='#', on=S.route===it[0];
-      var c=it[0]==='interventions'&&S.loaded?todayList().length:(it[0]==='automatisations'?'':'');
+      var c=it[0]==='interventions'&&S.loaded?todayList().length:(it[0]==='retours'&&S.fb&&S.fb.items.length?S.fb.items.length:'');
       return '<a href="'+(soon?'#':'#/'+it[0])+'" class="'+(on?'on':'')+'"'+(soon?' data-soon="'+esc(it[1])+'"':'')+'>'+ic(it[2])+'<span>'+esc(it[1])+'</span>'+(soon?'<span class="soon">bientôt</span>':(c!==''?'<span class="c num">'+c+'</span>':''))+'</a>'; }).join('')+'</div>'; }).join('')+'</nav>'+
     '<div class="side-foot"><div class="envb"'+(prod?' style="background:var(--bad-bg);color:var(--bad)"':'')+'><i'+(prod?' style="background:var(--bad-dot)"':'')+'></i>'+(prod?'CRM de production':'CRM de test (crmdev)')+'</div>'+
     '<button class="me" data-act="menu"><span class="av">'+esc(initials(u.nom))+'</span><span style="flex:1;min-width:0"><b>'+esc(u.nom||'Admin')+'</b><small>'+esc(u.profil_nom||'Admin +')+'</small></span>'+ic('out')+'</button></div></aside>';
@@ -735,6 +735,50 @@ VIEWS.maintenance=function(){
   return h;
 };
 
+
+/* ---------- Vue : retours des utilisateurs ---------- */
+var FB_T={bug:['Bug','b-late'], idee:['Idée','b-surplace'], question:['Question','b-aconf']};
+function fbParse(m){
+  var raw=String(pick(m,['text','text_comment','texte'])||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>\s*<p[^>]*>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').trim();
+  if(raw.indexOf('[Retour appli]')!==0) return null;
+  var x=raw.match(/^\[Retour appli\]\s*(Bug|Idée|Question|Retour)\s*·\s*Écran : ([^·]*?)\s*·\s*v(\S+)\s*·\s*(.*?)\s*\((admin|agent)\)\s*·\s*(.*?(?:installée|navigateur))\s*([\s\S]*)$/);
+  var t={Bug:'bug','Idée':'idee',Question:'question'};
+  if(!x) return {type:'bug', message:raw.replace('[Retour appli]','').trim(), at:pick(m,['date','created_at','date_comment'])};
+  return {type:t[x[1]]||'question', screen:x[2], version:x[3], user_nom:x[4], role:x[5], device:x[6], message:x[7].trim(), at:pick(m,['date','created_at','date_comment'])};
+}
+function loadFeedback(){
+  S.fb={loading:true, items:(S.fb&&S.fb.items)||[]}; render();
+  return api('GET','feedback?limit=200').then(function(r){
+    if(r.ok){ var arr=(r.json&&(r.json.feedback||r.json.items||r.json.data))||[]; S.fb={src:'crm', items:arr.map(function(f){ return {type:f.type, message:f.message, screen:f.screen, version:f.version, device:f.device, user_nom:f.user_nom||f.user, role:f.role, at:f.occurred_at||f.created_at}; })}; render(); return; }
+    var cid=S.settings&&S.settings.fb&&S.settings.fb.cid;
+    if(!cid){ S.fb={src:'none', items:[]}; render(); return; }
+    return api('GET','clients/'+encodeURIComponent(cid)).then(function(r2){
+      var c=(r2.json&&(r2.json.client||r2.json.contact||r2.json.data||r2.json))||{};
+      var items=(Array.isArray(c.comments)?c.comments:[]).map(fbParse).filter(Boolean);
+      S.fb={src:'fiche', cid:cid, ok:r2.ok, items:items}; render();
+    });
+  }).catch(function(){ S.fb={src:'err', items:[]}; render(); });
+}
+VIEWS.retours=function(){
+  var f=S.fbFilter||'all', fb=S.fb||{items:[]}, items=fb.items.filter(function(x){ return f==='all' || x.type===f; });
+  var h=topbar('Appli mobile','Retours des utilisateurs','<button class="btn" data-act="fbload">'+ic('refresh')+'Actualiser</button>');
+  var n=function(t){ return fb.items.filter(function(x){ return t==='all'||x.type===t; }).length; };
+  h+='<div class="page fade"><div class="kpis">'+[['all','Tous les retours'],['bug','Bugs'],['idee','Idées'],['question','Questions']].map(function(k){ return '<button class="card kpi" style="text-align:left;cursor:pointer;'+(f===k[0]?'border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)':'')+'" data-fbf="'+k[0]+'"><span class="l">'+k[1]+'</span><span class="v num">'+n(k[0])+'</span></button>'; }).join('')+'</div>';
+  h+='<div class="row"><section class="card col2"><div class="card-h"><div><h2>'+(f==='all'?'Tous les retours':FB_T[f][0]+'s')+'</h2><p>Envoyés depuis le bouton « Retour » de l\'appli (bulle en haut de l\'écran, ou Plus › Envoyer un retour)</p></div></div>';
+  if(fb.loading && !fb.items.length) h+='<div class="card-b"><div class="skel" style="height:160px"></div></div>';
+  else if(!items.length) h+='<div class="empty">'+ic('msg')+'<b>'+(fb.src==='none'?'Pas encore de boîte de réception':'Aucun retour pour le moment')+'</b><span>'+(fb.src==='none'?'Choisissez à droite la fiche du CRM qui recevra les retours, en attendant la route dédiée du CRM.':'Les retours des techniciens apparaîtront ici.')+'</span></div>';
+  else h+=items.slice().reverse().map(function(x){ var t=FB_T[x.type]||['Retour','b-soon'];
+    return '<div class="list-i"><span class="av">'+esc(initials(x.user_nom||'?'))+'</span><span class="t"><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>'+esc(x.user_nom||'Utilisateur')+'</b><span class="badge '+t[1]+'"><i></i>'+t[0]+'</span>'+(x.role?'<span class="hint">'+esc(x.role)+'</span>':'')+'</span><span style="color:var(--ink);font-size:13.5px;line-height:1.5;white-space:pre-wrap;margin:4px 0">'+esc(x.message)+'</span><span>'+esc([x.at, x.screen?'écran « '+x.screen+' »':'', x.version?'v'+x.version:'', x.device].filter(Boolean).join(' · '))+'</span></span></div>'; }).join('');
+  h+='</section><section class="card col1"><div class="card-h"><div><h2>Où arrivent les retours</h2><p>'+(fb.src==='crm'?'Route dédiée du CRM : tout est en place.':'En attendant la route dédiée du CRM')+'</p></div></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">'+
+    (fb.src==='crm'?'<p class="hint">Les retours sont enregistrés par le CRM.</p>':
+    '<p class="hint">Créez dans le CRM une fiche nommée par exemple « Retours AR Terrain », puis indiquez son numéro ici. Chaque retour y est ajouté en commentaire et s\'affiche dans cette page.</p>'+
+    '<label class="lbl"><span>N° de la fiche CRM</span><input class="inp" data-fbcid inputmode="numeric" value="'+esc((S.draft&&S.draft.fb&&S.draft.fb.cid)||'')+'" placeholder="ex. 12345"></label>'+
+    '<button class="btn pri" data-act="pubfb"'+(!S.draft||JSON.stringify(S.draft.fb)===JSON.stringify(S.settings&&S.settings.fb)||S.publishing?' disabled':'')+'>Enregistrer pour tous les téléphones</button>'+
+    (fb.src==='fiche'&&fb.ok===false?'<div class="err">Fiche n° '+esc(fb.cid)+' introuvable dans le CRM.</div>':''))+
+    '<div class="soonbox">'+ic('bolt')+'<div><b>Bientôt</b><span>Statut « traité », réponse au technicien et capture d\'écran jointe, avec la route « retours » du CRM (demande Grok).</span></div></div></div></section></div></div>';
+  return h;
+};
+
 /* ---------- Palette de commandes ---------- */
 function palItems(){
   var q=S.palQ.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''), out=[];
@@ -778,6 +822,8 @@ function bindAll(){
     if(a==='discard'){ S.draft=clone(S.settings); render(); return; }
     if(a==='pubmaint'){ publishSettings(['maint']); return; }
     if(a==='health'){ runHealth(); return; }
+    if(a==='fbload'){ loadFeedback(); return; }
+    if(a==='pubfb'){ publishSettings(['fb']).then(function(){ loadFeedback(); }); return; }
     doAct(a); }; });
   on('[data-soon]', function(el){ el.onclick=function(e){ e.preventDefault(); e.stopPropagation(); toast('« '+el.dataset.soon+' » arrive bientôt : il attend une nouvelle route du CRM'); }; });
   on('[data-open]', function(el){ el.onclick=function(e){ if(e.target.closest('[data-check]')) return; openAppt(el.dataset.open); }; });
@@ -806,6 +852,8 @@ function bindAll(){
   on('[data-maint]', function(el){ el.onclick=function(){ setDraft(function(D){ D.maint.on=!D.maint.on; }); }; });
   on('[data-maintmsg]', function(el){ el.onchange=function(){ setDraft(function(D){ D.maint.msg=el.value.trim().slice(0,400); }); }; });
   on('[data-mainttime]', function(el){ el.onchange=function(){ setDraft(function(D){ D.maint.until=el.value; }); }; });
+  on('[data-fbf]', function(el){ el.onclick=function(){ S.fbFilter=el.dataset.fbf; render(); }; });
+  on('[data-fbcid]', function(el){ el.onchange=function(){ setDraft(function(D){ D.fb={cid:el.value.replace(/\D/g,'')}; }); }; });
   on('[data-rule]', function(el){ el.onclick=function(){ S.ruleSel=+el.dataset.rule; render(); }; });
   on('[data-pal]', function(el){ el.onclick=function(){ palRun(palItems()[+el.dataset.pal]); }; });
   var pq=document.getElementById('palQ'); if(pq){ pq.focus(); pq.setSelectionRange(pq.value.length, pq.value.length);
@@ -820,7 +868,8 @@ window.addEventListener('beforeunload', function(e){ if(draftDirty()){ e.prevent
 
 /* ---------- Navigation ---------- */
 function route(){ var r=(location.hash.match(/^#\/([a-z]+)/)||[])[1]||'pilotage'; if(!PAGES[r]) r='pilotage'; if(r!==S.route) S.iv.open=null; S.route=r; S.navOpen=false;
-  if((r==='studio'||r==='equipe'||r==='maintenance') && !S.setLoaded && SESSION) loadSettings();
+  if((r==='studio'||r==='equipe'||r==='maintenance'||r==='retours') && !S.setLoaded && SESSION) loadSettings();
+  if(r==='retours' && SESSION){ (S.setLoaded?Promise.resolve():loadSettings()).then(function(){ loadFeedback(); }); }
   if(r==='maintenance' && SESSION){ if(!S.health) runHealth(); if(!S.version) loadVersion(); }
   document.title=PAGES[r]+' · Console AR Terrain'; render(); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
