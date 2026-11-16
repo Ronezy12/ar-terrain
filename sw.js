@@ -1,5 +1,5 @@
 /* Service worker : l'appli s'ouvre et fonctionne sans réseau. */
-var CACHE = 'ar-terrain-v48';
+var CACHE = 'ar-terrain-v50';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.png', 'lib/data.js', 'lib/icons.js', 'lib/pdf.js', 'vendor/jspdf.umd.min.js', 'vendor/three.min.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); })); });
@@ -11,7 +11,8 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   // Page : réseau d'abord (pour avoir la dernière version), cache si pas de réseau
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req, { cache: 'no-store' }).then(function (r) { var cp = r.clone(); caches.open(CACHE).then(function (c) { c.put('index.html', cp); }); return r; }).catch(function () { return caches.match('index.html'); }));
+    var page = /console\.html$/.test(url.pathname) ? 'console.html' : 'index.html';
+    e.respondWith(fetch(req, { cache: 'no-store' }).then(function (r) { var cp = r.clone(); if (r.ok) caches.open(CACHE).then(function (c) { c.put(page, cp); }); return r; }).catch(function () { return caches.match(page); }));
     return;
   }
   // Fichiers de l'appli et polices : cache d'abord, mise à jour en arrière-plan

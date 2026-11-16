@@ -1046,6 +1046,15 @@ main.pgv-tabR{animation:pgVTabR .3s ease-out both}main.pgv-tabL{animation:pgVTab
 .plme{display:block;width:18px;height:18px;border-radius:50%;background:#1A73E8;border:3px solid #fff;box-shadow:0 0 0 8px rgba(26,115,232,.22);box-sizing:border-box}
 .plmap .leaflet-control-attribution{font-size:9px}
 .pl-hero>*{margin:0}.pl-hero .pl-k>*{border:0}
+/* Écran de maintenance v54 */
+#maintScr{position:fixed;inset:0;z-index:99999;background:#0F1B4D;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;padding-top:max(24px,env(safe-area-inset-top))}
+#maintScr .ms-in{max-width:380px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+#maintScr .ms-ic{width:64px;height:64px;border-radius:18px;background:#FFC93C;color:#0F1B4D;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+#maintScr .ms-ic svg{width:32px;height:32px}
+#maintScr h2{margin:0;font-size:24px;font-weight:800}
+#maintScr p{margin:0;font-size:15.5px;line-height:1.5;color:#DCE2F7}
+#maintScr .ms-u{font-weight:700;color:#FFC93C}
+#maintScr .ms-s{font-size:13.5px;color:#B9C3EA;margin-bottom:10px}
 </style>
 
 </head>
@@ -3103,7 +3112,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.53 · 16 nov. 2026';
+var APP_VERSION='1.0.54 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5716,6 +5725,29 @@ payFlow=function(amount, c, cb){
     toast(ok?'Paiement de '+eur(p.amt)+' accepté et envoyé au CRM':'Paiement SumUp non abouti'+(SUMUP_MSG?' : '+SUMUP_MSG:'')+'. Vous pouvez réessayer.');
   }, 1200);
 })();
+
+/* =========================================================
+   V54 — Pilotage depuis la console : mode maintenance (écran d'attente pour les agents) et avis Google partagés
+   ========================================================= */
+['avis','maint'].forEach(function(k){ if(SET_FIELDS.indexOf(k)<0) SET_FIELDS.push(k); });
+var _cfgSanitize54=cfgSanitize;
+cfgSanitize=function(app){ var out=_cfgSanitize54.apply(this, arguments);
+  if(app && app.maint && typeof app.maint==='object' && !Array.isArray(app.maint)) out.maint={on:!!app.maint.on, msg:String(app.maint.msg||'').slice(0,400), until:String(app.maint.until||'').slice(0,5)};
+  if(app && app.avis && typeof app.avis==='object' && !Array.isArray(app.avis)) out.avis={on:app.avis.on!==false, delai:['now','2h','j1'].indexOf(app.avis.delai)>=0?app.avis.delai:'2h', lien:String(app.avis.lien||'').slice(0,300)};
+  return out; };
+if(CFG.avis && typeof CFG.avis==='object'){ if(CFG.avis.on===undefined) CFG.avis.on=true; if(!CFG.avis.delai) CFG.avis.delai='2h'; if(CFG.avis.lien==null) CFG.avis.lien=''; } else CFG.avis={on:true, delai:'2h', lien:''};
+function maintApply(){
+  var m=CFG.maint, on=!!(m && typeof m==='object' && m.on) && !!sessUser() && !sessIsAdmin(), el=document.getElementById('maintScr');
+  if(!on){ if(el) el.remove(); return; }
+  if(!el){ el=document.createElement('div'); el.id='maintScr'; el.setAttribute('role','alertdialog'); el.setAttribute('aria-label','Maintenance en cours'); document.body.appendChild(el); }
+  var html='<div class="ms-in"><span class="ms-ic">'+ic('wrench')+'</span><h2>Maintenance en cours</h2><p>'+esc(m.msg||'L\'appli est en maintenance pour quelques minutes.')+'</p>'+(m.until?'<p class="ms-u">Retour prévu vers '+esc(m.until)+'</p>':'')+
+    '<p class="ms-s">Vos photos, notes et actions sont gardées sur le téléphone et partiront toutes seules à la réouverture.</p><button class="btn accent block" id="msRetry">Réessayer</button></div>';
+  if(el.getAttribute('data-h')!==html){ el.innerHTML=html; el.setAttribute('data-h', html); }
+  var b=document.getElementById('msRetry'); if(b) b.onclick=function(){ b.disabled=true; b.textContent='Vérification…'; pullSettings().then(function(){ maintApply(); var x=document.getElementById('msRetry'); if(x){ x.disabled=false; x.textContent='Réessayer'; } }); };
+}
+var _pull54=pullSettings;
+pullSettings=function(){ return _pull54.apply(this, arguments).then(function(r){ maintApply(); return r; }, function(e){ maintApply(); throw e; }); };
+setInterval(maintApply, 4000); setTimeout(maintApply, 300);
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
