@@ -1055,6 +1055,10 @@ main.pgv-tabR{animation:pgVTabR .3s ease-out both}main.pgv-tabL{animation:pgVTab
 #maintScr p{margin:0;font-size:15.5px;line-height:1.5;color:#DCE2F7}
 #maintScr .ms-u{font-weight:700;color:#FFC93C}
 #maintScr .ms-s{font-size:13.5px;color:#B9C3EA;margin-bottom:10px}
+#maintScr .ms-tag{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:#0F1B4D;background:#FFC93C;border-radius:8px;padding:4px 10px}
+#maintScr .ms-adm{margin-top:4px;border:0;background:none;color:#B9C3EA;font:600 14px var(--sans);text-decoration:underline;padding:10px;min-height:44px}
+#maintBanner{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--warning-bg);color:var(--warning);font-size:13px;font-weight:700;padding-top:max(8px,env(safe-area-inset-top))}
+#maintBanner svg{width:16px;height:16px;flex:none}
 </style>
 
 </head>
@@ -3112,7 +3116,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.55 · 16 nov. 2026';
+var APP_VERSION='1.0.56 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5747,7 +5751,7 @@ function maintApply(){
 }
 var _pull54=pullSettings;
 pullSettings=function(){ return _pull54.apply(this, arguments).then(function(r){ maintApply(); return r; }, function(e){ maintApply(); throw e; }); };
-setInterval(maintApply, 4000); setTimeout(maintApply, 300);
+setInterval(function(){ maintApply(); }, 4000); setTimeout(function(){ maintApply(); }, 300);
 
 /* =========================================================
    V55 — Bouton « Retour » : les utilisateurs envoient un bug, une idée ou une question, qui arrive dans la console
@@ -5810,6 +5814,56 @@ SCREENS.plus=function(){ var h=_plus55.apply(this, arguments); if(!sessUser()) r
 var _bind55=bind;
 bind=function(){ var r=_bind55.apply(this, arguments); fbBtnSetup(); var p=document.getElementById('fbPlus'); if(p) p.onclick=feedbackSheet; return r; };
 setTimeout(fbBtnSetup, 200); setTimeout(fbFlush, 5000); setInterval(fbFlush, 120000); window.addEventListener('online', function(){ setTimeout(fbFlush, 1500); });
+
+/* =========================================================
+   V56 — Maintenance systématique : dès qu'elle est active, l'appli devient inaccessible pour tout le monde
+   (les admins peuvent seulement entrer volontairement pour vérifier), et l'admin peut l'activer depuis l'appli
+   ========================================================= */
+var MAINT_BYPASS='ar_maint_bypass';
+function maintOn(){ var m=CFG.maint; return !!(m && typeof m==='object' && m.on); }
+maintApply=function(){
+  var m=CFG.maint||{}, el=document.getElementById('maintScr'), admin=sessIsAdmin();
+  var by=false; try{ by=sessionStorage.getItem(MAINT_BYPASS)==='1'; }catch(e){}
+  if(!maintOn()){ try{ sessionStorage.removeItem(MAINT_BYPASS); }catch(e){} }
+  var show=maintOn() && !!sessUser() && !(admin && by);
+  var bn=document.getElementById('maintBanner');
+  if(maintOn() && admin && by){ if(!bn){ bn=document.createElement('div'); bn.id='maintBanner'; var ph=document.getElementById('phone')||document.body; ph.insertBefore(bn, ph.firstChild); } bn.innerHTML=ic('wrench')+'<span>Maintenance active : les techniciens ne peuvent pas utiliser l\'appli</span>'; }
+  else if(bn) bn.remove();
+  if(!show){ if(el) el.remove(); return; }
+  if(!el){ el=document.createElement('div'); el.id='maintScr'; el.setAttribute('role','alertdialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Maintenance en cours'); document.body.appendChild(el); }
+  var html='<div class="ms-in"><span class="ms-ic">'+ic('wrench')+'</span><span class="ms-tag">APPLICATION INDISPONIBLE</span><h2>Maintenance en cours</h2><p>'+esc(m.msg||'L\'appli est en maintenance pour quelques minutes.')+'</p>'+(m.until?'<p class="ms-u">Retour prévu vers '+esc(m.until)+'</p>':'')+
+    '<p class="ms-s">Vos photos, notes et actions déjà faites sont gardées sur le téléphone et partiront toutes seules à la réouverture. En cas d\'urgence, appelez le bureau.</p>'+
+    '<button class="btn accent block" id="msRetry">Réessayer</button>'+(admin?'<button class="ms-adm" id="msAdmin">Entrer quand même (admin, pour vérifier)</button>':'')+'</div>';
+  if(el.getAttribute('data-h')!==html){ el.innerHTML=html; el.setAttribute('data-h', html); }
+  var b=document.getElementById('msRetry'); if(b) b.onclick=function(){ b.disabled=true; b.textContent='Vérification…'; pullSettings().then(function(){ maintApply(); var x=document.getElementById('msRetry'); if(x){ x.disabled=false; x.textContent='Réessayer'; } if(!maintOn()) toast('La maintenance est terminée : bon travail !'); }); };
+  var a=document.getElementById('msAdmin'); if(a) a.onclick=function(){ try{ sessionStorage.setItem(MAINT_BYPASS,'1'); }catch(e){} maintApply(); };
+};
+/* Vérification plus fréquente quand la maintenance est active ou quand l'appli revient au premier plan */
+setInterval(function(){ if(sessUser() && document.visibilityState==='visible' && maintOn()) pullSettings(); }, 15000);
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible' && sessUser()) pullSettings(); });
+/* Réglages admin dans l'appli : carte « Mode maintenance » */
+var _reglages56=SCREENS.reglages;
+SCREENS.reglages=function(){ var h=_reglages56.apply(this, arguments); if(!sessUser() || !sessIsAdmin()) return h;
+  var m=CFG.maint||{}, on=!!m.on;
+  var card='<div class="sec" id="maintSec"><h2>Mode maintenance</h2></div><div class="card" style="display:flex;flex-direction:column;gap:12px'+(on?';border:2px solid var(--warning)':'')+'">'+
+    '<div class="row"><div class="grow"><b style="display:block">Rendre l\'appli inaccessible</b><span class="muted" style="font-size:13px">Tous les téléphones affichent l\'écran « Maintenance en cours » dans les 30 secondes.</span></div><label class="tog"><input type="checkbox" id="mtOn"'+(on?' checked':'')+'><span></span></label></div>'+
+    '<label class="field"><span>Message affiché</span><textarea id="mtMsg" rows="3" maxlength="400">'+esc(m.msg||'L\'appli est en maintenance pour quelques minutes. Vos photos et notes sont gardées sur le téléphone.')+'</textarea></label>'+
+    '<label class="field"><span>Retour prévu vers (facultatif)</span><input id="mtUntil" type="time" value="'+esc(m.until||'')+'"></label>'+
+    '<button class="btn soft block" id="mtPrev">'+ic('eye')+'Voir l\'écran de maintenance</button></div>';
+  return h.replace('<button class="btn danger block" id="reset">', card+'<button class="btn danger block" id="reset">');
+};
+var _bind56=bind;
+bind=function(){ var r=_bind56.apply(this, arguments);
+  if(S.screen==='reglages' && sessIsAdmin()){
+    var on=$('mtOn'), msg=$('mtMsg'), un=$('mtUntil'), pv=$('mtPrev');
+    var up=function(){ CFG.maint={on:!!(on&&on.checked), msg:(msg?msg.value.trim():'').slice(0,400), until:un?un.value:''}; try{ sessionStorage.setItem(MAINT_BYPASS,'1'); }catch(e){} save(); maintApply(); };
+    if(on) on.onchange=function(){ if(on.checked && !confirm('Activer la maintenance ? L\'appli devient inaccessible pour tous les techniciens jusqu\'à ce que vous la coupiez.')){ on.checked=false; return; } up(); toast(on.checked?'Maintenance activée : les téléphones basculent dans les 30 secondes':'Maintenance terminée : l\'appli est de nouveau accessible'); rerender(); };
+    if(msg) msg.onchange=up; if(un) un.onchange=up;
+    if(pv) pv.onclick=function(){ var keep=CFG.maint; CFG.maint={on:true, msg:msg?msg.value.trim():'', until:un?un.value:''}; try{ sessionStorage.removeItem(MAINT_BYPASS); }catch(e){} maintApply();
+      var x=document.getElementById('msAdmin'); if(x){ x.textContent='Fermer l\'aperçu'; x.onclick=function(){ CFG.maint=keep; try{ sessionStorage.setItem(MAINT_BYPASS,'1'); }catch(e){} var e2=document.getElementById('maintScr'); if(e2) e2.remove(); maintApply(); }; } };
+  }
+  return r; };
+setTimeout(maintApply, 300);
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
