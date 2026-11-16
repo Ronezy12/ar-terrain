@@ -1059,6 +1059,11 @@ main.pgv-tabR{animation:pgVTabR .3s ease-out both}main.pgv-tabL{animation:pgVTab
 #maintScr .ms-adm{margin-top:4px;border:0;background:none;color:#B9C3EA;font:600 14px var(--sans);text-decoration:underline;padding:10px;min-height:44px}
 #maintBanner{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--warning-bg);color:var(--warning);font-size:13px;font-weight:700;padding-top:max(8px,env(safe-area-inset-top))}
 #maintBanner svg{width:16px;height:16px;flex:none}
+/* Stabilité v57 : pas de zoom automatique ni de double-appui qui zoome */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{touch-action:manipulation}
+@media (pointer:coarse){ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea,select{font-size:16px!important} }
+img{max-width:100%}
 </style>
 
 </head>
@@ -3116,7 +3121,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.56 · 16 nov. 2026';
+var APP_VERSION='1.0.57 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5864,6 +5869,18 @@ bind=function(){ var r=_bind56.apply(this, arguments);
   }
   return r; };
 setTimeout(maintApply, 300);
+
+/* =========================================================
+   V57 — Stabilité de l'écran : pas de remontée en haut quand l'écran se met à jour, pas de zoom intempestif
+   ========================================================= */
+var _render57=render;
+render=function(){
+  var before=S._key, y=V.scrollTop, nav=(typeof NAV_DIR!=='undefined' && NAV_DIR) || S.slide;
+  var r=_render57.apply(this, arguments);
+  if(!nav && S._key===before && y>0 && V.scrollTop!==y){ V.scrollTop=y; }
+  return r;
+};
+
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};

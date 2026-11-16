@@ -28,6 +28,10 @@
 }
 *{box-sizing:border-box}
 svg:not([width]){width:16px;height:16px;flex:none}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{touch-action:manipulation}
+@media (pointer:coarse){ input:not([type=checkbox]):not([type=radio]),textarea,select{font-size:16px!important} }
+html{scrollbar-gutter:stable}
 a.btn{text-decoration:none}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
