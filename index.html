@@ -988,6 +988,12 @@ main.pg-pop{animation:pgPop .34s cubic-bezier(.2,.9,.25,1) both}
 .btn.primary:active{box-shadow:0 2px 8px rgba(29,63,191,.25) inset}
 @media (prefers-reduced-motion: reduce){main.pg-push,main.pg-pop,.ttl.ttl-in{animation:none}.rip{display:none}}
 .pwk{display:flex;align-items:center;gap:8px;margin-bottom:8px}.pwk .ibtn{width:44px;height:44px;flex:none}.pwk b{font-size:15px}
+/* Bouton de scan plus discret (Étiquetage) */
+.scan-cta{gap:10px;min-height:52px;padding:8px 12px 8px 8px;border-radius:14px;background:var(--tint);color:var(--primary);border:1.5px solid color-mix(in srgb,var(--primary) 22%,transparent);box-shadow:none}
+.scan-cta .c{width:36px;height:36px;background:var(--primary);color:#fff}.scan-cta .c svg{width:18px;height:18px}
+.scan-cta b{font-size:14.5px;color:var(--primary)}.scan-cta small{display:none}.scan-cta{width:auto;align-self:flex-start;padding-right:14px}
+.scan-cta>svg:last-child{width:16px;height:16px;color:var(--primary);opacity:.7}
+
 </style>
 
 </head>
@@ -3045,7 +3051,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.48 · 16 nov. 2026';
+var APP_VERSION='1.0.49 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5357,6 +5363,19 @@ function stripCity(adr, ville){ adr=String(adr||'').trim(); ville=String(ville||
 var _liveLoad48=liveLoad;
 liveLoad=function(){ return _liveLoad48.apply(this, arguments).then(function(ok){ if(ok){ var ch=false; CLIENTS.forEach(function(c){ if(c.crmId==null) return; var s=stripCity(c.adr, c.ville); if(s!==c.adr){ c.adr=s; ch=true; } }); if(ch){ liveCacheSave(); rerenderSoft(); } } return ok; }); };
 if(sessUser()) CLIENTS.forEach(function(c){ if(c.crmId!=null) c.adr=stripCity(c.adr, c.ville); });
+
+/* =========================================================
+   V49 — L'admin consulte les photos sans en ajouter ; bouton « Scanner le tableau existant » plus discret
+   ========================================================= */
+var _client49=SCREENS.client;
+SCREENS.client=function(id){
+  var h=_client49.apply(this, arguments);
+  if(S.role!=='admin') return h;
+  h=h.replace(/<label class="ph add">[\s\S]*?<\/label>/, '<input type="file" id="addPh" hidden>');
+  h=h.replace('<h2>Photos du chantier</h2>', '<h2>Photos des techniciens</h2>');
+  var c=client(id||S.arg); if(c && !(c.photos||[]).length) h=h.replace('<div class="phs"><input type="file" id="addPh" hidden></div>', '<p class="hint">Aucune photo pour l\'instant : les techniciens les ajoutent depuis le chantier.</p><input type="file" id="addPh" hidden>');
+  return h;
+};
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
