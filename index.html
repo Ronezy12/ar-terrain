@@ -3103,7 +3103,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.52 · 16 nov. 2026';
+var APP_VERSION='1.0.53 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5535,15 +5535,27 @@ function plLeaflet(){
   });
   return plLeaflet.p;
 }
+function plGeoOne(url, parse){ return fetch(url, {headers:{'Accept':'application/json'}}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(parse); }
+var PL_GEO_SRC=[
+  /* 1. Géoplateforme IGN (service d'adresses officiel de l'État) */
+  function(a){ return plGeoOne('https://data.geopf.fr/geocodage/search?limit=1&q='+encodeURIComponent(a), function(j){ var f=j&&j.features&&j.features[0]; if(!f || (f.properties && f.properties.score<0.35)) return null; return {lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0]}; }); },
+  /* 2. Ancienne adresse de la Base Adresse Nationale */
+  function(a){ return plGeoOne('https://api-adresse.data.gouv.fr/search/?limit=1&q='+encodeURIComponent(a), function(j){ var f=j&&j.features&&j.features[0]; if(!f || (f.properties && f.properties.score<0.35)) return null; return {lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0]}; }); },
+  /* 3. Photon (OpenStreetMap) */
+  function(a){ return plGeoOne('https://photon.komoot.io/api/?limit=1&lang=fr&q='+encodeURIComponent(a+', France'), function(j){ var f=j&&j.features&&j.features[0]; return f?{lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0]}:null; }); },
+  /* 4. Nominatim (OpenStreetMap) : une requête par seconde au maximum */
+  function(a){ return plGeoWait().then(function(){ return plGeoOne('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=fr&q='+encodeURIComponent(a), function(j){ var f=j&&j[0]; return f?{lat:+f.lat, lng:+f.lon}:null; }); }); }
+];
+var PL_NOMI=0; function plGeoWait(){ var w=Math.max(0, PL_NOMI+1100-Date.now()); PL_NOMI=Date.now()+w; return new Promise(function(ok){ setTimeout(ok, w); }); }
 function plGeo(c){
   var a=plAddr(c); if(!a) return Promise.resolve(null);
   if(PL_GEO[a]) return Promise.resolve(PL_GEO[a]);
-  return fetch('https://api-adresse.data.gouv.fr/search/?limit=1&q='+encodeURIComponent(a)).then(function(r){ return r.json(); }).then(function(j){
-    var f=j&&j.features&&j.features[0]; if(!f || (f.properties && f.properties.score<0.35)) return null;
-    var p={lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0]}; PL_GEO[a]=p;
+  var i=0;
+  function next(){ if(i>=PL_GEO_SRC.length) return Promise.resolve(null);
+    var src=PL_GEO_SRC[i++]; return src(a).then(function(p){ return (p && isFinite(p.lat) && isFinite(p.lng))?p:next(); }, function(){ return next(); }); }
+  return next().then(function(p){ if(!p) return null; PL_GEO[a]=p;
     try{ var k=Object.keys(PL_GEO); if(k.length>400) delete PL_GEO[k[0]]; localStorage.setItem(PL_GEO_KEY, JSON.stringify(PL_GEO)); }catch(e){}
-    return p;
-  }).catch(function(){ return null; });
+    return p; });
 }
 function plKm(a, b){ var R=6371, t=Math.PI/180, dl=(b.lat-a.lat)*t, dg=(b.lng-a.lng)*t, x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dg/2)*Math.sin(dg/2); return 2*R*Math.asin(Math.sqrt(x)); }
 function plDark(){ var th=document.documentElement.dataset.theme; return th==='dark' || (th!=='light' && matchMedia('(prefers-color-scheme: dark)').matches); }
