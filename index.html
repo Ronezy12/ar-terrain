@@ -987,6 +987,7 @@ main.pg-pop{animation:pgPop .34s cubic-bezier(.2,.9,.25,1) both}
 .btn:active{transform:scale(.95);filter:brightness(.93)}
 .btn.primary:active{box-shadow:0 2px 8px rgba(29,63,191,.25) inset}
 @media (prefers-reduced-motion: reduce){main.pg-push,main.pg-pop,.ttl.ttl-in{animation:none}.rip{display:none}}
+.pwk{display:flex;align-items:center;gap:8px;margin-bottom:8px}.pwk .ibtn{width:44px;height:44px;flex:none}.pwk b{font-size:15px}
 </style>
 
 </head>
@@ -3044,7 +3045,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.47 · 11 nov. 2026';
+var APP_VERSION='1.0.48 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5316,6 +5317,46 @@ render=function(){
     try{ if(navigator.vibrate && !t.closest('.dq-row')) navigator.vibrate(6); }catch(err){}
   }, {passive:true});
 })();
+
+/* =========================================================
+   V48 — Corrections de l'audit CRM : devis au format attendu par le CRM, planning semaine par semaine,
+   adresses sans ville en double
+   ========================================================= */
+/* Devis : event_id, occurred_at, référence en texte, prix et TVA pour les lignes libres, pièce et remarque */
+devisToCrm=function(dv, cid){
+  var c=client(cid)||{}; if(!sessUser() || c.crmId==null) return Promise.resolve(null);
+  var rid=null; if(S.site){ var sr=rdv(S.site.rid); if(sr && sr.cid===cid) rid=sr.crmId; } if(rid==null){ var near=RDVS.filter(function(r){ return r.cid===cid && r.crmId!=null; }).sort(function(a,b){ return Math.abs(a.d)-Math.abs(b.d); })[0]; if(near) rid=near.crmId; }
+  var lignes=(dv.lignes||[]).map(function(l){ var ref=l.libre?null:(l.ref||null); if(!ref) CATALOGUE.forEach(function(x){ if(!ref && x[1]===l.des && x[5]!=null) ref=x[5]; });
+    var o={libelle:String(l.des||'Ligne').slice(0,250), quantite:+l.qty||1, unite:l.u||'u', piece:l.room?dqRoomLabel(l.room):null};
+    if(ref!=null && !l.libre) o.ref=String(ref); else { o.prix_unitaire_ht=+l.pu||0; o.tva=(l.tva!=null && l.tva!=='')?+l.tva:20; }
+    return o; });
+  var body={event_id:uuid(), occurred_at:isoNow(), client_id:c.crmId, appointment_id:rid, titre:dv.titre||'Devis terrain', remarque:dv.note||'', a_chiffrer:!sessIsAdmin(), lignes:lignes, remise:dv.remise||null, acomptes:dv.acomptes||[]};
+  return apiCall('POST','devis',body).then(function(r){ if(r && !r.ok){ var em=(r.json&&r.json.error)||('erreur '+r.status); toast('Le CRM a refusé le devis : '+em); } return r; }).catch(function(){ toast('Le CRM ne répond pas : le devis n\'a pas été envoyé'); return null; });
+};
+/* Planning : semaines précédentes et suivantes */
+var _planning48=SCREENS.planning;
+SCREENS.planning=function(){
+  var h=_planning48.apply(this, arguments), day=S.pday||0, wk=Math.floor((day+1)/7);
+  var a=new Date(TODAY); a.setDate(a.getDate()-1+7*wk); var z=new Date(a); z.setDate(z.getDate()+6);
+  var f=function(d){ return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}).replace('.',''); };
+  var label=wk===0?'Cette semaine':wk===1?'Semaine prochaine':wk===-1?'Semaine dernière':'Du '+f(a)+' au '+f(z);
+  var nav='<div class="pwk"><button class="ibtn" data-pwk="-1" aria-label="Semaine précédente">'+ic('back')+'</button><div class="grow" style="text-align:center"><b>'+esc(label)+'</b><small class="muted" style="display:block">'+f(a)+' – '+f(z)+'</small></div><button class="ibtn" data-pwk="1" aria-label="Semaine suivante" style="transform:scaleX(-1)">'+ic('back')+'</button></div>';
+  if(wk!==0){ var days=''; for(var i=-1+7*wk;i<6+7*wk;i++){ var d=new Date(TODAY); d.setDate(d.getDate()+i); var n=visibleRdvs(i).length; days+='<button class="day'+(i===day?' on':'')+(i===0?' today':'')+'" data-day="'+i+'"><span>'+d.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','')+'</span><b>'+d.getDate()+'</b><i>'+(n?Array(Math.min(n,4)+1).join('<em></em>'):'')+'</i></button>'; }
+    h=h.replace(/<div class="days">[\s\S]*?<\/div>(?=<div class="row")/, '<div class="days">'+days+'</div>'); }
+  return h.replace('<div class="days">', nav+'<div class="days">');
+};
+var _bind48=bind;
+bind=function(){ var r=_bind48.apply(this, arguments);
+  if(S.screen==='planning') each('[data-pwk]',function(b){ b.onclick=function(){ var dir=+b.dataset.pwk, wk=Math.floor(((S.pday||0)+1)/7)+dir; S.pday=wk===0?0:-1+7*wk; render(); }; });
+  return r; };
+/* Adresses du CRM : on retire « CP Ville » de l'adresse quand il est déjà dans la ville */
+function stripCity(adr, ville){ adr=String(adr||'').trim(); ville=String(ville||'').trim(); if(!adr || !ville) return adr; var esc2=function(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); };
+  var cp=(ville.match(/^\d{5}/)||[''])[0], city=ville.replace(/^\d{5}\s*/,'');
+  var out=adr.replace(new RegExp('[,\\s]*'+esc2(ville)+'\\s*$','i'),''); if(out===adr && cp) out=adr.replace(new RegExp('[,\\s]*'+esc2(cp)+'\\s*'+esc2(city)+'\\s*$','i'),'');
+  return out||adr; }
+var _liveLoad48=liveLoad;
+liveLoad=function(){ return _liveLoad48.apply(this, arguments).then(function(ok){ if(ok){ var ch=false; CLIENTS.forEach(function(c){ if(c.crmId==null) return; var s=stripCity(c.adr, c.ville); if(s!==c.adr){ c.adr=s; ch=true; } }); if(ch){ liveCacheSave(); rerenderSoft(); } } return ok; }); };
+if(sessUser()) CLIENTS.forEach(function(c){ if(c.crmId!=null) c.adr=stripCity(c.adr, c.ville); });
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
