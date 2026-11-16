@@ -1013,6 +1013,39 @@ main.pgv-tabR{animation:pgVTabR .3s ease-out both}main.pgv-tabL{animation:pgVTab
 @keyframes pgGTabR{to{opacity:0;transform:translateX(-18px)}}@keyframes pgGTabL{to{opacity:0;transform:translateX(18px)}}
 @keyframes pgVTabR{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}@keyframes pgVTabL{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){.pg-ghost{display:none}main.pg-anim{animation:none!important}}
+/* Planning technicien v51 */
+.pl-bar{display:flex;align-items:center;gap:10px;margin:4px 0 10px}.pl-bar .seg{flex:1;max-width:300px}
+.pl-sum{font-size:13px;font-weight:600;color:var(--muted);margin:0 2px 6px;line-height:1.4}.pl-sum b{color:var(--ink)}
+.pl-prog{display:flex;gap:4px;align-items:center;margin:0 2px 12px}.pl-prog span{flex:1;height:6px;border-radius:3px;background:var(--line)}.pl-prog span.on{background:var(--primary)}.pl-prog span.cur{background:var(--accent)}.pl-prog small{font-size:12px;font-weight:700;color:var(--primary);margin-left:6px}
+.pl-hero{background:var(--primary);color:#fff;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:8px;box-shadow:0 14px 30px rgba(29,63,191,.28);margin-bottom:6px}
+.pl-hero .pl-k{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}.pl-hero .pl-lab{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--accent)}
+.pl-hero .pl-cd{font-size:12px;font-weight:700;background:rgba(255,255,255,.16);border-radius:10px;padding:4px 10px;white-space:nowrap}.pl-hero .pl-cd.late{background:var(--accent);color:#1D1D1F}
+.pl-hero .pl-t{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.05}.pl-hero .pl-n{font-size:20px;font-weight:800;overflow-wrap:anywhere;line-height:1.2}.pl-hero .pl-m{font-size:14px;opacity:.92;overflow-wrap:anywhere}
+.pl-hero .pl-note{background:rgba(255,255,255,.12);border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.4;display:flex;gap:10px;margin-top:4px}.pl-hero .pl-note svg{width:18px;height:18px;flex:none;color:var(--accent)}
+.pl-hero .pl-acts{display:grid;grid-template-columns:minmax(0,1fr) 52px 52px;gap:8px;margin-top:6px}
+.pl-hero .pl-go{height:54px;border:0;border-radius:16px;background:var(--accent);color:#1D1D1F;font:800 15px var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px;min-width:0}
+.pl-hero .pl-go svg,.pl-hero .pl-sq svg{width:20px;height:20px;flex:none}
+.pl-hero .pl-sq{height:54px;border:0;border-radius:16px;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none}.pl-hero .pl-sq.off{opacity:.35}
+.pl-h2{margin:16px 2px 8px;font-size:14px;font-weight:800;color:var(--muted)}
+.pl-tl{display:flex;flex-direction:column}.pl-it{display:flex;gap:10px}
+.pl-rail{width:16px;display:flex;flex-direction:column;align-items:center;flex:none}.pl-rail i{width:12px;height:12px;border-radius:50%;margin-top:24px;border:3px solid var(--bg);background:var(--primary);flex:none}.pl-rail b{flex:1;width:2px;background:var(--line-strong)}
+.pl-it:last-child .pl-rail b{visibility:hidden}.pl-it.st-aconf .pl-rail i{background:var(--accent)}.pl-it.done .pl-rail i{background:var(--muted)}.pl-it.done .pl-row{opacity:.62}
+.pl-row{flex:1;width:100%;min-width:0;margin-bottom:10px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px;text-align:left;color:var(--ink);font-family:var(--sans);min-height:64px}
+.pl-row .pl-h{display:flex;flex-direction:column;align-items:center;width:46px;flex:none}.pl-row .pl-h b{font-size:15px;font-weight:800}.pl-row .pl-h small{font-size:11px;color:var(--muted);font-weight:600}
+.pl-row .pl-x{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.pl-row .pl-x b{font-size:15px}.pl-row .pl-x span{font-size:12.5px;color:var(--muted)}.pl-row .pill{flex:none}
+.pl-row.sel{border:1.5px solid var(--primary);background:var(--tint)}
+.pl-num{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:var(--primary);color:#fff}.pl-num.done{background:#8E93A3}.pl-num.next{background:var(--accent);color:#1D1D1F}
+.plmap-wrap{position:relative;height:min(46vh,380px);border-radius:20px;overflow:hidden;border:1px solid var(--line);background:var(--fill);margin-bottom:12px;touch-action:none;isolation:isolate}
+.plmap{position:absolute;inset:0;background:var(--fill)}
+.plmap-msg{position:absolute;left:12px;right:68px;bottom:12px;background:var(--surface);color:var(--ink-2);border-radius:12px;padding:8px 12px;font-size:12.5px;font-weight:600;box-shadow:var(--shadow-sm);z-index:500;transition:opacity .4s}.plmap-msg.soft{opacity:.85}
+.plmap-me{position:absolute;right:12px;bottom:12px;width:46px;height:46px;border-radius:50%;border:0;background:var(--surface);color:var(--primary);box-shadow:var(--shadow-sm);z-index:500;display:flex;align-items:center;justify-content:center}.plmap-me svg{width:20px;height:20px}
+.pl-list{display:flex;flex-direction:column}.pl-list .pl-row{margin-bottom:8px}
+.plpin-w,.plme-w{background:none!important;border:0!important}
+.plpin{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 14px var(--sans);background:#1D3FBF;color:#fff;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.3);box-sizing:border-box;transition:transform .2s}
+.plpin.st-termine{background:#8E93A3}.plpin.next{background:#FFC93C;color:#1D1D1F;box-shadow:0 0 0 7px rgba(255,201,60,.35),0 3px 8px rgba(0,0,0,.3)}.plpin.sel{transform:scale(1.22)}
+.plme{display:block;width:18px;height:18px;border-radius:50%;background:#1A73E8;border:3px solid #fff;box-shadow:0 0 0 8px rgba(26,115,232,.22);box-sizing:border-box}
+.plmap .leaflet-control-attribution{font-size:9px}
+.pl-hero>*{margin:0}.pl-hero .pl-k>*{border:0}
 </style>
 
 </head>
@@ -3070,7 +3103,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.50 · 16 nov. 2026';
+var APP_VERSION='1.0.52 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4265,7 +4298,7 @@ doAct=function(id){
 };
 /* Nouvelles interventions : l'appli relit le CRM à l'ouverture, au retour au premier plan et toutes les 2 min */
 var LIVE_SEEN=null, LAST_LIVE=0, LIVE_QUIET=false;
-var _toast24=toast; toast=function(m){ if(LIVE_QUIET && /chargés depuis le CRM|Chargement CRM impossible/.test(m)) return; return _toast24.apply(this, arguments); };
+var _toast24=toast; toast=function(m){ if(/chargés depuis le CRM/.test(m)) return; if(LIVE_QUIET && /Chargement CRM impossible/.test(m)) return; return _toast24.apply(this, arguments); };
 function liveIds(){ return RDVS.filter(function(r){ return r.crmId!=null; }).map(function(r){ return String(r.crmId); }); }
 function liveRefresh(force){
   if(IN_PREVIEW || !sessUser() || CFG.crm.mode==='grok' || !netOk()) return;
@@ -5423,6 +5456,254 @@ render=function(){
   }
   return r;
 };
+
+/* =========================================================
+   V51 — Planning technicien : « Tournée » (prochain RDV en grand + fil de la journée), « Frise » (horaire) et « Carte » (vraie carte)
+   ========================================================= */
+var PL_GEO_KEY='ar_geo_v1', PL_GEO={}, PL_MAP=null, PL_SEL=null;
+try{ PL_GEO=JSON.parse(localStorage.getItem(PL_GEO_KEY)||'{}')||{}; }catch(e){ PL_GEO={}; }
+function plNowMin(){ try{ return hm2min(parisHM(new Date())); }catch(e){ var d=new Date(); return d.getHours()*60+d.getMinutes(); } }
+function plDur(m){ m=Math.max(0,Math.round(m)); var h=Math.floor(m/60), mm=m%60; return h?(h+' h'+(mm?' '+String(mm).padStart(2,'0'):'')):(mm+' min'); }
+function plCity(c){ return String((c&&c.ville)||'').replace(/^\d{5}\s*/,''); }
+function plAddr(c){ return [c&&c.adr, c&&c.ville].filter(Boolean).join(' ').trim(); }
+function plSorted(list){ return list.slice().sort(function(a,b){ return hm2min(a.h)-hm2min(b.h); }); }
+function plNext(list, day){
+  if(day<0) return null;
+  var open=list.filter(function(r){ return r.st!=='termine'; });
+  if(!open.length) return null;
+  var cur=open.filter(function(r){ return r.st==='surplace'||r.st==='enroute'; })[0];
+  return cur||open[0];
+}
+function plNote(r, c){
+  var p=(c&&c.poseurs&&c.poseurs.length)?c.poseurs[0]:null;
+  var t=p?(p.texte||p.text||''):'';
+  return String(t||r.note||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+}
+function plHero(r, day){
+  var c=client(r.cid), now=plNowMin(), start=hm2min(r.h), lab='PROCHAIN RDV', cd='', late=false;
+  if(r.st==='surplace'){ lab='EN COURS'; cd=day===0?'depuis '+plDur(Math.max(0,now-start)):''; }
+  else if(r.st==='enroute'){ lab='EN ROUTE'; }
+  else if(day===0){ if(start>now) cd='dans '+plDur(start-now); else { cd='en retard de '+plDur(now-start); late=true; } }
+  else lab='PREMIER RDV';
+  var act=null;
+  if(r.st==='aconf') act=['valid','check','Valider le RDV'];
+  else if(day===0 && r.st==='confirme') act=['route','nav','Je suis en route'];
+  else if(r.st==='enroute') act=['arrive','pin','Je suis arrivé'];
+  else if(r.st==='surplace') act=['site','wrench','Ouvrir le chantier'];
+  else act=['open','chev','Voir le RDV'];
+  var note=plNote(r, c), tel=String((c&&c.tel)||'').replace(/[^\d+]/g,'');
+  var h='<section class="pl-hero">';
+  h+='<div class="pl-k"><span class="pl-lab">'+lab+'</span>'+(cd?'<span class="pl-cd'+(late?' late':'')+'">'+esc(cd)+'</span>':'')+'</div>';
+  h+='<div class="pl-t num">'+esc(r.h)+'</div><div class="pl-n">'+esc(c.nom)+'</div>';
+  h+='<div class="pl-m">'+esc([c.type, plDur(r.dur)].filter(Boolean).join(' · '))+'</div>';
+  if(plAddr(c)) h+='<div class="pl-m">'+esc([c.adr, plCity(c)].filter(Boolean).join(', '))+'</div>';
+  if(note) h+='<div class="pl-note">'+ic('chat')+'<span>« '+esc(note.slice(0,180))+(note.length>180?'…':'')+' »</span></div>';
+  h+='<div class="pl-acts"><button class="pl-go" data-plact="'+act[0]+'" data-id="'+esc(r.id)+'">'+ic(act[1])+esc(act[2])+'</button>';
+  h+=(tel?'<a class="pl-sq" href="tel:'+esc(tel)+'" aria-label="Appeler le client">'+ic('phone')+'</a>':'<span class="pl-sq off" aria-hidden="true">'+ic('phone')+'</span>');
+  h+='<button class="pl-sq" data-plnav="'+esc(r.id)+'" aria-label="Itinéraire">'+ic('nav')+'</button></div>';
+  return h+'</section>';
+}
+function plRow(r, opt){
+  opt=opt||{}; var c=client(r.cid), s=RST[r.st]||['',''], done=r.st==='termine';
+  var lead=opt.num!=null?'<span class="pl-num'+(done?' done':'')+(opt.next?' next':'')+'">'+opt.num+'</span>':'<span class="pl-h"><b class="num">'+esc(r.h)+'</b><small>'+(done?'fait':plDur(r.dur))+'</small></span>';
+  return '<button class="pl-row'+(opt.sel?' sel':'')+'" '+(opt.num!=null?'data-plpin="'+(opt.num-1)+'"':'data-rdv="'+esc(r.id)+'"')+'>'+lead+
+    '<span class="pl-x"><b class="ell">'+esc(c.nom)+'</b><span class="ell">'+esc([opt.num!=null?r.h+' – '+fin(r):'', c.type, plCity(c)].filter(Boolean).join(' · '))+'</span></span>'+
+    '<span class="pill '+s[1]+'">'+esc(s[0])+'</span></button>';
+}
+function plTour(list, day){
+  var nx=plNext(list, day), h='';
+  if(nx) h+=plHero(nx, day);
+  var rest=list.filter(function(r){ return r!==nx; }), open=rest.filter(function(r){ return r.st!=='termine'; }), done=rest.filter(function(r){ return r.st==='termine'; });
+  if(open.length){ h+='<h2 class="pl-h2">'+(nx?'Ensuite':'Rendez-vous')+'</h2><div class="pl-tl">'+open.map(function(r){ return '<div class="pl-it st-'+r.st+'"><span class="pl-rail"><i></i><b></b></span>'+plRow(r)+'</div>'; }).join('')+'</div>'; }
+  if(done.length){ h+='<h2 class="pl-h2">Terminés</h2><div class="pl-tl">'+done.map(function(r){ return '<div class="pl-it done"><span class="pl-rail"><i></i><b></b></span>'+plRow(r)+'</div>'; }).join('')+'</div>'; }
+  if(!nx && !open.length && done.length && day===0) h='<div class="card empty-st">'+ic('check')+'<b>Journée terminée</b><span class="muted">Toutes les interventions du jour sont faites. Bravo !</span></div>'+h;
+  return h;
+}
+function plCarte(list, day){
+  var nx=plNext(list, day), h='<div class="plmap-wrap" data-noswipe><div id="plMap" class="plmap" aria-label="Carte de la tournée"></div><div class="plmap-msg" id="plMapMsg">Chargement de la carte…</div>'+
+    '<button class="plmap-me" id="plMe" aria-label="Recentrer sur ma position">'+ic('pin')+'</button></div>';
+  h+='<div class="pl-list">'+list.map(function(r, i){ return plRow(r, {num:i+1, next:r===nx, sel:PL_SEL===i}); }).join('')+'</div>';
+  return h;
+}
+function plLeaflet(){
+  if(window.L && window.L.map) return Promise.resolve(window.L);
+  if(plLeaflet.p) return plLeaflet.p;
+  plLeaflet.p=new Promise(function(ok, ko){
+    var l=document.createElement('link'); l.rel='stylesheet'; l.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(l);
+    var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    s.onload=function(){ ok(window.L); }; s.onerror=function(){ plLeaflet.p=null; ko(new Error('leaflet')); }; document.head.appendChild(s);
+  });
+  return plLeaflet.p;
+}
+function plGeo(c){
+  var a=plAddr(c); if(!a) return Promise.resolve(null);
+  if(PL_GEO[a]) return Promise.resolve(PL_GEO[a]);
+  return fetch('https://api-adresse.data.gouv.fr/search/?limit=1&q='+encodeURIComponent(a)).then(function(r){ return r.json(); }).then(function(j){
+    var f=j&&j.features&&j.features[0]; if(!f || (f.properties && f.properties.score<0.35)) return null;
+    var p={lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0]}; PL_GEO[a]=p;
+    try{ var k=Object.keys(PL_GEO); if(k.length>400) delete PL_GEO[k[0]]; localStorage.setItem(PL_GEO_KEY, JSON.stringify(PL_GEO)); }catch(e){}
+    return p;
+  }).catch(function(){ return null; });
+}
+function plKm(a, b){ var R=6371, t=Math.PI/180, dl=(b.lat-a.lat)*t, dg=(b.lng-a.lng)*t, x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dg/2)*Math.sin(dg/2); return 2*R*Math.asin(Math.sqrt(x)); }
+function plDark(){ var th=document.documentElement.dataset.theme; return th==='dark' || (th!=='light' && matchMedia('(prefers-color-scheme: dark)').matches); }
+function plInitMap(list, day){
+  var el=$('plMap'), msg=$('plMapMsg'); if(!el) return;
+  var wrap=el.parentNode; ['touchstart','touchmove','pointerdown','pointermove','wheel'].forEach(function(t){ wrap.addEventListener(t, function(e){ e.stopPropagation(); }, {passive:true}); });
+  if(!navigator.onLine){ msg.textContent='Hors ligne : la carte s\'affichera au retour du réseau.'; return; }
+  var nx=plNext(list, day);
+  plLeaflet().then(function(L){
+    if(!document.body.contains(el)) return;
+    if(PL_MAP){ try{ PL_MAP.remove(); }catch(e){} PL_MAP=null; }
+    var map=L.map(el, {zoomControl:false, attributionControl:true}).setView([48.85, 2.45], 10); PL_MAP=map;
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/'+(plDark()?'dark_all':'rastertiles/voyager')+'/{z}/{x}/{y}{r}.png', {maxZoom:19, subdomains:'abcd', attribution:'© OpenStreetMap · © CARTO'}).addTo(map);
+    map.markers=[];
+    return Promise.all(list.map(function(r){ return plGeo(client(r.cid)); })).then(function(pts){
+      if(PL_MAP!==map) return;
+      var ll=[], route=[], miss=0;
+      pts.forEach(function(p, i){ var r=list[i];
+        if(!p){ miss++; map.markers[i]=null; return; }
+        var cls='plpin'+(r.st==='termine'?' st-termine':'')+(r===nx?' next':'')+(PL_SEL===i?' sel':'');
+        var m=L.marker([p.lat, p.lng], {icon:L.divIcon({className:'plpin-w', html:'<span class="'+cls+'">'+(i+1)+'</span>', iconSize:[34,34], iconAnchor:[17,17]}), keyboard:false});
+        m.on('click', function(){ plSelect(i, true); }); m.addTo(map); map.markers[i]=m; ll.push([p.lat, p.lng]); if(r.st!=='termine') route.push([p.lat, p.lng]);
+      });
+      if(route.length>1) L.polyline(route, {color:'#1D3FBF', weight:4, opacity:.75, dashArray:'2 10', lineCap:'round'}).addTo(map);
+      if(ll.length) map.fitBounds(ll, {padding:[46,46], maxZoom:14});
+      var km=0; for(var k=1;k<route.length;k++) km+=plKm({lat:route[k-1][0], lng:route[k-1][1]}, {lat:route[k][0], lng:route[k][1]});
+      msg.textContent=!ll.length?'Adresses introuvables sur la carte.':(miss?miss+' adresse'+(miss>1?'s':'')+' introuvable'+(miss>1?'s':'')+' · ':'')+(route.length>1?'≈ '+Math.round(km*1.3)+' km de trajet restant':'Touchez un numéro pour le voir');
+      if(!ll.length) return;
+      setTimeout(function(){ if(msg && msg.parentNode) msg.classList.add('soft'); }, 2600);
+    });
+  }).catch(function(){ if(msg) msg.textContent='Carte indisponible pour le moment. La liste reste à jour.'; });
+  var me=$('plMe'); if(me) me.onclick=function(){ if(!PL_MAP) return; toast('Recherche de votre position…'); getPos(function(pos, code){ if(!pos){ toast(code===9?'Position indisponible dans l\'aperçu':'Position refusée ou indisponible'); return; }
+    if(PL_MAP.me) PL_MAP.removeLayer(PL_MAP.me);
+    PL_MAP.me=window.L.marker([pos.lat, pos.lng], {icon:window.L.divIcon({className:'plme-w', html:'<span class="plme"></span>', iconSize:[18,18], iconAnchor:[9,9]}), keyboard:false, interactive:false}).addTo(PL_MAP);
+    PL_MAP.flyTo([pos.lat, pos.lng], 14, {duration:.6}); }, {timeout:12000, maxAge:60000}); };
+}
+function plSelect(i, fromMap){
+  var list=plSorted(visibleRdvs(S.pday||0)), r=list[i]; if(!r) return;
+  if(PL_SEL===i && !fromMap){ rdvSheet(r.id); return; }
+  PL_SEL=i;
+  each('.pl-list .pl-row', function(b){ b.classList.toggle('sel', +b.dataset.plpin===i); });
+  if(PL_MAP && PL_MAP.markers){ PL_MAP.markers.forEach(function(m, k){ if(!m) return; var e=m.getElement&&m.getElement(); var s=e&&e.querySelector('.plpin'); if(s) s.classList.toggle('sel', k===i); }); var m=PL_MAP.markers[i]; if(m) PL_MAP.flyTo(m.getLatLng(), Math.max(PL_MAP.getZoom(), 13), {duration:.5}); }
+  if(fromMap){ var b=document.querySelector('.pl-list [data-plpin="'+i+'"]'); if(b) b.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  else toast('Touchez encore pour ouvrir le RDV');
+}
+var _planning51=SCREENS.planning;
+SCREENS.planning=function(){
+  if(S.role==='admin') return _planning51.apply(this, arguments);
+  var base=_planning51.apply(this, arguments);
+  if(MODULES.planning && MODULES.planning.badge){ MODULES.planning.badge=0; setTimeout(renderTabs,0); }
+  var day=S.pday||0, mode=S.plv||'tour', list=plSorted(visibleRdvs(day));
+  var top=(base.match(/<div class="pwk">[\s\S]*?<div class="days">[\s\S]*?<\/div>/)||[''])[0];
+  var d=new Date(TODAY); d.setDate(d.getDate()+day);
+  var dl=day===0?'Aujourd\'hui':day===1?'Demain':day===-1?'Hier':d.toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'});
+  var h='<div class="pad">'+top;
+  h+='<div class="pl-bar"><div class="seg" id="plmode">'+[['tour','Tournée'],['frise','Frise'],['carte','Carte']].map(function(x){ return '<button data-plv="'+x[0]+'" class="'+(mode===x[0]?'on':'')+'">'+x[1]+'</button>'; }).join('')+'</div>'+(day!==0?'<button class="btn sm soft" data-pltoday>Aujourd\'hui</button>':'')+'</div>';
+  if(list.length){
+    var tot=list.reduce(function(a, r){ return a+(+r.dur||0); }, 0), last=list[list.length-1], nd=list.filter(function(r){ return r.st==='termine'; }).length;
+    h+='<div class="pl-sum"><b>'+esc(dl.charAt(0).toUpperCase()+dl.slice(1))+'</b> · '+list.length+' intervention'+(list.length>1?'s':'')+' · '+plDur(tot)+' sur place · fin ≈ '+esc(fin(last))+'</div>';
+    if(day===0) h+='<div class="pl-prog" aria-label="'+nd+' sur '+list.length+' terminées">'+list.map(function(r){ return '<span class="'+(r.st==='termine'?'on':(r.st==='surplace'||r.st==='enroute')?'cur':'')+'"></span>'; }).join('')+'<small class="num">'+nd+'/'+list.length+'</small></div>';
+  }
+  if(!list.length) h+='<div class="card empty-st">'+ic('cal')+'<b>Aucun RDV '+(day===0?'aujourd\'hui':'ce jour-là')+'</b><span class="muted">Le bureau vous préviendra par notification si un RDV est ajouté.</span></div>';
+  else if(mode==='frise') h+=agenda(list, day);
+  else if(mode==='carte') h+=plCarte(list, day);
+  else h+=plTour(list, day);
+  return h+'</div>';
+};
+var _bind51=bind;
+bind=function(){ var r=_bind51.apply(this, arguments);
+  if(S.screen==='planning' && S.role!=='admin'){
+    each('[data-plv]', function(b){ b.onclick=function(){ if(S.plv===b.dataset.plv) return; S.plv=b.dataset.plv; PL_SEL=null; try{ localStorage.setItem('ar_plv', S.plv); }catch(e){} render(); }; });
+    each('[data-pltoday]', function(b){ b.onclick=function(){ S.pday=0; render(); }; });
+    each('[data-day]', function(b){ var f=b.onclick; b.onclick=function(){ PL_SEL=null; return f&&f.apply(this, arguments); }; });
+    each('[data-plnav]', function(b){ b.onclick=function(){ var x=rdv(b.dataset.plnav); if(x) navSheet(client(x.cid)); }; });
+    each('[data-plpin]', function(b){ b.onclick=function(){ plSelect(+b.dataset.plpin, false); }; });
+    each('[data-plact]', function(b){ b.onclick=function(){ var id=b.dataset.id, a=b.dataset.plact;
+      if(a==='valid') return validRdv(id);
+      if(a==='arrive') return arrive(id);
+      if(a==='site') return go('chantier', id);
+      rdvSheet(id); if(a==='route'){ var t=document.querySelector('#sRoute'); if(t) t.click(); } }; });
+    if((S.plv||'tour')==='carte'){ var list=plSorted(visibleRdvs(S.pday||0)); if(list.length) setTimeout(function(){ plInitMap(list, S.pday||0); }, 30); }
+  }
+  return r; };
+try{ var _plv=localStorage.getItem('ar_plv'); if(_plv && /^(tour|frise|carte)$/.test(_plv)) S.plv=_plv; }catch(e){}
+var _rerenderSoft51=rerenderSoft, PL_SIG='';
+function plSig(){ return plSorted(visibleRdvs(S.pday||0)).map(function(r){ return r.id+'/'+r.st+'/'+r.h+'/'+r.dur; }).join('|'); }
+rerenderSoft=function(){ if(S.screen==='planning' && S.role!=='admin' && (S.plv||'tour')==='carte' && PL_MAP){ var s=plSig(); if(s===PL_SIG) return; PL_SIG=s; } return _rerenderSoft51.apply(this, arguments); };
+
+/* =========================================================
+   V52 — SumUp en vrai : clé d'affiliation dans les réglages admin (partagée à tous les téléphones),
+   bouton « Encaisser » qui ouvre l'appli SumUp avec le montant, puis retour sur AR Terrain avec le résultat
+   ========================================================= */
+var PAY_KEY='ar_sumup_pending';
+if(!CFG.pay || typeof CFG.pay!=='object') CFG.pay={key:'', appId:''};
+if(SET_FIELDS.indexOf('pay')<0) SET_FIELDS.push('pay');
+var _cfgSanitize52=cfgSanitize;
+cfgSanitize=function(app){ var out=_cfgSanitize52.apply(this, arguments);
+  if(app && app.pay && typeof app.pay==='object' && !Array.isArray(app.pay)) out.pay={key:String(app.pay.key||'').trim().slice(0,200), appId:String(app.pay.appId||'').trim().slice(0,200)};
+  return out; };
+function sumupReady(){ return !!(CFG.pay && CFG.pay.key); }
+var _reglages52=SCREENS.reglages;
+SCREENS.reglages=function(){ var h=_reglages52.apply(this, arguments); if(!sessUser()) return h;
+  var ok=sumupReady();
+  var card='<div class="sec"><h2>Paiement SumUp</h2></div><div class="card" style="display:flex;flex-direction:column;gap:12px">'+
+    '<div class="row"><b class="grow">Encaisser par carte avec l\'appli SumUp</b><span class="pill '+(ok?'p-ok':'p-warn')+'">'+(ok?ic('check')+'Prêt':'À configurer')+'</span></div>'+
+    '<label class="field"><span>Clé d\'affiliation SumUp</span><input id="suKey" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(CFG.pay.key||'')+'" placeholder="Collez la clé de votre compte développeur SumUp"></label>'+
+    '<label class="field"><span>Identifiant d\'application (si SumUp en demande un)</span><input id="suApp" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(CFG.pay.appId||'')+'" placeholder="ex. fr.entreprise-ar.terrain"></label>'+
+    '<p class="hint">La clé est partagée avec les téléphones des techniciens par le CRM. Ils doivent avoir l\'appli SumUp installée et connectée au compte de l\'entreprise.</p></div>';
+  var re=/<div class="sec"><h2>Paiement<\/h2><\/div><div class="card li">[\s\S]*?Connecté<\/span><\/div>/;
+  return re.test(h)?h.replace(re, card):h.replace('<button class="btn danger block" id="reset">', card+'<button class="btn danger block" id="reset">');
+};
+var _bind52=bind;
+bind=function(){ var r=_bind52.apply(this, arguments);
+  if(S.screen==='reglages'){
+    var k=$('suKey'), a=$('suApp');
+    var up=function(){ CFG.pay={key:(k?k.value:'').trim(), appId:(a?a.value:'').trim()}; save(); };
+    if(k) k.onchange=function(){ up(); toast(k.value.trim()?'Clé SumUp enregistrée':'Clé SumUp retirée'); rerender(); };
+    if(a) a.onchange=up;
+  }
+  return r; };
+function sumupOpen(amt, c, title){
+  var tx='ar-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
+  var back=location.origin+location.pathname;
+  var q={'affiliate-key':CFG.pay.key, 'total':(+amt).toFixed(2), 'amount':(+amt).toFixed(2), 'currency':'EUR', 'title':title, 'foreign-tx-id':tx, 'callback':back, 'callbacksuccess':back, 'callbackfail':back, 'skip-screen-success':'true'};
+  if(CFG.pay.appId) q['app-id']=CFG.pay.appId;
+  try{ localStorage.setItem(PAY_KEY, JSON.stringify({tx:tx, amt:+amt, cid:c.id, crmId:c.crmId, nom:c.nom, rid:S.fin?S.fin.rid:null, fin:S.fin||null, at:Date.now()})); }catch(e){}
+  location.href='sumupmerchant://pay/1.0?'+Object.keys(q).map(function(x){ return x+'='+encodeURIComponent(q[x]); }).join('&');
+  setTimeout(function(){ if(document.visibilityState==='visible') toast('L\'appli SumUp ne s\'est pas ouverte : vérifiez qu\'elle est installée sur ce téléphone'); }, 2500);
+}
+var _payFlow52=payFlow;
+payFlow=function(amount, c, cb){
+  if(!sessUser()) return _payFlow52.apply(this, arguments);
+  var hasDevis=c && c.devis && c.devis.length && c.devis[0].ttc>0, pre=hasDevis?amount:'';
+  var s=sheet('<div class="row" style="align-items:flex-start"><div class="grow"><h3>Encaisser</h3><div class="muted" style="font-size:13.5px">'+esc(c.nom)+'</div></div><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div>'+
+    '<label class="field"><span>Montant à encaisser (€)</span><input id="suAmt" inputmode="decimal" placeholder="0,00" value="'+(pre!==''?String(pre).replace('.',','):'')+'"></label>'+
+    (sumupReady()?'<button class="btn accent block" id="suGo">'+ic('card')+'Encaisser avec SumUp</button><p class="hint" style="text-align:center">L\'appli SumUp s\'ouvre avec le montant. Le client paie sur le lecteur, puis vous revenez ici automatiquement.</p>'
+      :'<div class="card" style="padding:12px 14px;font-size:13.5px;line-height:1.45">'+ic('late').replace('<svg','<svg style="width:16px;height:16px;vertical-align:-3px;color:var(--warning)"')+' SumUp n\'est pas encore configuré. Le bureau doit coller la clé SumUp dans Réglages › Paiement SumUp.</div>')+
+    '<div class="muted" style="font-size:13px;font-weight:700;margin-top:4px">Autre moyen de paiement</div><div class="opts">'+[['especes','Espèces'],['cheque','Chèque'],['virement','Virement'],['plus tard','À régler plus tard']].map(function(x){ return '<button class="opt" data-other="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>');
+  s.querySelector('[data-close]').onclick=closeSheet;
+  var val=function(){ var v=parseFloat(String(s.querySelector('#suAmt').value||'').replace(/\s/g,'').replace(',','.')); return isFinite(v)&&v>0?Math.round(v*100)/100:0; };
+  var go=s.querySelector('#suGo'); if(go) go.onclick=function(){ var v=val(); if(!v){ toast('Indiquez le montant à encaisser'); s.querySelector('#suAmt').focus(); return; } closeSheet(); sumupOpen(v, c, 'Entreprise AR · '+c.nom); };
+  [].forEach.call(s.querySelectorAll('[data-other]'),function(b){ b.onclick=function(){ var how=b.dataset.other, v=how==='plus tard'?0:val();
+    if(how!=='plus tard' && !v){ toast('Indiquez le montant reçu'); return; }
+    crmSend('payment.recorded',{client_id:c.id, appointment_id:S.fin?S.fin.rid:undefined, data:{montant:v, moyen:how}}); closeSheet(); cb(how==='plus tard'?'à régler plus tard':how, v); toast(how==='plus tard'?'Le bureau relancera le paiement':'Paiement noté et envoyé au CRM'); }; });
+};
+(function sumupReturn(){
+  var u=new URL(location.href), st=u.searchParams.get('smp-status')||u.searchParams.get('smp_status');
+  if(!st) return;
+  var SUMUP_TX=u.searchParams.get('smp-tx-code')||u.searchParams.get('smp_tx_code')||'', SUMUP_MSG=u.searchParams.get('smp-message')||u.searchParams.get('smp_message')||'';
+  var p=null; try{ p=JSON.parse(localStorage.getItem(PAY_KEY)||'null'); localStorage.removeItem(PAY_KEY); }catch(e){}
+  ['smp-status','smp-message','smp-tx-code','smp-receipt-sent','foreign-tx-id','smp_status','smp_message','smp_tx_code'].forEach(function(k){ u.searchParams.delete(k); });
+  try{ history.replaceState(null, '', u.pathname+(u.search||'')+u.hash); }catch(e){}
+  var ok=/^success$/i.test(st);
+  setTimeout(function(){
+    if(!p){ toast(ok?'Paiement SumUp accepté':'Paiement SumUp non abouti'); return; }
+    if(ok) crmSend('payment.recorded',{client_id:p.cid, appointment_id:p.rid||undefined, data:{montant:p.amt, moyen:'carte SumUp', foreign_tx_id:p.tx, transaction:SUMUP_TX||null}});
+    if(p.fin){ S.fin=p.fin; if(ok) S.fin.pay={how:'carte (SumUp)', amount:p.amt}; go('fin', p.rid); }
+    toast(ok?'Paiement de '+eur(p.amt)+' accepté et envoyé au CRM':'Paiement SumUp non abouti'+(SUMUP_MSG?' : '+SUMUP_MSG:'')+'. Vous pouvez réessayer.');
+  }, 1200);
+})();
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
