@@ -260,6 +260,11 @@ textarea.inp{height:auto;padding:10px;resize:vertical;line-height:1.45}
 .login-c{width:min(420px,100%);padding:28px;display:flex;flex-direction:column;gap:16px}
 .login-c h1{margin:0;font-size:22px;font-weight:800}
 .login-c p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
+.otp{display:flex;gap:8px;justify-content:space-between}
+.otp-i{width:100%;max-width:52px;height:58px;border:1.5px solid var(--line);border-radius:12px;text-align:center;font-size:24px;font-weight:800;background:var(--surface);font-variant-numeric:tabular-nums}
+.otp-i:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.ic2fa{width:48px;height:48px;border-radius:14px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center}
+.ic2fa svg{width:24px;height:24px}
 .err{background:var(--bad-bg);color:var(--bad);padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600}
 .skel{background:linear-gradient(90deg,var(--line-2),var(--surface-2),var(--line-2));background-size:200% 100%;animation:sk 1.2s infinite;border-radius:8px}
 @keyframes sk{to{background-position:-200% 0}}
@@ -472,33 +477,67 @@ function loadingOrError(){
 }
 function todayList(){ var t=new Date(); return S.appts.filter(function(a){ return sameDay(a.start,t); }); }
 
-/* ---------- Vue : connexion ---------- */
+/* ---------- Vue : connexion (avec double authentification Google Authenticator) ---------- */
+var LG={step:'cred', email:'', psw:''};
+function need2fa(r){ var j=r.json||{}, m=String(j.error||j.message||'');
+  return !!(j.need_2fa||j.require_2fa||j.requires_2fa||j.two_factor||j.mfa_required||j['2fa']||j.totp_required||r.status===428||/2fa|deux facteurs|double auth|authenticator|otp|totp|code de (v[ée]rification|s[ée]curit[ée])|code requis/i.test(m)); }
 function viewLogin(){
   var last=''; try{ last=localStorage.getItem('ar_last_email')||''; }catch(e){}
-  return '<div class="login"><form class="card login-c" id="lg" autocomplete="on"><div style="display:flex;align-items:center;gap:10px"><span class="logo">AR</span><b>Console AR Terrain</b></div>'+
-    '<h1>Connexion</h1><p>Utilisez votre e-mail et votre mot de passe du CRM. Si vous êtes déjà connecté dans l\'appli sur ce navigateur, la console reprend la même session.</p>'+
+  var head='<div style="display:flex;align-items:center;gap:10px"><span class="logo">AR</span><b>Console AR Terrain</b></div>';
+  if(LG.step==='code') return '<div class="login"><form class="card login-c" id="lg2" autocomplete="off">'+head+
+    '<span class="ic2fa">'+ic('lock')+'</span><h1>Vérification en deux étapes</h1><p>Ouvrez <b>Google Authenticator</b> (ou votre appli d\'authentification) sur votre téléphone et saisissez le code à 6 chiffres affiché pour le CRM Entreprise AR.</p>'+
     (S.loginErr?'<div class="err" role="alert">'+esc(S.loginErr)+'</div>':'')+
-    '<label class="lbl"><span>E-mail</span><input class="inp" id="lgE" type="email" autocomplete="username" required value="'+esc(last)+'"></label>'+
+    '<div class="otp" role="group" aria-label="Code à 6 chiffres">'+[0,1,2,3,4,5].map(function(i){ return '<input class="otp-i" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Chiffre '+(i+1)+'"'+(i===0?' autocomplete="one-time-code"':'')+'>'; }).join('')+'</div>'+
+    '<button class="btn pri" style="height:42px;justify-content:center" id="lg2Go">'+(S.logging?'Vérification…':'Valider le code')+'</button>'+
+    '<p class="hint">Compte : <b>'+esc(LG.email)+'</b> · le code change toutes les 30 secondes.</p><button type="button" class="btn ghost" data-lgback>← Revenir à l\'e-mail et au mot de passe</button></form></div>';
+  return '<div class="login"><form class="card login-c" id="lg" autocomplete="on">'+head+
+    '<h1>Connexion</h1><p>Votre e-mail et votre mot de passe du CRM. Si vous êtes déjà connecté dans l\'appli sur ce navigateur, la console reprend la même session.</p>'+
+    (S.loginErr?'<div class="err" role="alert">'+esc(S.loginErr)+'</div>':'')+
+    '<label class="lbl"><span>E-mail</span><input class="inp" id="lgE" type="email" autocomplete="username" required value="'+esc(LG.email||last)+'"></label>'+
     '<label class="lbl"><span>Mot de passe</span><input class="inp" id="lgP" type="password" autocomplete="current-password" required></label>'+
-    (S.need2fa?'<label class="lbl"><span>Code de vérification</span><input class="inp" id="lgC" inputmode="numeric" autocomplete="one-time-code"></label>':'')+
-    '<button class="btn pri" style="height:42px;justify-content:center" id="lgGo">'+(S.logging?'Connexion…':'Se connecter')+'</button>'+
+    '<button class="btn pri" style="height:42px;justify-content:center" id="lgGo">'+(S.logging?'Connexion…':'Continuer')+'</button>'+
+    '<button type="button" class="btn ghost" data-lg2fa style="justify-content:center">'+ic('lock')+'Mon compte demande un code Google Authenticator</button>'+
     '<details><summary class="hint" style="cursor:pointer">Adresse du CRM</summary><input class="inp" id="lgU" style="margin-top:8px;width:100%" value="'+esc(API)+'"></details></form></div>';
 }
-function bindLogin(){
-  var f=document.getElementById('lg'); if(!f) return;
-  f.onsubmit=function(e){ e.preventDefault(); if(S.logging) return;
-    var u=document.getElementById('lgU').value.trim().replace(/\/+$/,''); if(u && u!==API && /^(https:\/\/|http:\/\/localhost[:\/])/.test(u)){ API=u; try{ localStorage.setItem('ar_console_api', u); }catch(e){} }
-    var email=document.getElementById('lgE').value.trim(), psw=document.getElementById('lgP').value, code=(document.getElementById('lgC')||{}).value;
-    S.logging=true; S.loginErr=null; render();
-    api('POST','auth/login',{email:email, psw:psw, code_2fa:code||undefined}).then(function(r){
-      S.logging=false;
-      if(!r.ok || !r.json || !r.json.token){ var m=(r.json&&r.json.error)||''; if(/2fa|code/i.test(m)) S.need2fa=true; S.loginErr=r.status===401?'E-mail ou mot de passe incorrect.':r.status===429?'Trop d\'essais : patientez quelques minutes.':(m||('Erreur '+r.status)); render(); return; }
+function doLogin(code){
+  S.logging=true; S.loginErr=null; render();
+  var body={email:LG.email, psw:LG.psw}; if(code){ body.code_2fa=code; body.code=code; }
+  api('POST','auth/login',body).then(function(r){
+    S.logging=false;
+    if(r.ok && r.json && r.json.token){
       var x=r.json.user||{};
-      SESSION={env:'test', token:r.json.token, expires_at:r.json.expires_at, user:{id:x.id_crmuser, nom:x.nom, profil:x.id_profil, installator:x.id_installator, profil_nom:(x.profil_nom||x.nom_profil||x.libelle_profil||null), email:x.email||email}};
-      saveSession(); try{ localStorage.setItem('ar_last_email', email); }catch(e){}
-      boot();
-    }).catch(function(){ S.logging=false; S.loginErr='Le CRM ne répond pas.'; render(); });
-  };
+      SESSION={env:'test', token:r.json.token, expires_at:r.json.expires_at, user:{id:x.id_crmuser, nom:x.nom, profil:x.id_profil, installator:x.id_installator, profil_nom:(x.profil_nom||x.nom_profil||x.libelle_profil||null), email:x.email||LG.email}};
+      saveSession(); try{ localStorage.setItem('ar_last_email', LG.email); }catch(e){} LG={step:'cred', email:'', psw:''}; boot(); return;
+    }
+    var m=(r.json&&r.json.error)||'';
+    if(!code && need2fa(r)){ LG.step='code'; S.loginErr=null; render(); return; }
+    if(code){ S.loginErr=r.status===429?'Trop d\'essais : patientez quelques minutes.':'Code refusé'+(m?' ('+m+')':'')+'. Vérifiez que c\'est le code du CRM Entreprise AR et qu\'il n\'a pas expiré, puis réessayez.'; render(); return; }
+    S.loginErr=r.status===401?'Le CRM refuse la connexion ('+(m||'informations incorrectes')+'). Si votre compte a la double authentification, cliquez sur « Mon compte demande un code Google Authenticator ».':r.status===429?'Trop d\'essais : patientez quelques minutes.':r.status===503?'L\'API de l\'application est coupée dans le CRM (Paramétrage › Application terrain).':(m||('Erreur '+r.status));
+    render();
+  }).catch(function(){ S.logging=false; S.loginErr='Le CRM ne répond pas. Vérifiez la connexion internet.'; render(); });
+}
+function bindLogin(){
+  var f=document.getElementById('lg');
+  if(f){
+    var grab=function(){ var u=document.getElementById('lgU').value.trim().replace(/\/+$/,''); if(u && u!==API && /^(https:\/\/|http:\/\/localhost[:\/])/.test(u)){ API=u; try{ localStorage.setItem('ar_console_api', u); }catch(e){} }
+      LG.email=document.getElementById('lgE').value.trim(); LG.psw=document.getElementById('lgP').value; return LG.email && LG.psw; };
+    var pw=document.getElementById('lgP'); if(pw && LG.psw) pw.value=LG.psw;
+    f.onsubmit=function(e){ e.preventDefault(); if(S.logging) return; if(grab()) doLogin(null); };
+    var t=f.querySelector('[data-lg2fa]'); if(t) t.onclick=function(){ if(!grab()){ S.loginErr='Saisissez d\'abord votre e-mail et votre mot de passe.'; render(); return; } LG.step='code'; S.loginErr=null; render(); };
+    return;
+  }
+  var g=document.getElementById('lg2'); if(!g) return;
+  var ins=[].slice.call(g.querySelectorAll('.otp-i'));
+  var code=function(){ return ins.map(function(i){ return i.value; }).join(''); };
+  var fill=function(str, from){ var d=String(str).replace(/\D/g,'').split(''); for(var k=from;k<ins.length && d.length;k++) ins[k].value=d.shift(); var nx=ins.filter(function(i){ return !i.value; })[0]; (nx||ins[ins.length-1]).focus(); if(code().length===6 && !S.logging) doLogin(code()); };
+  ins.forEach(function(inp, i){
+    inp.oninput=function(){ var v=inp.value.replace(/\D/g,''); if(v.length>1){ inp.value=''; fill(v, i); return; } inp.value=v; if(v && i<5) ins[i+1].focus(); if(code().length===6 && !S.logging) doLogin(code()); };
+    inp.onkeydown=function(e){ if(e.key==='Backspace' && !inp.value && i>0){ ins[i-1].value=''; ins[i-1].focus(); e.preventDefault(); } if(e.key==='ArrowLeft' && i>0) ins[i-1].focus(); if(e.key==='ArrowRight' && i<5) ins[i+1].focus(); };
+    inp.onpaste=function(e){ var t=(e.clipboardData||window.clipboardData).getData('text'); if(t){ e.preventDefault(); fill(t, i); } };
+  });
+  setTimeout(function(){ if(ins[0]) ins[0].focus(); }, 30);
+  g.onsubmit=function(e){ e.preventDefault(); if(S.logging) return; var c=code(); if(c.length!==6){ S.loginErr='Le code contient 6 chiffres.'; render(); return; } doLogin(c); };
+  var bk=g.querySelector('[data-lgback]'); if(bk) bk.onclick=function(){ LG.step='cred'; LG.psw=''; S.loginErr=null; render(); };
 }
 
 /* ---------- Vue : tableau de bord ---------- */
