@@ -994,6 +994,25 @@ main.pg-pop{animation:pgPop .34s cubic-bezier(.2,.9,.25,1) both}
 .scan-cta b{font-size:14.5px;color:var(--primary)}.scan-cta small{display:none}.scan-cta{width:auto;align-self:flex-start;padding-right:14px}
 .scan-cta>svg:last-child{width:16px;height:16px;color:var(--primary);opacity:.7}
 
+/* Transitions de pages façon appli native */
+main.in-r,main.in-l,main.pg-push,main.pg-pop{animation:none!important}
+.pg-ghost{position:absolute;overflow:hidden;pointer-events:none;background:var(--bg);will-change:transform,opacity}
+.pg-ghost::after{content:"";position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+.pg-ghost-in{will-change:transform}
+main.pg-anim{position:relative;background:var(--bg);will-change:transform,opacity}
+.pg-ghost.pgg-push{z-index:0;animation:pgGPush .44s cubic-bezier(.32,.72,0,1) forwards}.pg-ghost.pgg-push::after{animation:pgShadeIn .44s cubic-bezier(.32,.72,0,1) forwards}
+main.pgv-push{z-index:1;animation:pgVPush .44s cubic-bezier(.32,.72,0,1) both;box-shadow:-10px 0 28px rgba(0,0,0,.14)}
+.pg-ghost.pgg-pop{z-index:3;animation:pgGPop .44s cubic-bezier(.32,.72,0,1) forwards;box-shadow:-10px 0 28px rgba(0,0,0,.14)}
+main.pgv-pop{animation:pgVPop .44s cubic-bezier(.32,.72,0,1) both}
+.pg-ghost.pgg-tabR{z-index:3;animation:pgGTabR .3s ease-out forwards}.pg-ghost.pgg-tabL{z-index:3;animation:pgGTabL .3s ease-out forwards}
+main.pgv-tabR{animation:pgVTabR .3s ease-out both}main.pgv-tabL{animation:pgVTabL .3s ease-out both}
+@keyframes pgGPush{to{transform:translateX(-28%)}}@keyframes pgShadeIn{to{opacity:.16}}
+@keyframes pgVPush{from{transform:translateX(100%)}to{transform:none}}
+@keyframes pgGPop{from{transform:none}to{transform:translateX(100%)}}
+@keyframes pgVPop{from{transform:translateX(-28%);filter:brightness(.86)}to{transform:none;filter:none}}
+@keyframes pgGTabR{to{opacity:0;transform:translateX(-18px)}}@keyframes pgGTabL{to{opacity:0;transform:translateX(18px)}}
+@keyframes pgVTabR{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}@keyframes pgVTabL{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.pg-ghost{display:none}main.pg-anim{animation:none!important}}
 </style>
 
 </head>
@@ -3051,7 +3070,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.49 · 16 nov. 2026';
+var APP_VERSION='1.0.50 · 16 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5375,6 +5394,34 @@ SCREENS.client=function(id){
   h=h.replace('<h2>Photos du chantier</h2>', '<h2>Photos des techniciens</h2>');
   var c=client(id||S.arg); if(c && !(c.photos||[]).length) h=h.replace('<div class="phs"><input type="file" id="addPh" hidden></div>', '<p class="hint">Aucune photo pour l\'instant : les techniciens les ajoutent depuis le chantier.</p><input type="file" id="addPh" hidden>');
   return h;
+};
+
+/* =========================================================
+   V50 — Transitions de pages façon appli native : l'ancienne page reste visible et recule pendant que la nouvelle arrive
+   (ouvrir : depuis la droite par-dessus ; retour : la page part vers la droite ; onglets : fondu enchaîné court)
+   ========================================================= */
+var _render50=render, PG_T=null;
+render=function(){
+  var dir=NAV_DIR, tab=S.slide, before=S._key, mode=dir||(tab?(tab>0?'tabR':'tabL'):null), ghost=null;
+  if(MOTION_OK && mode && V.firstChild){
+    var old=document.querySelector('.pg-ghost'); if(old) old.remove();
+    ghost=document.createElement('div'); ghost.className='pg-ghost'; ghost.setAttribute('aria-hidden','true');
+    ghost.style.cssText='left:'+V.offsetLeft+'px;top:'+V.offsetTop+'px;width:'+V.clientWidth+'px;height:'+V.clientHeight+'px';
+    var inner=document.createElement('div'); inner.className='pg-ghost-in'; inner.innerHTML=V.innerHTML; inner.style.transform='translateY('+(-V.scrollTop)+'px)';
+    [].forEach.call(inner.querySelectorAll('[id]'),function(e){ e.removeAttribute('id'); });
+    ghost.appendChild(inner);
+  }
+  var r=_render50.apply(this, arguments);
+  if(ghost && S._key!==before){
+    clearTimeout(PG_T); V.classList.remove('pg-push','pg-pop','in-r','in-l','pgv-push','pgv-pop','pgv-tabR','pgv-tabL');
+    var cls={push:['pgg-push','pgv-push'], pop:['pgg-pop','pgv-pop'], tabR:['pgg-tabR','pgv-tabR'], tabL:['pgg-tabL','pgv-tabL']}[mode];
+    ghost.classList.add(cls[0]);
+    ghost.style.height=Math.max(ghost.offsetHeight||0, V.clientHeight)+'px';
+    if(mode==='push') V.parentNode.insertBefore(ghost, V); else V.parentNode.insertBefore(ghost, V.nextSibling);
+    void V.offsetWidth; V.classList.add('pg-anim', cls[1]);
+    PG_T=setTimeout(function(){ ghost.remove(); V.classList.remove('pg-anim', cls[1]); }, mode.indexOf('tab')===0?320:460);
+  }
+  return r;
 };
 
 SCREENS.soon = function(){
