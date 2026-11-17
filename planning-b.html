@@ -18,7 +18,12 @@
        { id_rdv, id_contact, debut (ISO), duree (min), nom, adresse, installateur, technicien_id, statut,
          type ("Pose"|"Dépannage"|"Prévisite"|"SAV"|"Chantier"|"Autre"),
          commande: { statut: "a_faire"|"passee", passee_le, url } | null,
-         etapes: { confirme, en_route, sur_place, termine } (heures ISO, facultatif), note }
+         etapes: { confirme, en_route, sur_place, termine } (heures ISO, facultatif), note,
+         telephone (affiche le lien « Appeler ») }
+  4. Actions envoyées à onAction(action, rdv, data) — renvoyer {rdv:{…}} mis à jour (ou {commande:{…}}) :
+       confirmer · attribuer {technicien} · reattribuer {technicien, debut?} · decaler {debut, technicien}
+       commander (→ {commande}) · voir_commande · nouveau {date} (rdv = null) · annuler {avant}
+  5. Autres réglages : ficheUrl(rdv) → lien de la fiche client · carteUrl (texte, ou fonction(date)) → bouton « Carte ».
 -->
 <style>
 #pb-app{--bl:#1D3FBF;--bl2:#152E8C;--yl:#FFC93C;--ink:#10152B;--ink2:#2A3352;--mut:#5B6275;--fnt:#8A90A2;--ln:#ECEEF3;--ln2:#F1F3F8;--bg:#FFFFFF;--pn:#FBFBFD;--ok:#2B8A3E;--bad:#E5383B;
@@ -257,6 +262,7 @@ var CFG=Object.assign({
   },
   /* Actions d'écriture : à brancher sur les routes du CRM. Doit renvoyer une Promise (rejet = annulation). */
   onAction:null,
+  carteUrl:null, /* ex. function(d){ return '/crm/planning_b.php?vue=carte&date='+ymd(d); } */
   ficheUrl:function(rdv){ return rdv.cid ? '/crm/fiche.php?id='+encodeURIComponent(rdv.cid) : null; },
   hourStart:7, rowHeight:48
 }, window.PLANNING_CONFIG||{});
