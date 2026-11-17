@@ -157,6 +157,11 @@ select.sel.act{border-color:var(--primary-line);background-color:var(--primary-s
 .list-i .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .list-i .t b{font-size:13.5px}.list-i .t span{font-size:12.5px;color:var(--muted)}
 .prog{height:6px;border-radius:3px;background:var(--line-2);min-width:80px}.prog span{display:block;height:6px;border-radius:3px}
+.bug-i.fresh{background:linear-gradient(90deg,var(--bad-bg),transparent 60%)}
+.bug-n{min-width:44px;height:30px;border-radius:9px;background:var(--bad-bg);color:var(--bad);font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}.bug-n.crm{background:var(--warn-bg,#FFF4E6);color:var(--warn,#C2410C)}
+.bug-pile{margin:8px 0 0;padding:10px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto}
+@keyframes bugPulse{50%{opacity:.45}}
+@media (prefers-reduced-motion: reduce){.bug-i .badge{animation:none!important}}
 .soonbox{border:1px dashed var(--line);border-radius:12px;padding:14px;display:flex;gap:12px;align-items:flex-start;background:var(--surface-2)}
 .soonbox svg{width:18px;height:18px;color:var(--faint);flex:none;margin-top:1px}
 .soonbox b{font-size:13.5px;display:block}.soonbox span{font-size:12.5px;color:var(--muted)}
@@ -356,12 +361,12 @@ function ic(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 var S={ route:'pilotage', appts:[], loaded:false, loading:false, loadedAt:0, err:null, clients:{}, range:14,
   iv:{view:'today', q:'', tech:'', st:'', sort:'start', dir:1, sel:{}, open:null, tab:'det'},
   settings:null, draft:null, setLoaded:false, role:'tech', health:null, version:null, ruleSel:0, navOpen:false, pal:false, palQ:'', palI:0 };
-var PAGES={pilotage:'Tableau de bord', interventions:'Interventions', studio:'Studio de l\'appli', automatisations:'Automatisations', equipe:'Équipe et droits', retours:'Retours des utilisateurs', maintenance:'Déploiements et maintenance'};
+var PAGES={pilotage:'Tableau de bord', interventions:'Interventions', studio:'Studio de l\'appli', automatisations:'Automatisations', equipe:'Équipe et droits', retours:'Retours des utilisateurs', bugs:'Bugs en direct', maintenance:'Déploiements et maintenance'};
 var NAV=[
   ['Pilotage', [['pilotage','Tableau de bord','home'],['interventions','Interventions','list'],['#carte','Carte en direct','map']]],
   ['Commercial', [['#clients','Clients','users'],['#devis','Devis','doc'],['#paiements','Paiements','card']]],
   ['Appli mobile', [['studio','Studio de l\'appli','layout'],['automatisations','Automatisations','bolt'],['retours','Retours des utilisateurs','msg'],['equipe','Équipe et droits','shield'],['#modeles','Modèles de messages','doc']]],
-  ['Système', [['maintenance','Déploiements','rocket'],['#journal','Journal d\'audit','clock'],['#claude','Assistant Claude','spark']]]
+  ['Système', [['bugs','Bugs en direct','alert'],['maintenance','Déploiements','rocket'],['#journal','Journal d\'audit','clock'],['#claude','Assistant Claude','spark']]]
 ];
 
 /* ---------- Données : rendez-vous ---------- */
@@ -462,7 +467,7 @@ function render(){
   var side='<aside class="side'+(S.navOpen?' on':'')+'" aria-label="Menu"><div class="brand"><span class="logo">AR</span><span><b>Entreprise AR</b><small>Console AR Terrain</small></span></div>'+
     '<button class="search" data-act="pal">'+ic('search')+'<span>Rechercher…</span><span class="kbd">Ctrl K</span></button><nav class="nav">'+
     NAV.map(function(g){ return '<div class="nav-g"><span>'+g[0]+'</span>'+g[1].map(function(it){ var soon=it[0].charAt(0)==='#', on=S.route===it[0];
-      var c=it[0]==='interventions'&&S.loaded?todayList().length:(it[0]==='retours'&&S.fb&&S.fb.items.length?S.fb.items.length:'');
+      var c=it[0]==='interventions'&&S.loaded?todayList().length:(it[0]==='retours'&&S.fb&&S.fb.items.length?(S.fb.items.filter(function(x){ return !/^⚙ Erreur automatique/.test(String(x.message||'')); }).length||''):(it[0]==='bugs'&&S.fb&&S.fb.items.length?(S.fb.items.filter(function(x){ return /^⚙ Erreur automatique/.test(String(x.message||'')) && Date.now()-new Date(String(x.at||'').replace(' ','T')).getTime()<864e5; }).length||''):''));
       return '<a href="'+(soon?'#':'#/'+it[0])+'" class="'+(on?'on':'')+'"'+(soon?' data-soon="'+esc(it[1])+'"':'')+'>'+ic(it[2])+'<span>'+esc(it[1])+'</span>'+(soon?'<span class="soon">bientôt</span>':(c!==''?'<span class="c num">'+c+'</span>':''))+'</a>'; }).join('')+'</div>'; }).join('')+'</nav>'+
     '<div class="side-foot"><div class="envb"'+(prod?' style="background:var(--bad-bg);color:var(--bad)"':'')+'><i'+(prod?' style="background:var(--bad-dot)"':'')+'></i>'+(prod?'CRM de production':'CRM de test (crmdev)')+'</div>'+
     '<button class="me" data-act="menu"><span class="av">'+esc(initials(u.nom))+'</span><span style="flex:1;min-width:0"><b>'+esc(u.nom||'Admin')+'</b><small>'+esc(u.profil_nom||'Admin +')+'</small></span>'+ic('out')+'</button></div></aside>';
@@ -752,7 +757,7 @@ function fbParse(m){
   return {type:t[x[1]]||'question', screen:x[2], version:x[3], user_nom:x[4], role:x[5], device:x[6], message:x[7].trim(), at:pick(m,['date','created_at','date_comment'])};
 }
 function loadFeedback(){
-  S.fb={loading:true, items:(S.fb&&S.fb.items)||[]}; render();
+  S.fb={loading:true, items:(S.fb&&S.fb.items)||[], src:S.fb&&S.fb.src}; S.bugAt=Date.now(); render();
   return api('GET','feedback?limit=200').then(function(r){
     if(r.ok){ var arr=(r.json&&(r.json.feedback||r.json.items||r.json.data))||[]; S.fb={src:'crm', items:arr.map(function(f){ return {type:f.type, message:f.message, screen:f.screen, version:f.version, device:f.device, user_nom:f.user_nom||f.user, role:f.role, at:f.occurred_at||f.created_at}; })}; render(); return; }
     var cid=S.settings&&S.settings.fb&&S.settings.fb.cid;
@@ -781,6 +786,45 @@ VIEWS.retours=function(){
     '<button class="btn pri" data-act="pubfb"'+(!S.draft||JSON.stringify(S.draft.fb)===JSON.stringify(S.settings&&S.settings.fb)||S.publishing?' disabled':'')+'>Enregistrer pour tous les téléphones</button>'+
     (fb.src==='fiche'&&fb.ok===false?'<div class="err">Fiche n° '+esc(fb.cid)+' introuvable dans le CRM.</div>':''))+
     '<div class="soonbox">'+ic('bolt')+'<div><b>Bientôt</b><span>Statut « traité », réponse au technicien et capture d\'écran jointe, avec la route « retours » du CRM (demande Grok).</span></div></div></div></section></div></div>';
+  return h;
+};
+
+/* ---------- Vue : bugs en direct (erreurs envoyées automatiquement par l'appli, actualisées toutes les minutes) ---------- */
+var BUG_EVERY=60;
+function isAuto(x){ return /^⚙ Erreur automatique/.test(String(x && x.message || '')); }
+function bugTime(x){ var t=x.at?new Date(String(x.at).replace(' ', 'T')).getTime():NaN; return isNaN(t)?0:t; }
+function bugParse(x){ var m=String(x.message).replace(/^⚙ Erreur automatique \(([^)]*)\) : /, function(_, k){ x.kind=k; return ''; }); var lines=m.split('\n');
+  return { kind:x.kind||'appli', msg:lines[0], pile:(lines.filter(function(l){ return /^Pile : /.test(l); })[0]||'').replace('Pile : ', ''), off:/En ligne : non/.test(m) }; }
+function bugGroups(){
+  var items=((S.fb&&S.fb.items)||[]).filter(isAuto), g={};
+  items.forEach(function(x){ var p=bugParse(x), k=p.kind+'|'+p.msg+'|'+(x.screen||''), t=bugTime(x);
+    if(!g[k]) g[k]={kind:p.kind, msg:p.msg, screen:x.screen||'', pile:p.pile, n:0, users:{}, versions:{}, devices:{}, first:t, last:t, off:0};
+    var o=g[k]; o.n++; if(x.user_nom) o.users[x.user_nom]=1; if(x.version) o.versions[String(x.version).split(' ')[0]]=1; if(x.device) o.devices[String(x.device).split(' · ')[0]]=1; if(p.off) o.off++;
+    if(t && (!o.first || t<o.first)) o.first=t; if(t>o.last){ o.last=t; o.pile=p.pile||o.pile; } });
+  return { items:items, groups:Object.keys(g).map(function(k){ return g[k]; }).sort(function(a, b){ return b.last-a.last; }) };
+}
+var _viewRetours=VIEWS.retours;
+VIEWS.retours=function(){ var fb=S.fb; if(!fb || !fb.items) return _viewRetours(); S.fb=Object.assign({}, fb, {items:fb.items.filter(function(x){ return !isAuto(x); })}); try{ return _viewRetours(); } finally{ S.fb=fb; } };
+VIEWS.bugs=function(){
+  var fb=S.fb||{items:[]}, G=bugGroups(), now=Date.now(), h1=G.items.filter(function(x){ return now-bugTime(x)<3600e3; }).length, h24=G.items.filter(function(x){ return now-bugTime(x)<864e5; }).length;
+  var users={}; G.items.forEach(function(x){ if(now-bugTime(x)<864e5 && x.user_nom) users[x.user_nom]=1; });
+  var crm=G.items.filter(function(x){ return /\(crm\)/.test(x.message) && now-bugTime(x)<3600e3; }).length;
+  var right='<span class="crumb" id="bugTick">'+(S.bugPause?'En pause':(fb.loading?'Actualisation…':'Actualisé '+ago(S.bugAt)))+'</span>'+
+    '<button class="btn sm" data-act="bugpause">'+(S.bugPause?'Reprendre':'Pause')+'</button><button class="btn sm" data-act="fbload" aria-label="Actualiser">'+ic('refresh')+'</button>';
+  var h=topbar('Système','Bugs en direct', right)+'<div class="page fade">';
+  h+='<div class="kpis">'+[['Erreurs · dernière heure', h1, h1?'var(--bad)':''], ['Erreurs · 24 h', h24, ''], ['Techniciens touchés · 24 h', Object.keys(users).length, ''], ['Pannes du CRM · 1 h', crm, crm?'var(--bad)':'']].map(function(k){
+    return '<div class="card kpi"><span class="l">'+k[0]+'</span><span class="v num"'+(k[2]?' style="color:'+k[2]+'"':'')+'>'+k[1]+'</span></div>'; }).join('')+'</div>';
+  h+='<section class="card"><div class="card-h"><div><h2>Erreurs regroupées</h2><p>Chaque erreur de l\'appli est envoyée toute seule par le téléphone (au plus une fois par heure et par téléphone). Actualisation automatique toutes les minutes.</p></div></div>';
+  if(fb.src==='none') h+='<div class="empty">'+ic('alert')+'<b>Pas encore de boîte de réception</b><span>Les bugs arrivent par le même chemin que les retours : choisissez la fiche du CRM dans « Retours des utilisateurs ».</span><a class="btn pri" href="#/retours">Choisir la fiche</a></div>';
+  else if(fb.loading && !G.items.length) h+='<div class="card-b"><div class="skel" style="height:160px"></div></div>';
+  else if(!G.groups.length) h+='<div class="empty">'+ic('check')+'<b>Aucun bug signalé</b><span>Tout va bien pour l\'instant. Les nouvelles erreurs apparaîtront ici dans la minute.</span></div>';
+  else h+=G.groups.map(function(o, i){ var fresh=now-o.last<10*60e3, open=S.bugOpen===i;
+    return '<div class="list-i bug-i'+(fresh?' fresh':'')+'"><span class="bug-n num'+(o.kind==='crm'?' crm':'')+'">'+o.n+'×</span><span class="t" style="min-width:0;flex:1">'+
+      '<span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge '+(o.kind==='crm'?'b-aconf':'b-late')+'"><i></i>'+(o.kind==='crm'?'CRM':'Appli')+'</span>'+(o.screen?'<span class="hint">écran « '+esc(o.screen)+' »</span>':'')+(fresh?'<span class="badge b-late" style="animation:bugPulse 1.6s ease-in-out infinite">nouveau</span>':'')+'</span>'+
+      '<b style="display:block;margin:5px 0;font-size:13.5px;word-break:break-word">'+esc(o.msg)+'</b>'+
+      '<span class="hint">'+esc(['dernière fois '+ago(o.last), Object.keys(o.users).join(', '), 'v'+Object.keys(o.versions).join(', v'), Object.keys(o.devices).join(', '), o.off?o.off+' hors ligne':''].filter(function(s){ return s && s!=='v'; }).join(' · '))+'</span>'+
+      (o.pile?'<button class="btn ghost sm" data-bug="'+i+'" style="margin-top:6px">'+(open?'Masquer':'Voir')+' le détail technique</button>'+(open?'<pre class="bug-pile">'+esc(o.pile)+'</pre>':''):'')+'</span></div>'; }).join('');
+  h+='</section><p class="hint" style="margin-top:12px">Le détail technique sert à corriger le bug : copiez-le et envoyez-le avec une capture si besoin.</p></div>';
   return h;
 };
 
@@ -828,6 +872,7 @@ function bindAll(){
     if(a==='pubmaint'){ publishSettings(['maint']); return; }
     if(a==='health'){ runHealth(); return; }
     if(a==='fbload'){ loadFeedback(); return; }
+    if(a==='bugpause'){ S.bugPause=!S.bugPause; render(); return; }
     if(a==='pubfb'){ publishSettings(['fb']).then(function(){ loadFeedback(); }); return; }
     doAct(a); }; });
   on('[data-soon]', function(el){ el.onclick=function(e){ e.preventDefault(); e.stopPropagation(); toast('« '+el.dataset.soon+' » arrive bientôt : il attend une nouvelle route du CRM'); }; });
@@ -858,6 +903,7 @@ function bindAll(){
   on('[data-maintmsg]', function(el){ el.onchange=function(){ setDraft(function(D){ D.maint.msg=el.value.trim().slice(0,400); }); }; });
   on('[data-mainttime]', function(el){ el.onchange=function(){ setDraft(function(D){ D.maint.until=el.value; }); }; });
   on('[data-fbf]', function(el){ el.onclick=function(){ S.fbFilter=el.dataset.fbf; render(); }; });
+  on('[data-bug]', function(el){ el.onclick=function(){ var i=+el.dataset.bug; S.bugOpen=S.bugOpen===i?null:i; render(); }; });
   on('[data-fbcid]', function(el){ el.onchange=function(){ setDraft(function(D){ D.fb={cid:el.value.replace(/\D/g,'')}; }); }; });
   on('[data-rule]', function(el){ el.onclick=function(){ S.ruleSel=+el.dataset.rule; render(); }; });
   on('[data-pal]', function(el){ el.onclick=function(){ palRun(palItems()[+el.dataset.pal]); }; });
@@ -873,8 +919,8 @@ window.addEventListener('beforeunload', function(e){ if(draftDirty()){ e.prevent
 
 /* ---------- Navigation ---------- */
 function route(){ var r=(location.hash.match(/^#\/([a-z]+)/)||[])[1]||'pilotage'; if(!PAGES[r]) r='pilotage'; if(r!==S.route) S.iv.open=null; S.route=r; S.navOpen=false;
-  if((r==='studio'||r==='equipe'||r==='maintenance'||r==='retours') && !S.setLoaded && SESSION) loadSettings();
-  if(r==='retours' && SESSION){ (S.setLoaded?Promise.resolve():loadSettings()).then(function(){ loadFeedback(); }); }
+  if((r==='studio'||r==='equipe'||r==='maintenance'||r==='retours'||r==='bugs') && !S.setLoaded && SESSION) loadSettings();
+  if((r==='retours'||r==='bugs') && SESSION){ (S.setLoaded?Promise.resolve():loadSettings()).then(function(){ loadFeedback(); }); }
   if(r==='maintenance' && SESSION){ if(!S.health) runHealth(); if(!S.version) loadVersion(); }
   document.title=PAGES[r]+' · Console AR Terrain'; render(); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
@@ -882,6 +928,8 @@ function boot(){ S.loginErr=null; route(); if(SESSION && isAdmin(SESSION.user)){
 try{ var th=localStorage.getItem('ar_console_theme'); if(th) document.documentElement.setAttribute('data-theme', th); }catch(e){}
 setInterval(function(){ if(SESSION && document.visibilityState==='visible' && (S.route==='pilotage'||S.route==='interventions'||S.route==='equipe')) loadAppts(); }, 30000);
 setInterval(function(){ if(SESSION && S.loaded && !S.pal && S.iv.open==null && (S.route==='pilotage'||S.route==='interventions') && document.activeElement && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) render(); }, 15000);
+setInterval(function(){ if(SESSION && S.route==='bugs' && !S.bugPause && document.visibilityState==='visible') loadFeedback(); }, BUG_EVERY*1000);
+setInterval(function(){ var t=document.getElementById('bugTick'); if(t && S.route==='bugs' && !S.bugPause && !(S.fb&&S.fb.loading)) t.textContent='Actualisé '+ago(S.bugAt)+' · prochaine dans '+Math.max(0, BUG_EVERY-Math.round((Date.now()-S.bugAt)/1000))+' s'; }, 1000);
 boot();
 })();
 </script>

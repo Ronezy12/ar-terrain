@@ -1073,6 +1073,11 @@ img{max-width:100%}
 .dq-cart.empty .dq-cnt{background:var(--fill);color:var(--muted)}
 .dq-go{gap:2px;padding:0 12px 0 16px}
 .dq-go svg{width:18px;height:18px}
+.ac-home{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;border:1.5px solid #FFD66B;background:#FFF9E6}.ac-home b{display:block;font-size:15px}.ac-home small{display:block;font-size:12.5px;color:var(--muted)}.ac-home>svg{width:18px;height:18px;color:var(--muted);flex:none}
+.ac-ic{width:38px;height:38px;border-radius:12px;background:#FFC93C;color:#3D2C00;display:flex;align-items:center;justify-content:center;flex:none}.ac-ic svg{width:19px;height:19px}
+.ac-card{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.ac-note{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#8A5A00;background:#FFF6DB;border-radius:10px;padding:7px 10px}.ac-note svg{width:15px;height:15px;flex:none}
+.ac-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:26px 18px;color:var(--muted);font-size:13.5px;line-height:1.45}.ac-empty svg{width:28px;height:28px;color:var(--brand,#1D3FBF)}.ac-empty b{color:var(--ink);font-size:15px}
 </style>
 
 </head>
@@ -1272,7 +1277,7 @@ var DEFAULT_CFG = {
   navApp:null, shape:'pill', size:'normal', theme:'auto'
 };
 var KEY='ar_terrain_proto_v3';
-function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function clone(o){ return o===undefined ? undefined : JSON.parse(JSON.stringify(o)); }
 var CFG = (function(){ try{ var s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.tabs&&s.quick){ var d=clone(DEFAULT_CFG); Object.keys(d).forEach(function(k){ if(s[k]===undefined) s[k]=d[k]; }); if(s.crm){ var dc={on:false, env:'test', urls:{test:'',prod:''}, actions:{}, testers:['t1'], mode:'api', grok:{url:'', format:'per_tool', auth:'bearer', header:'X-Api-Key', map:{}}}; Object.keys(dc).forEach(function(x){ if(s.crm[x]===undefined) s.crm[x]=dc[x]; }); }
     ['techAccess','notif','avis'].forEach(function(k){ Object.keys(d[k]).forEach(function(x){ if(s[k][x]===undefined) s[k][x]=d[k][x]; }); }); return s; } }catch(e){} return clone(DEFAULT_CFG); })();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(CFG)); }catch(e){} applyLook(); }
@@ -3130,7 +3135,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.63 · 17 nov. 2026';
+var APP_VERSION='1.0.65 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6127,6 +6132,117 @@ var _client62=SCREENS.client;
 SCREENS.client=function(id){ var h=_client62.apply(this, arguments); var c=client(id||S.arg); if(!c || !sessUser() || !prMsgSent(c.id)) return h;
   return h.replace(ic('cal')+'Prendre RDV avec le client</button>', ic('cal')+'Saisir le RDV (message envoyé)</button>'); };
 
+/* ---------------- v64 · « À appeler » : vraies fiches à rappeler (remplace l'ancien journal d'appels de démonstration) ---------------- */
+/* Statuts gérés par l'appli : RDV pris (le technicien confirme), RDV à prendre par tech → RDV pris par le technicien,
+   Pose en cours (Je suis arrivé), Pose finie (fin d'intervention signée). Tous les autres statuts restent au bureau. */
+var AC_KEY='ar_a_rappeler', AC_REMOTE=null, AC_REMOTE_AT=0, AC_REMOTE_OFF=false;
+function acList(){ try{ var l=JSON.parse(localStorage.getItem(AC_KEY)||'[]'); return Array.isArray(l)?l:[]; }catch(e){ return []; } }
+function acSave(l){ try{ localStorage.setItem(AC_KEY, JSON.stringify(l.slice(-80))); }catch(e){} }
+function acForget(cid){ acSave(acList().filter(function(x){ return x.cid!==cid; })); }
+function acIsATaker(c){ return /rdv\s*[àa]\s*prendre\s*par\s*(le\s*)?tech/i.test(String(c && c.statutCrm || '')); }
+function acAgo(t){ var m=Math.round((Date.now()-t)/60000); if(m<60) return 'il y a '+Math.max(1,m)+' min'; var h=Math.round(m/60); if(h<24) return 'il y a '+h+' h'; var d=Math.round(h/24); return 'il y a '+d+' jour'+(d>1?'s':''); }
+/* Liste du CRM (route à créer par Grok : GET /api/v1/clients?statut=rdv_a_prendre_par_tech). Tant qu'elle n'existe pas, on n'affiche rien de faux. */
+function acFetchRemote(force){
+  if(AC_REMOTE_OFF || !sessUser() || !navigator.onLine) return;
+  if(!force && Date.now()-AC_REMOTE_AT<5*60000) return; AC_REMOTE_AT=Date.now();
+  apiCall('GET','clients?statut=rdv_a_prendre_par_tech').then(function(r){
+    if(r.status===404 || r.status===405){ AC_REMOTE_OFF=true; return; }
+    if(!r.ok || !r.json) return;
+    var arr=r.json.clients||r.json.contacts||r.json.data||(Array.isArray(r.json)?r.json:[]);
+    AC_REMOTE=arr.map(function(x){ return { crmId:x.id_contact||x.id, nom:x.nom||x.nom_contact||('Fiche '+(x.id_contact||x.id)), tel:x.telephone||x.portable||'', ville:x.ville||'', adresse:x.adresse||'', depuis:x.depuis||x.date_statut||'' }; });
+    acBadge(); if(S.screen==='appels' || S.screen==='accueil') rerender();
+  }).catch(function(){});
+}
+function acClientFor(x){ /* fiche déjà chargée, sinon fiche légère créée pour pouvoir appeler et prendre RDV */
+  var c=CLIENTS.filter(function(k){ return k.crmId!=null && String(k.crmId)===String(x.crmId); })[0]; if(c) return c;
+  c={id:'crm-c-'+x.crmId, crmId:isNaN(+x.crmId)?x.crmId:+x.crmId, nom:x.nom, tel:x.tel, email:'', adresse:x.adresse, ville:x.ville, type:'Intervention', statut:'interv', statutCrm:'RDV à prendre par tech', tech:ME, ref:'#'+x.crmId, devis:[], hist:[]};
+  CLIENTS.push(c); return c;
+}
+function acItems(){
+  var seen={}, out=[];
+  (AC_REMOTE||[]).forEach(function(x){ var c=acClientFor(x); if(seen[c.id]) return; seen[c.id]=1; out.push({c:c, kind:'bureau', depuis:x.depuis}); });
+  CLIENTS.forEach(function(c){ if(!seen[c.id] && acIsATaker(c)){ seen[c.id]=1; out.push({c:c, kind:'bureau'}); } });
+  acList().forEach(function(x){ var c=client(x.cid); if(!c) return; if(seen[c.id]){ out.forEach(function(o){ if(o.c.id===c.id){ o.msg=x; } }); return; } seen[c.id]=1; out.push({c:c, kind:'relance', msg:x}); });
+  return out;
+}
+function acBadge(){ if(MODULES.appels){ MODULES.appels.label='À appeler'; MODULES.appels.badge=acItems().length||0; } }
+SCREENS.appels = function(){
+  acFetchRemote(false);
+  var items=acItems(), bureau=items.filter(function(o){ return o.kind==='bureau'; }), rel=items.filter(function(o){ return o.kind==='relance'; });
+  var card=function(o){ var c=o.c, m=o.msg;
+    return '<div class="card ac-card"><div class="li"><span class="av">'+initials(c.nom)+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(c.nom)+'</b>'+
+      '<span class="muted" style="font-size:12.5px">'+esc([c.ville, c.tel].filter(Boolean).join(' · ')||'Pas de numéro sur la fiche')+'</span></div></div>'+
+      (m?'<div class="ac-note">'+ic('chat')+'<span>Message laissé '+esc(acAgo(m.t))+(m.n>1?' · '+m.n+' tentatives':'')+'</span></div>':'')+
+      '<div class="btns"><button class="btn primary sm" data-acall="'+esc(c.id)+'">'+ic('phone')+(m?'Rappeler':'Appeler et prendre RDV')+'</button><button class="btn soft sm" data-open="'+esc(c.id)+'">Fiche</button>'+
+      (o.kind==='relance'?'<button class="btn soft sm" data-adone="'+esc(c.id)+'">'+ic('check')+'Fait</button>':'')+'</div></div>'; };
+  var h='<div class="pad"><div class="kpis"><div class="kpi"><b class="num">'+bureau.length+'</b><small>confiés par le bureau</small></div><div class="kpi'+(rel.length?' alert':'')+'"><b class="num">'+rel.length+'</b><small>à relancer</small></div></div>';
+  if(!items.length) return h+'<div class="card ac-empty">'+ic('phone')+'<b>Personne à appeler</b><span>Quand le bureau met une fiche en « RDV à prendre par tech », elle apparaît ici. Les clients qui n\'ont pas répondu à votre appel y restent aussi jusqu\'au RDV.</span></div></div>';
+  if(bureau.length) h+='<div class="sec"><h2>Confiés par le bureau</h2></div><div class="list">'+bureau.map(card).join('')+'</div>';
+  if(rel.length) h+='<div class="sec"><h2>Pas de réponse · à relancer</h2></div><div class="list">'+rel.map(card).join('')+'</div>';
+  return h+'</div>';
+};
+bindAppels=function(){
+  each('[data-acall]',function(b){ b.onclick=function(){ prStart(b.dataset.acall, null); }; });
+  each('[data-adone]',function(b){ b.onclick=function(){ acForget(b.dataset.adone); acBadge(); rerender(); toast('Retiré de la liste'); }; });
+};
+/* Pas de réponse + message envoyé → le client reste dans « À appeler » */
+var _prMissed64=prMissed;
+prMissed=function(c){
+  prSendSheet('Pas de réponse', 'Message pour '+c.nom, c, prMsgMissed(c), function(how){
+    PR_CALL=null;
+    var l=acList(), x=l.filter(function(k){ return k.cid===c.id; })[0]; if(x){ x.t=Date.now(); x.n=(x.n||1)+1; } else l.push({cid:c.id, t:Date.now(), n:1}); acSave(l); acBadge();
+    if(how){ var o=prMsgGet(); o[c.id]=Date.now(); prMsgSet(o); rerender(); prNote(c, 'Appel sans réponse : message envoyé par '+how+' pour prendre rendez-vous ('+(sessUser()||{}).nom+').'); toast('Message préparé : au prochain appui, vous saisirez directement le RDV'); }
+    else toast('Le client reste dans « À appeler »');
+  });
+};
+/* RDV pris → sort de la liste, et le CRM reçoit le statut à appliquer */
+var _prCreate64=prCreate;
+prCreate=function(c, rid, f){ acForget(c.id); if(AC_REMOTE) AC_REMOTE=AC_REMOTE.filter(function(x){ return String(x.crmId)!==String(c.crmId); }); c.statutCrm='RDV pris par le technicien'; acBadge(); return _prCreate64.apply(this, arguments); };
+var _apiCall64=apiCall;
+apiCall=function(method, path, body){
+  if(method==='POST' && body && typeof body==='object' && /^appointments(\/|$)/.test(String(path)) && body.source==='technicien' && !body.statut_contact) body.statut_contact='RDV pris par le technicien';
+  return _apiCall64.apply(this, arguments);
+};
+var _liveLoad64=liveLoad;
+liveLoad=function(){ return _liveLoad64.apply(this, arguments).then(function(ok){ acFetchRemote(true); acBadge(); return ok; }); };
+setTimeout(acBadge, 500);
+TITLES.appels='À appeler'; if(typeof LIVE_HIDE!=='undefined') delete LIVE_HIDE.appels; if(typeof DEMO_SCREENS!=='undefined') delete DEMO_SCREENS.appels; /* l'écran montre maintenant de vraies fiches */
+var _accueil64=SCREENS.accueil;
+SCREENS.accueil=function(){ var h=_accueil64.apply(this, arguments);
+  if(!sessUser() || S.role==='admin' || !CRM_LIVE.on) return h;
+  var it=acItems(), n=it.length; if(!n) return h;
+  var nb=it.filter(function(o){ return o.kind==='bureau'; }).length, nr=n-nb;
+  var card='<button class="card tap ac-home" data-goappels><span class="ac-ic">'+ic('phone')+'</span><span class="grow" style="min-width:0;text-align:left"><b>'+n+' client'+(n>1?'s':'')+' à appeler</b><small>'+[nb?nb+' confié'+(nb>1?'s':'')+' par le bureau':'', nr?nr+' à relancer':''].filter(Boolean).join(' · ')+'</small></span>'+ic('chev')+'</button>';
+  var i=h.indexOf('live-band'); if(i<0) return h.replace('<div class="pad">','<div class="pad">'+card);
+  var j=h.indexOf('</div>', i); return h.slice(0, j+6)+card+h.slice(j+6);
+};
+document.addEventListener('click', function(e){ var b=e.target.closest && e.target.closest('[data-goappels]'); if(b){ e.preventDefault(); go('appels'); } });
+
+/* ---------------- v65 · Bugs automatiques : chaque erreur de l'appli part vers la console (même circuit que « Envoyer un retour ») ---------------- */
+var ERR_SEEN={}, ERR_N=0, ERR_HOUR=Date.now();
+var ERR_NOISE=/^Script error\.?$|ResizeObserver loop|Load failed|Failed to fetch|NetworkError|The operation was aborted|AbortError|cancelled|annulé/i;
+function errReport(e, where, kind){
+  try{
+    if(!sessUser()) return;
+    var msg=String(e && (e.message||e.reason&&e.reason.message) || e || 'Erreur inconnue').slice(0, 300);
+    if(ERR_NOISE.test(msg)) return;
+    if(Date.now()-ERR_HOUR>3600e3){ ERR_HOUR=Date.now(); ERR_N=0; }
+    var key=msg+'|'+(where||'')+'|'+(S.screen||''); if(ERR_SEEN[key] && Date.now()-ERR_SEEN[key]<3600e3) return; /* la même erreur au plus une fois par heure et par téléphone */
+    if(ERR_N>=12) return; ERR_SEEN[key]=Date.now(); ERR_N++;
+    var pile=String(e && e.stack || '').split('\n').slice(0, 4).map(function(l){ return l.trim().replace(/https?:\/\/[^\s)]+\//g, ''); }).join(' / ').slice(0, 400);
+    var p=fbPayload('bug', '⚙ Erreur automatique ('+(kind||'appli')+') : '+msg+(where?' · '+where:'')+(pile?'\nPile : '+pile:'')+'\nEn ligne : '+(navigator.onLine?'oui':'non'));
+    p.auto=true; p.kind=kind||'appli';
+    var q=fbQueue(); q.push(p); fbSaveQ(q); setTimeout(fbFlush, 1500);
+  }catch(x){}
+}
+window.addEventListener('error', function(ev){ errReport(ev.error || ev.message, ev.filename ? String(ev.filename).split('/').pop()+':'+ev.lineno : '', 'appli'); });
+window.addEventListener('unhandledrejection', function(ev){ var r=ev.reason; if(r && (r.code==='unwired' || r.code==='login')) return; errReport(r, 'promesse', 'appli'); });
+/* Le CRM qui répond en erreur (5xx) est aussi signalé, pour voir les pannes en direct */
+var _apiCall65=apiCall;
+apiCall=function(method, path, body){ var p0=String(path).split('?')[0];
+  return _apiCall65.apply(this, arguments).then(function(r){ if(r && r.status>=500 && !/^feedback|^events/.test(p0)) errReport('Le CRM a répondu '+r.status+' sur '+method+' '+p0.replace(/\d+/g, 'N'), (r.json && r.json.error) || '', 'crm'); return r; });
+};
+
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
@@ -6275,13 +6391,14 @@ window.addEventListener('resize', fitDev);
    V47 — Un écran qui plante ne bloque plus : réparation automatique des réglages et nouvel essai,
    sinon message clair avec bouton « Réparer » (au lieu de rester sur l'écran précédent)
    ========================================================= */
-function cfgRepairAll(){ var D=clone(DEFAULT_CFG); ['tabs','quick','techAccess','notif','shape','size','simple','tour'].forEach(function(k){ CFG[k]=clone(D[k]); }); CFG.liveTabsInit=false; CFG.tabsV36=false; CFG.simpleV39=true; CFG.simple=false; if(!CFG.quick.some(function(q){ return q.id==='position'; })) CFG.quick.splice(2,0,{id:'position',on:true}); save(); tabKey=''; }
+function cfgRepairAll(){ var D=clone(DEFAULT_CFG); ['tabs','quick','techAccess','notif','shape','size','simple','tour'].forEach(function(k){ if(D[k]===undefined) delete CFG[k]; else CFG[k]=clone(D[k]); }); CFG.liveTabsInit=false; CFG.tabsV36=false; CFG.simpleV39=true; CFG.simple=false; if(!CFG.quick.some(function(q){ return q.id==='position'; })) CFG.quick.splice(2,0,{id:'position',on:true}); save(); tabKey=''; }
 Object.keys(SCREENS).forEach(function(name){
   var fn=SCREENS[name]; if(typeof fn!=='function' || fn._safe) return;
   var safe=function(arg){
     try{ return fn.apply(this, arguments); }
     catch(e){
-      if(!safe._retried){ safe._retried=true; try{ cfgRepairAll(); var h=fn.apply(this, arguments); safe._retried=false; setTimeout(function(){ toast('Réglages de l\'appli réparés sur ce téléphone'); }, 300); return h; }catch(e2){ e=e2; } }
+      var e0=e; if(!safe._retried){ safe._retried=true; try{ cfgRepairAll(); var h=fn.apply(this, arguments); safe._retried=false; setTimeout(function(){ toast('Réglages de l\'appli réparés sur ce téléphone'); }, 300); return h; }catch(e2){ e=e0; } }
+      try{ if(typeof errReport==='function') errReport(e, 'écran '+name); }catch(x){}
       safe._retried=false;
       try{ console.error(e); }catch(x){}
       return '<div class="pad"><div class="card empty-st">'+ic('late')+'<b>Cet écran n\'a pas pu s\'ouvrir</b><span class="muted" style="word-break:break-word">'+esc(String(e&&e.message||e))+' · écran « '+esc(name)+' » · version '+esc(String(APP_VERSION).split(' ')[0])+'</span><button class="btn primary sm" id="scrRepair" style="margin-top:8px">Réparer les réglages de l\'appli</button><span class="muted" style="font-size:12.5px">Si ça continue, faites une capture de cet écran et envoyez-la.</span></div></div>';
