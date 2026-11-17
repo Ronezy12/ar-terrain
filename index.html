@@ -3130,7 +3130,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.60 · 17 nov. 2026';
+var APP_VERSION='1.0.61 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5920,6 +5920,169 @@ bind=function(){ var r=_bind59.apply(this, arguments);
   var off=target?target.offsetTop:8*60;
   requestAnimationFrame(function(){ var top=body.getBoundingClientRect().top-V.getBoundingClientRect().top+V.scrollTop; V.scrollTop=Math.max(0, top+off-110); });
   return r; };
+
+/* =========================================================
+   V61 — « Prendre RDV avec le client » : appel → (pas de réponse : message pré-rempli) → date et créneau → message de confirmation
+   Le RDV apparaît tout de suite dans le planning du technicien, et part au CRM dès que la route existe (le bureau est prévenu par une note sur la fiche)
+   ========================================================= */
+var PR_KEY='ar_pending_rdv', PR_CALL=null;
+function prList(){ try{ return JSON.parse(localStorage.getItem(PR_KEY)||'[]')||[]; }catch(e){ return []; } }
+function prSave(l){ try{ localStorage.setItem(PR_KEY, JSON.stringify(l.slice(-50))); }catch(e){} }
+function prMe(){ var u=sessUser()||{}; var n=String(u.nom||'').trim(); var f=n.split(/\s+/)[0]||''; if(/^[A-ZÀ-Ý-]+$/.test(f) && f.length>1) f=f.charAt(0)+f.slice(1).toLowerCase(); if(/^(technicien|tech|agent|admin|test)$/i.test(f)) f=''; return f; }
+function prWho(){ var f=prMe(); return f?('c\'est '+f+', technicien de l\'Entreprise AR'):('c\'est votre technicien de l\'Entreprise AR'); }
+function prTel(c){ return String((c&&c.tel)||'').replace(/[^\d+]/g,''); }
+function prIntl(t){ t=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(t)) return '33'+t.slice(1); return t.replace(/^\+/,''); }
+function prSms(tel, msg){ var ios=/iPhone|iPad|iPod/.test(navigator.userAgent); return 'sms:'+tel+(ios?'&':'?')+'body='+encodeURIComponent(msg); }
+function prIso(date, h){ var d=new Date(date+'T'+h+':00'), o=-d.getTimezoneOffset(), s=o>=0?'+':'-', p=function(n){ return String(Math.floor(Math.abs(n))).padStart(2,'0'); };
+  return date+'T'+h+':00'+s+p(o/60)+':'+p(o%60); }
+function prDayLabel(date){ return new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'}); }
+function prMsgMissed(c){ return 'Bonjour, '+prWho()+'. J\'ai essayé de vous appeler pour convenir d\'un rendez-vous. Vous pouvez me rappeler à ce numéro ou me répondre ici avec vos disponibilités. Merci et bonne journée !'; }
+function prMsgConfirm(c, p){ var adr=[c.adr, String(c.ville||'').replace(/^\d{5}\s*/,'')].filter(Boolean).join(', ');
+  return 'Bonjour, '+prWho()+'. Je vous confirme notre rendez-vous le '+prDayLabel(p.date)+' entre '+p.h.replace(':','h')+' et '+min2hm(hm2min(p.h)+p.dur).replace(':','h')+(adr?', au '+adr:'')+'. En cas d\'empêchement, prévenez-moi à ce numéro. À bientôt !'; }
+
+/* 1. Lancer l'appel */
+function prStart(cid, rid){
+  var c=client(cid); if(!c){ toast('Fiche introuvable'); return; }
+  var tel=prTel(c);
+  if(!tel){ toast('Pas de numéro sur la fiche : saisissez le RDV directement'); prForm(c, rid); return; }
+  PR_CALL={cid:c.id, rid:rid||null, t:Date.now(), shown:false};
+  closeSheet();
+  location.href='tel:'+tel;
+  setTimeout(function(){ if(PR_CALL && !PR_CALL.shown && document.visibilityState==='visible') prOutcome(); }, 2600);
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible' && PR_CALL && !PR_CALL.shown && Date.now()-PR_CALL.t>1500 && Date.now()-PR_CALL.t<3*3600e3) setTimeout(prOutcome, 350);
+});
+
+/* 2. Au retour de l'appel */
+function prOutcome(){
+  if(!PR_CALL) return; PR_CALL.shown=true;
+  var c=client(PR_CALL.cid), rid=PR_CALL.rid; if(!c) return;
+  var sh=sheet('<div class="row" style="align-items:flex-start"><div class="grow"><h3>Appel à '+esc(c.nom)+'</h3><div class="muted" style="font-size:13.5px">Comment ça s\'est passé ?</div></div><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div>'+
+    '<button class="btn primary block" id="prOk">'+ic('cal')+(rid?'Nouvelle date convenue : la saisir':'RDV pris : choisir la date')+'</button>'+
+    '<button class="btn accent block" id="prNo">'+ic('chat')+'Pas de réponse : envoyer un message</button>'+
+    '<div class="btns"><button class="btn soft sm" id="prAgain">'+ic('phone')+'Rappeler</button><button class="btn soft sm" id="prLater">Plus tard</button></div>');
+  sh.querySelector('[data-close]').onclick=closeSheet;
+  sh.querySelector('#prOk').onclick=function(){ closeSheet(); prForm(c, rid); };
+  sh.querySelector('#prNo').onclick=function(){ closeSheet(); prMissed(c); };
+  sh.querySelector('#prAgain').onclick=function(){ prStart(c.id, rid); };
+  sh.querySelector('#prLater').onclick=function(){ PR_CALL=null; closeSheet(); };
+}
+
+/* 3. Pas de réponse : message pré-rempli */
+function prSendSheet(title, sub, c, msg, done){
+  var tel=prTel(c);
+  var sh=sheet('<div class="row" style="align-items:flex-start"><div class="grow"><h3>'+esc(title)+'</h3><div class="muted" style="font-size:13.5px">'+esc(sub)+'</div></div><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div>'+
+    '<label class="field"><span>Message (modifiable)</span><textarea id="prMsg" rows="6" autocomplete="off" data-form-type="other" data-1p-ignore="true">'+esc(msg)+'</textarea></label>'+
+    (tel?'<div class="btns"><a class="btn primary" id="prSms" href="#">'+ic('chat')+'SMS</a><a class="btn wa" id="prWa" href="#">'+ic('wa')+'WhatsApp</a></div>':'<p class="hint">Pas de numéro sur la fiche.</p>')+
+    '<button class="btn soft block" id="prSkip">Ne pas envoyer</button>');
+  var finish=function(how){ closeSheet(); if(done) done(how); };
+  sh.querySelector('[data-close]').onclick=function(){ finish(null); };
+  sh.querySelector('#prSkip').onclick=function(){ finish(null); };
+  var txt=function(){ return sh.querySelector('#prMsg').value.trim(); };
+  var s=sh.querySelector('#prSms'); if(s) s.onclick=function(e){ e.preventDefault(); var m=txt(); location.href=prSms(tel, m); setTimeout(function(){ finish('SMS'); }, 400); };
+  var w=sh.querySelector('#prWa'); if(w) w.onclick=function(e){ e.preventDefault(); var m=txt(); window.open('https://wa.me/'+prIntl(tel)+'?text='+encodeURIComponent(m), '_blank'); setTimeout(function(){ finish('WhatsApp'); }, 400); };
+}
+function prMissed(c){
+  prSendSheet('Pas de réponse', 'Message pour '+c.nom, c, prMsgMissed(c), function(how){
+    PR_CALL=null;
+    if(how){ prNote(c, 'Appel sans réponse : message envoyé par '+how+' pour prendre rendez-vous ('+(sessUser()||{}).nom+').'); toast('Message préparé : le client peut vous rappeler'); }
+  });
+}
+
+/* 4. Saisir le RDV */
+function prForm(c, rid){
+  var r=rid?rdv(rid):null, t=new Date(TODAY); t.setDate(t.getDate()+1);
+  var def={date:t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'), h:'09:00', dur:r?r.dur:90, type:'Intervention'};
+  var DUR=[[30,'30 min'],[60,'1 h'],[90,'1 h 30'],[120,'2 h'],[180,'3 h'],[240,'Demi-journée'],[480,'Journée']];
+  var TYP=['Intervention','Visite technique','Devis','Dépannage','SAV'];
+  var f={date:def.date, h:def.h, dur:def.dur, type:def.type};
+  var sh=sheet('<div class="row" style="align-items:flex-start"><div class="grow"><h3>'+(rid?'Nouvelle date du RDV':'Rendez-vous pris')+'</h3><div class="muted" style="font-size:13.5px">'+esc(c.nom)+'</div></div><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div>'+
+    '<div class="row" style="gap:10px"><label class="field grow"><span>Date</span><input type="date" id="prD" value="'+f.date+'" min="'+def.date.slice(0,8)+'01"></label><label class="field" style="width:42%"><span>Heure</span><input type="time" id="prH" value="'+f.h+'" step="300"></label></div>'+
+    '<div><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:6px">Durée</div><div class="opts" id="prDur">'+DUR.map(function(x){ return '<button class="opt'+(f.dur===x[0]?' on':'')+'" data-v="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div></div>'+
+    (rid?'':'<div><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:6px">Type</div><div class="opts" id="prTyp">'+TYP.map(function(x){ return '<button class="opt'+(f.type===x?' on':'')+'" data-v="'+esc(x)+'">'+esc(x)+'</button>'; }).join('')+'</div></div>')+
+    '<label class="field"><span>Note (facultatif)</span><textarea id="prN" rows="2" autocomplete="off" data-form-type="other" placeholder="Ex. : code portail 1234, se garer dans la cour"></textarea></label>'+
+    '<p class="hint" id="prSum" style="margin:0"></p>'+
+    '<button class="btn primary block" id="prGo">'+ic('check')+'Valider le rendez-vous</button>');
+  var sum=function(){ var ok=f.date&&f.h; sh.querySelector('#prSum').textContent=ok?('Le '+prDayLabel(f.date)+', de '+f.h.replace(':','h')+' à '+min2hm(hm2min(f.h)+f.dur).replace(':','h')+'.'):'Choisissez la date et l\'heure.'; };
+  var pick=function(sel, key, num){ [].forEach.call(sh.querySelectorAll(sel+' .opt'), function(b){ b.onclick=function(){ f[key]=num?+b.dataset.v:b.dataset.v; [].forEach.call(sh.querySelectorAll(sel+' .opt'), function(x){ x.classList.toggle('on', x===b); }); sum(); }; }); };
+  pick('#prDur','dur',true); pick('#prTyp','type',false);
+  sh.querySelector('#prD').onchange=function(){ f.date=this.value; sum(); }; sh.querySelector('#prH').onchange=function(){ f.h=this.value; sum(); };
+  sh.querySelector('[data-close]').onclick=function(){ PR_CALL=null; closeSheet(); };
+  sum();
+  sh.querySelector('#prGo').onclick=function(){
+    f.date=sh.querySelector('#prD').value; f.h=sh.querySelector('#prH').value;
+    if(!f.date || !/^\d\d:\d\d$/.test(f.h)){ toast('Indiquez la date et l\'heure'); return; }
+    var when=new Date(f.date+'T'+f.h+':00'); if(when.getTime()<Date.now()-5*60000){ toast('Cette date est déjà passée'); return; }
+    f.note=sh.querySelector('#prN').value.trim(); closeSheet(); prCreate(c, rid, f);
+  };
+}
+
+/* 5. Enregistrer : planning du technicien tout de suite, CRM dès que possible */
+function prInject(p){
+  var off=dayOffset(new Date(p.date+'T12:00:00'));
+  if(p.rid){ var r=rdv(p.rid); if(r){ r.d=off; r.h=p.h; r.dur=p.dur; r.st='confirme'; r.pending=true; } return; }
+  if(RDVS.some(function(x){ return x.id==='p-'+p.pid; })) return;
+  RDVS.push({id:'p-'+p.pid, cid:p.cid, tech:ME, d:off, h:p.h, dur:p.dur, st:'confirme', rap:30, note:p.note||'', type:p.type, pending:true});
+}
+function prCreate(c, rid, f){
+  var r=rid?rdv(rid):null;
+  var p={pid:uuid(), cid:c.id, crmCid:c.crmId!=null?c.crmId:null, rid:rid||null, crmRid:r&&r.crmId!=null?r.crmId:(rid&&/^crm-r-/.test(rid)?rid.replace('crm-r-',''):null), date:f.date, h:f.h, dur:f.dur, type:f.type||'Intervention', note:f.note||'', created:isoNow(), sent:false, noted:false};
+  var l=prList(); l.push(p); prSave(l);
+  prInject(p); PR_CALL=null; S.pday=dayOffset(new Date(p.date+'T12:00:00'));
+  try{ liveCacheSave(); }catch(e){} rerender();
+  prSync();
+  toast('RDV enregistré : il est dans votre planning');
+  setTimeout(function(){
+    prSendSheet('Confirmer au client', 'Le '+prDayLabel(p.date)+' à '+p.h.replace(':','h'), c, prMsgConfirm(c, p), function(how){ if(how) toast('Confirmation préparée par '+how); });
+  }, 450);
+}
+function prNote(c, texte){
+  if(!sessUser() || c.crmId==null) return Promise.resolve(false);
+  return apiCall('POST','events',{event_id:uuid(), action:'note.added', occurred_at:isoNow(), client_id:c.crmId, data:{texte:texte}}).then(function(r){ return !!r.ok; }).catch(function(){ return false; });
+}
+var PR_SYNCING=false;
+function prSync(){
+  if(PR_SYNCING || !sessUser() || !navigator.onLine) return; var l=prList().filter(function(p){ return !p.sent; }); if(!l.length) return;
+  PR_SYNCING=true;
+  l.reduce(function(pr, p){ return pr.then(function(){
+    var body={event_id:p.pid, client_id:p.crmCid, debut:prIso(p.date, p.h), duree:p.dur, type:p.type, note:p.note, source:'technicien'};
+    var call=p.crmRid?apiCall('POST','appointments/'+encodeURIComponent(p.crmRid), body):apiCall('POST','appointments', body);
+    return call.then(function(r){
+      if(r.ok && r.json && (r.json.id||r.json.id_rdv||r.json.appointment||r.json.created||(r.json.rdv && !Array.isArray(r.json.rdv)))){ p.sent=true; return; }
+      if(!p.noted){ var c=client(p.cid)||{crmId:p.crmCid};
+        return prNote(c, '[RDV pris par le technicien] '+((sessUser()||{}).nom||'')+' a '+(p.rid?'déplacé':'pris')+' un rendez-vous ('+p.type+') le '+prDayLabel(p.date)+' de '+p.h+' à '+min2hm(hm2min(p.h)+p.dur)+(p.note?' · note : '+p.note:'')+'. À reporter dans le planning du CRM.').then(function(ok){ if(ok) p.noted=true; }); }
+    }).catch(function(){});
+  }); }, Promise.resolve()).then(function(){
+    var all=prList(); l.forEach(function(p){ all.forEach(function(q, i){ if(q.pid===p.pid) all[i]=p; }); }); prSave(all); PR_SYNCING=false;
+  });
+}
+/* Après chaque lecture du CRM : remettre les RDV pris en attente, retirer ceux que le CRM connaît maintenant */
+var _liveLoad61=liveLoad;
+liveLoad=function(){ return _liveLoad61.apply(this, arguments).then(function(ok){
+  var l=prList(), keep=[];
+  l.forEach(function(p){
+    var start=new Date(p.date+'T'+p.h+':00').getTime();
+    var known=RDVS.some(function(r){ if(r.pending || r.cid!==p.cid) return false; var d=new Date(TODAY); d.setDate(d.getDate()+r.d); var t=new Date(d.getFullYear(), d.getMonth(), d.getDate(), +r.h.slice(0,2), +r.h.slice(3,5)).getTime(); return Math.abs(t-start)<15*60000; });
+    var old=start<Date.now()-2*864e5;
+    if(known || old) return; keep.push(p); prInject(p);
+  });
+  if(keep.length!==l.length) prSave(keep);
+  if(keep.length) prSync();
+  return ok; }); };
+setTimeout(function(){ if(sessUser()) prList().forEach(prInject); }, 400);
+setInterval(prSync, 90000); window.addEventListener('online', function(){ setTimeout(prSync, 2000); });
+
+/* Points d'entrée : fiche client et fiche RDV */
+var _client61=SCREENS.client;
+SCREENS.client=function(id){ var h=_client61.apply(this, arguments); if(!sessUser()) return h; var c=client(id||S.arg); if(!c) return h;
+  return h.replace('<div class="rounds">', '<button class="btn accent block" data-prdv="'+esc(c.id)+'" style="margin-bottom:12px">'+ic('cal')+'Prendre RDV avec le client</button><div class="rounds">'); };
+var _rdvSheet61=rdvSheet;
+rdvSheet=function(id){ var res=_rdvSheet61.apply(this, arguments); var r=rdv(id), sh=document.querySelector('.sheet');
+  if(sh && r && sessUser() && r.st!=='termine' && r.st!=='surplace'){ var f=sh.querySelector('#sFiche'); if(f && !sh.querySelector('[data-prdv]')){ var b=document.createElement('button'); b.className='btn soft sm'; b.setAttribute('data-prdv', r.cid); b.setAttribute('data-prid', r.id); b.innerHTML=ic('cal')+'Décaler avec le client'; f.parentNode.insertBefore(b, f); } }
+  if(sh && r && r.pending){ var hd=sh.querySelector('h3'); if(hd && !sh.querySelector('.pr-pend')){ var s=document.createElement('div'); s.className='pill p-warn pr-pend'; s.style.marginTop='6px'; s.textContent='Pris par vous · en attente dans le CRM'; hd.parentNode.insertBefore(s, hd.nextSibling); } }
+  return res; };
+document.addEventListener('click', function(e){ var b=e.target.closest('[data-prdv]'); if(!b) return; e.preventDefault(); e.stopPropagation(); prStart(b.getAttribute('data-prdv'), b.getAttribute('data-prid')||null); }, true);
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
