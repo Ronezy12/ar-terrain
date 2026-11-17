@@ -3130,7 +3130,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.62 · 17 nov. 2026';
+var APP_VERSION='1.0.63 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5936,9 +5936,11 @@ function prSms(tel, msg){ var ios=/iPhone|iPad|iPod/.test(navigator.userAgent); 
 function prIso(date, h){ var d=new Date(date+'T'+h+':00'), o=-d.getTimezoneOffset(), s=o>=0?'+':'-', p=function(n){ return String(Math.floor(Math.abs(n))).padStart(2,'0'); };
   return date+'T'+h+':00'+s+p(o/60)+':'+p(o%60); }
 function prDayLabel(date){ return new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'}); }
-function prMsgMissed(c){ return 'Bonjour, '+prWho()+'. J\'ai essayé de vous appeler pour convenir d\'un rendez-vous. Vous pouvez me rappeler à ce numéro ou me répondre ici avec vos disponibilités. Merci et bonne journée !'; }
+function prMsgMissed(c){
+  return 'Bonjour,\n\nC\'est le technicien de l\'Entreprise AR. J\'ai essayé de vous appeler pour convenir d\'un rendez-vous.\n\nVous pouvez me rappeler à ce numéro ou me répondre ici avec vos disponibilités.\n\nMerci et bonne journée !\nEntreprise AR'; }
 function prMsgConfirm(c, p){ var adr=[c.adr, String(c.ville||'').replace(/^\d{5}\s*/,'')].filter(Boolean).join(', ');
-  return 'Bonjour, '+prWho()+'. Je vous confirme notre rendez-vous le '+prDayLabel(p.date)+' entre '+p.h.replace(':','h')+' et '+min2hm(hm2min(p.h)+p.dur).replace(':','h')+(adr?', au '+adr:'')+'. En cas d\'empêchement, prévenez-moi à ce numéro. À bientôt !'; }
+  var jour=prDayLabel(p.date); jour=jour.charAt(0).toUpperCase()+jour.slice(1);
+  return 'Bonjour,\n\nC\'est le technicien de l\'Entreprise AR. Je vous confirme notre rendez-vous :\n\n📅 '+jour+'\n🕐 De '+p.h.replace(':','h')+' à '+min2hm(hm2min(p.h)+p.dur).replace(':','h')+(adr?'\n📍 '+adr:'')+'\n\nEn cas d\'empêchement, prévenez-moi à ce numéro.\n\nÀ bientôt !\nEntreprise AR'; }
 
 /* 1. Lancer l'appel */
 function prStart(cid, rid){
@@ -5973,7 +5975,7 @@ function prOutcome(){
 function prSendSheet(title, sub, c, msg, done){
   var tel=prTel(c);
   var sh=sheet('<div class="row" style="align-items:flex-start"><div class="grow"><h3>'+esc(title)+'</h3><div class="muted" style="font-size:13.5px">'+esc(sub)+'</div></div><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div>'+
-    '<label class="field"><span>Message (modifiable)</span><textarea id="prMsg" rows="6" autocomplete="off" data-form-type="other" data-1p-ignore="true">'+esc(msg)+'</textarea></label>'+
+    '<label class="field"><span>Message (modifiable)</span><textarea id="prMsg" rows="11" autocomplete="off" data-form-type="other" data-1p-ignore="true">'+esc(msg)+'</textarea></label>'+
     (tel?'<div class="btns"><a class="btn primary" id="prSms" href="#">'+ic('chat')+'SMS</a><a class="btn wa" id="prWa" href="#">'+ic('wa')+'WhatsApp</a></div>':'<p class="hint">Pas de numéro sur la fiche.</p>')+
     '<button class="btn soft block" id="prSkip">Ne pas envoyer</button>');
   var finish=function(how){ closeSheet(); if(done) done(how); };
