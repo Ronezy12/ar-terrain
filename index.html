@@ -1142,6 +1142,11 @@ img{max-width:100%}
 @keyframes ldBreath{0%,100%{transform:scale(.82)}50%{transform:scale(1.12)}}
 @keyframes ldRing{0%{transform:scale(.9);opacity:.9}100%{transform:scale(2.2);opacity:0}}
 @media (prefers-reduced-motion: reduce){.ld-orb b,.ld-orb i,.tabs .bdg{animation:none}}
+.hold-bar{position:absolute;left:10px;right:10px;bottom:4px;height:4px;border-radius:2px;background:var(--line);overflow:hidden;pointer-events:none}
+.hold-bar::after{content:"";position:absolute;inset:0;background:var(--primary);transform-origin:left;transform:scaleX(0);animation:inherit;animation-name:holdFill;animation-timing-function:linear;animation-fill-mode:forwards}
+.hold-bar{animation-name:none}
+@keyframes holdFill{to{transform:scaleX(1)}}
+.holding{filter:brightness(.97)}
 </style>
 
 </head>
@@ -3203,7 +3208,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.76 · 17 nov. 2026';
+var APP_VERSION='1.0.77 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5343,11 +5348,17 @@ function dqSendToOffice(){
   S.dv=null; S.dq=null; if(S.screen==='devis') back();
   setTimeout(function(){ popup('<div class="pop-ic" style="background:var(--success-bg);color:var(--success)">'+ic('check')+'</div><h3>Envoyé au bureau</h3><p class="hint" style="text-align:center">Le bureau chiffre le devis de '+esc(c.nom||'votre client')+' et l\'envoie au client. Vous êtes prévenu dès qu\'il est signé.</p><button class="btn primary block" data-close>Terminer</button>'); }, 120);
 }
+var DQ_HOLD_MS=5000; /* durée du maintien sur un produit du devis */
 function dqBindHold(root, onLong){
   [].forEach.call(root.querySelectorAll('[data-hold]'),function(el){
-    var t=null, held=false;
-    el.addEventListener('pointerdown',function(){ held=false; clearTimeout(t); t=setTimeout(function(){ held=true; el.dataset.held='1'; try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){} onLong(el); }, 450); });
-    ['pointerup','pointerleave','pointercancel'].forEach(function(ev){ el.addEventListener(ev,function(){ clearTimeout(t); }); });
+    var t=null, held=false, x0=0, y0=0, bar=null;
+    var stop=function(){ clearTimeout(t); t=null; el.classList.remove('holding'); if(bar){ bar.remove(); bar=null; } };
+    el.addEventListener('pointerdown',function(e){ held=false; stop(); x0=e.clientX; y0=e.clientY;
+      if(getComputedStyle(el).position==='static') el.style.position='relative';
+      bar=document.createElement('span'); bar.className='hold-bar'; bar.style.animationDuration=DQ_HOLD_MS+'ms'; el.appendChild(bar); el.classList.add('holding');
+      t=setTimeout(function(){ held=true; el.dataset.held='1'; stop(); try{ if(navigator.vibrate) navigator.vibrate(18); }catch(e2){} onLong(el); }, DQ_HOLD_MS); });
+    el.addEventListener('pointermove',function(e){ if(t && (Math.abs(e.clientX-x0)>10 || Math.abs(e.clientY-y0)>10)) stop(); }); /* on fait défiler : pas de pression longue */
+    ['pointerup','pointerleave','pointercancel'].forEach(function(ev){ el.addEventListener(ev, stop); });
     el.addEventListener('contextmenu',function(e){ e.preventDefault(); });
     el.addEventListener('click',function(e){ if(el.dataset.held==='1'){ e.stopPropagation(); e.preventDefault(); el.dataset.held=''; } }, true);
   });
@@ -6729,6 +6740,25 @@ var _accueil75=SCREENS.accueil;
 SCREENS.accueil=function(){ var h=_accueil75.apply(this, arguments);
   return h.replace(/<div class="card empty-st"><span class="spin big"><\/span><b>Chargement de vos RDV<\/b><span class="muted">[^<]*<\/span><\/div>/,
     '<div class="card ld-card"><span class="ld-orb" aria-hidden="true"><i></i><i></i><b></b></span><b>Chargement de vos RDV</b></div>'); };
+/* ---------------- v77 · Action rapide « Photo » réelle (appareil photo → fiche du client → CRM) · « Matériel » masqué tant qu'il n'est pas relié au CRM ---------------- */
+function quickPhotoClient(){
+  if(S.screen==='client' && client(S.arg)) return {c:client(S.arg), rid:(S.site&&S.site.rid)||null};
+  if(S.site){ var sr=rdv(S.site.rid); if(sr && client(sr.cid)) return {c:client(sr.cid), rid:sr.id}; }
+  var nx=techRdv().filter(function(r){ return r.st!=='termine'; })[0]; if(nx && client(nx.id)) return {c:client(nx.id), rid:nx.rid};
+  return null;
+}
+function quickPhoto(){
+  var t=quickPhotoClient(); if(!t){ toast('Aucun RDV en cours : ouvrez la fiche du client pour ajouter une photo'); return; }
+  var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.style.display='none'; document.body.appendChild(inp);
+  inp.addEventListener('change', function(){ var f=inp.files&&inp.files[0]; inp.remove(); if(!f) return; var rd=new FileReader();
+    rd.onload=function(){ ensureClient(t.c); t.c.photos.unshift({cap:'Photo du '+new Date().toLocaleDateString('fr-FR'), src:rd.result, who:'Vous', w:'À l\'instant'}); toast('Photo ajoutée à la fiche de '+t.c.nom); try{ photoUpload(t.c, t.c.photos[0], t.rid); }catch(e){} try{ bgRender(); }catch(e){} };
+    rd.readAsDataURL(f); });
+  inp.click();
+}
+var _doAct77=doAct;
+doAct=function(id){ if(sessUser() && id==='photo') return quickPhoto(); if(sessUser() && id==='materiel'){ toast('Bientôt disponible'); return; } return _doAct77.apply(this, arguments); };
+var _rb77=rb;
+rb=function(id){ if(sessUser() && id==='materiel') return ''; return _rb77.apply(this, arguments); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
