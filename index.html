@@ -3135,7 +3135,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.65 · 17 nov. 2026';
+var APP_VERSION='1.0.66 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6034,7 +6034,7 @@ function prInject(p){
 }
 function prCreate(c, rid, f){
   var r=rid?rdv(rid):null;
-  var p={pid:uuid(), cid:c.id, crmCid:c.crmId!=null?c.crmId:null, rid:rid||null, crmRid:r&&r.crmId!=null?r.crmId:(rid&&/^crm-r-/.test(rid)?rid.replace('crm-r-',''):null), date:f.date, h:f.h, dur:f.dur, type:f.type||'Intervention', note:f.note||'', created:isoNow(), sent:false, noted:false};
+  var p={pid:uuid(), cid:c.id, nom:c.nom||'', tel:c.tel||'', adresse:c.adresse||'', ville:c.ville||'', crmCid:c.crmId!=null?c.crmId:null, rid:rid||null, crmRid:r&&r.crmId!=null?r.crmId:(rid&&/^crm-r-/.test(rid)?rid.replace('crm-r-',''):null), date:f.date, h:f.h, dur:f.dur, type:f.type||'Intervention', note:f.note||'', created:isoNow(), sent:false, noted:false};
   var l=prList(); l.push(p); prSave(l);
   prInject(p); PR_CALL=null; S.pday=dayOffset(new Date(p.date+'T12:00:00'));
   try{ liveCacheSave(); }catch(e){} rerender();
@@ -6173,7 +6173,7 @@ SCREENS.appels = function(){
     return '<div class="card ac-card"><div class="li"><span class="av">'+initials(c.nom)+'</span><div class="grow" style="min-width:0"><b class="ell" style="display:block">'+esc(c.nom)+'</b>'+
       '<span class="muted" style="font-size:12.5px">'+esc([c.ville, c.tel].filter(Boolean).join(' · ')||'Pas de numéro sur la fiche')+'</span></div></div>'+
       (m?'<div class="ac-note">'+ic('chat')+'<span>Message laissé '+esc(acAgo(m.t))+(m.n>1?' · '+m.n+' tentatives':'')+'</span></div>':'')+
-      '<div class="btns"><button class="btn primary sm" data-acall="'+esc(c.id)+'">'+ic('phone')+(m?'Rappeler':'Appeler et prendre RDV')+'</button><button class="btn soft sm" data-open="'+esc(c.id)+'">Fiche</button>'+
+      '<div class="btns">'+(m?'<button class="btn primary sm" data-acall2="'+esc(c.id)+'">'+ic('phone')+'Rappeler</button><button class="btn accent sm" data-aform="'+esc(c.id)+'">'+ic('cal')+'Saisir le RDV</button>':'<button class="btn primary sm" data-acall="'+esc(c.id)+'">'+ic('phone')+'Appeler et prendre RDV</button>')+'<button class="btn soft sm" data-open="'+esc(c.id)+'">Fiche</button>'+
       (o.kind==='relance'?'<button class="btn soft sm" data-adone="'+esc(c.id)+'">'+ic('check')+'Fait</button>':'')+'</div></div>'; };
   var h='<div class="pad"><div class="kpis"><div class="kpi"><b class="num">'+bureau.length+'</b><small>confiés par le bureau</small></div><div class="kpi'+(rel.length?' alert':'')+'"><b class="num">'+rel.length+'</b><small>à relancer</small></div></div>';
   if(!items.length) return h+'<div class="card ac-empty">'+ic('phone')+'<b>Personne à appeler</b><span>Quand le bureau met une fiche en « RDV à prendre par tech », elle apparaît ici. Les clients qui n\'ont pas répondu à votre appel y restent aussi jusqu\'au RDV.</span></div></div>';
@@ -6183,6 +6183,8 @@ SCREENS.appels = function(){
 };
 bindAppels=function(){
   each('[data-acall]',function(b){ b.onclick=function(){ prStart(b.dataset.acall, null); }; });
+  each('[data-acall2]',function(b){ b.onclick=function(){ _prStart62(b.dataset.acall2, null); }; });
+  each('[data-aform]',function(b){ b.onclick=function(){ var c=client(b.dataset.aform); if(c) prForm(c, null); }; });
   each('[data-adone]',function(b){ b.onclick=function(){ acForget(b.dataset.adone); acBadge(); rerender(); toast('Retiré de la liste'); }; });
 };
 /* Pas de réponse + message envoyé → le client reste dans « À appeler » */
@@ -6242,6 +6244,27 @@ var _apiCall65=apiCall;
 apiCall=function(method, path, body){ var p0=String(path).split('?')[0];
   return _apiCall65.apply(this, arguments).then(function(r){ if(r && r.status>=500 && !/^feedback|^events/.test(p0)) errReport('Le CRM a répondu '+r.status+' sur '+method+' '+p0.replace(/\d+/g, 'N'), (r.json && r.json.error) || '', 'crm'); return r; });
 };
+
+/* ---------------- v66 · Un RDV sans fiche client ne doit jamais faire planter un écran ---------------- */
+function rdvClientsFix(){
+  try{
+    if(typeof RDVS==='undefined' || !RDVS || !RDVS.forEach) return;
+    var pend={}; try{ prList().forEach(function(p){ pend[p.cid]=p; }); }catch(e){}
+    RDVS.forEach(function(r){
+      if(!r) return; if(r.cid==null || r.cid==='') r.cid='rdv-'+r.id;
+      if(client(r.cid)) return;
+      var p=pend[r.cid]||{}, raw=r.raw||{}, crmId=p.crmCid!=null?p.crmCid:(/^crm-c-/.test(String(r.cid))?String(r.cid).replace('crm-c-',''):null);
+      CLIENTS.push({id:r.cid, crmId:crmId!=null&&!isNaN(+crmId)?+crmId:crmId, nom:p.nom||r.nom||raw.nom||'Client', tel:p.tel||'', email:'', adresse:p.adresse||r.adresse||raw.adresse||'', ville:p.ville||'', type:r.type||'Intervention', statut:'interv', statutCrm:'', tech:r.tech||ME, ref:crmId?'#'+crmId:'', devis:[], hist:[], stub:true});
+    });
+  }catch(e){}
+}
+var STUB_ASKED={};
+function stubNames(){ if(!sessUser() || !navigator.onLine) return; CLIENTS.forEach(function(c){ if(!c.stub || c.nom!=='Client' || c.crmId==null || STUB_ASKED[c.crmId]) return; STUB_ASKED[c.crmId]=1;
+  apiCall('GET','clients/'+encodeURIComponent(c.crmId)).then(function(r){ var k=r.ok&&r.json&&(r.json.client||r.json.contact||r.json.data); if(!k) return; c.nom=k.nom||k.nom_contact||c.nom; c.tel=k.telephone||k.portable||c.tel; c.adresse=k.adresse||c.adresse; c.ville=[k.cp,k.ville].filter(Boolean).join(' ')||c.ville;
+    var l=prList(), ch=false; l.forEach(function(p){ if(p.cid===c.id && !p.nom){ p.nom=c.nom; ch=true; } }); if(ch) prSave(l); rerender(); }).catch(function(){}); }); }
+setInterval(stubNames, 20000); setTimeout(stubNames, 3000);
+var _render66=render;
+render=function(){ rdvClientsFix(); return _render66.apply(this, arguments); };
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
