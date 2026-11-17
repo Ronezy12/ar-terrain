@@ -1106,6 +1106,9 @@ img{max-width:100%}
 .plmap.maplibregl-map{position:absolute!important;inset:0}
 .plpin-w{width:34px;height:34px}
 .plme-w{width:18px;height:18px}
+.tour-dots{display:inline-flex;gap:4px}.tour-dots i{width:6px;height:6px;border-radius:3px;background:var(--line-strong);transition:width .2s,background-color .2s}.tour-dots i.done{background:var(--primary);opacity:.45}.tour-dots i.on{width:16px;background:var(--primary)}
+.tour-nav{margin-top:6px}.tour-tip.wait{opacity:.6;pointer-events:none}
+.tour-hole{transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1),width .3s,height .3s}
 </style>
 
 </head>
@@ -3167,7 +3170,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.72 · 17 nov. 2026';
+var APP_VERSION='1.0.73 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3618,7 +3621,7 @@ var TOUR=[
   {sel:'.next', t:'Votre prochain RDV', d:'Le client, l\'heure et l\'adresse. Tout ce qu\'il faut savoir avant de partir.'},
   {sel:'.next .stepbtn', t:'Un seul bouton à suivre', d:'Il vous dit quoi faire maintenant : valider, partir, arriver, puis ouvrir le chantier. Le bureau est prévenu à chaque étape.'},
   {sel:'.next .rsteps', t:'Où vous en êtes', d:'Les 4 étapes du RDV : Confirmé, En route, Sur place, Terminé.'},
-  {sel:'.next .mini', t:'Les raccourcis', d:'Appeler le client, lancer l\'itinéraire, prévenir d\'un retard ou ouvrir sa fiche.'},
+  {sel:'.next .mini, .next .btns:last-child', t:'Les raccourcis', d:'Appeler le client, lancer l\'itinéraire, prévenir d\'un retard ou ouvrir sa fiche.'},
   {sel:'.daylist', t:'Toute votre journée', d:'Vos RDV dans l\'ordre. Touchez-en un pour voir la fiche du client.'},
   {sel:'#tabs', t:'La barre du bas', d:'Planning, clients et WhatsApp. Le bouton « Plus » regroupe le reste, dont l\'aide.'},
   {sel:'#bell', t:'Les nouveautés', d:'Les nouvelles interventions du bureau et vos rappels arrivent ici, et en notification sur le téléphone.'}
@@ -6450,15 +6453,20 @@ function viewSig(){
 var LAST_SIG=null;
 var _render71=render;
 render=function(){ if(window.__dbgR) console.log('RENDER '+String(new Error().stack).split('\n').slice(2,6).map(function(l){ return l.trim().replace(/\(.*\)/,'').replace(/^at /,''); }).join(' < ')); var r=_render71.apply(this, arguments); LAST_SIG=viewSig(); return r; };
+var BG_PENDING=false;
 function bgRender(){
-  if(document.querySelector('#scrim') || document.querySelector('.onb')) return;
-  var ae=document.activeElement; if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName) && V.contains(ae)) return;
+  if(document.querySelector('#scrim')){ BG_PENDING=true; return; }
+  var ae=document.activeElement; if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName) && V.contains(ae)){ BG_PENDING=true; return; }
+  BG_PENDING=false;
   var ns=viewSig(); if(ns===LAST_SIG) return;
   if(window.__dbgR && LAST_SIG){ var A=LAST_SIG.split('§'), B=ns.split('§'); console.log('RENDER diff '+A.map(function(x,i){ return x===B[i]?'':i+': '+String(x).slice(0,80)+' → '+String(B[i]).slice(0,80); }).filter(Boolean).join(' | ')); }
   var y=V.scrollTop; V.classList.add('quiet'); render(); V.scrollTop=y;
   requestAnimationFrame(function(){ requestAnimationFrame(function(){ V.classList.remove('quiet'); }); });
 }
 rerenderSoft=function(){ if(['accueil','planning','clients','appels','client'].indexOf(S.screen)<0) return; bgRender(); };
+var _closeSheet71=closeSheet; closeSheet=function(){ var r=_closeSheet71.apply(this, arguments); if(BG_PENDING) setTimeout(bgRender, 60); return r; };
+document.addEventListener('focusout', function(){ if(BG_PENDING) setTimeout(bgRender, 200); });
+setInterval(function(){ if(BG_PENDING) bgRender(); }, 3000);
 /* ---------------- v72 · Carte du planning : MapLibre (npm maplibre-gl) + fond OpenFreeMap, carte vectorielle nette et fluide, vue gardée pendant les synchronisations ---------------- */
 var OFM_STYLE='https://tiles.openfreemap.org/styles/liberty', ML_P=null, PL_CAM={};
 function mlLoad(){
@@ -6526,6 +6534,61 @@ plInitMap=function(list, day){
     if(PL_MAP.me) PL_MAP.removeLayer(PL_MAP.me);
     PL_MAP.me=window.L.marker([pos.lat, pos.lng], {icon:window.L.divIcon({className:'plme-w', html:'<span class="plme"></span>', iconSize:[18,18], iconAnchor:[9,9]}), keyboard:false, interactive:false}).addTo(PL_MAP);
     PL_MAP.flyTo([pos.lat, pos.lng], 14, {duration:.6}); }, {timeout:12000, maxAge:60000}); };
+};
+/* ---------------- v73 · Visite guidée de A à Z : elle passe d'écran en écran, ne saute plus d'étape, numérotation juste ---------------- */
+function tourNextRdv(){ try{ var l=techRdv().filter(function(r){ return r.st!=='termine'; }); return l[0]||null; }catch(e){ return null; } }
+function tourClientId(){ var n=tourNextRdv(); if(n && (n.cid||n.id) && client(n.cid||n.id)) return n.cid||n.id; var c=(CLIENTS||[]).filter(function(x){ return !x.stub; })[0]; return c?c.id:null; }
+var TOUR2=[
+  {go:'accueil', sel:'.next', t:'Votre prochain RDV', d:'Le client, l\'heure et l\'adresse : tout ce qu\'il faut avant de partir.', when:function(){ return !!tourNextRdv(); }},
+  {go:'accueil', sel:'.next .stepbtn, .next .btn.big, .next [data-act="enroute"], .next .btn', t:'Le bouton à suivre', d:'Il change à chaque étape : valider le RDV, « Je suis en route », « Je suis arrivé », puis ouvrir le chantier.', when:function(){ return !!tourNextRdv(); }},
+  {go:'accueil', sel:'.next .mini, .next .btns:last-child', t:'Les raccourcis', d:'Appeler le client, lancer l\'itinéraire ou ouvrir sa fiche en un geste.', when:function(){ return !!tourNextRdv(); }},
+  {go:'accueil', sel:'.ac-home', t:'Clients à appeler', d:'Les clients que le bureau vous confie, et ceux qui n\'ont pas répondu. Touchez pour les rappeler.', when:function(){ return typeof acItems==='function' && acItems().length>0; }},
+  {go:'planning', sel:'.days', t:'Votre semaine', d:'Touchez un jour pour voir ses RDV. Les points indiquent les jours chargés.'},
+  {go:'planning', sel:'.seg', t:'Trois façons de voir', d:'Tournée (la liste dans l\'ordre), Frise (les horaires) et Carte (le trajet de la journée).'},
+  {go:'planning', sel:'.pl-hero, .pl-row, .pl-it', t:'Chaque RDV', d:'Touchez un RDV pour le confirmer, partir, le décaler avec le client ou ouvrir sa fiche.'},
+  {go:'clients', sel:'.search', t:'Retrouver un client', d:'Cherchez par nom, ville ou téléphone. Vous voyez les clients qui vous sont attribués.'},
+  {go:'client', sel:'[data-prdv]', t:'Prendre RDV avec le client', d:'L\'appli appelle le client. S\'il ne répond pas, un message est prêt à envoyer. Sinon, vous choisissez la date et il reçoit la confirmation.', when:function(){ return !!tourClientId(); }},
+  {go:'client', sel:'.rounds', t:'Contacter le client', d:'Appel, WhatsApp et itinéraire, directement depuis sa fiche.', when:function(){ return !!tourClientId(); }},
+  {go:'client', sel:'.cm-box', t:'Un mot pour le bureau', d:'Touchez un raccourci (accès difficile, matériel manquant…) ou écrivez, puis « Envoyer ». Le bureau le voit dans le CRM.', when:function(){ return !!tourClientId(); }},
+  {go:'accueil', sel:'#fbBtn', t:'Un souci ? Une idée ?', d:'Cette bulle envoie un bug, une idée ou une question au bureau, depuis n\'importe quel écran.', round:true},
+  {go:'accueil', sel:'#bell', t:'Les nouveautés', d:'Les nouvelles interventions et vos rappels arrivent ici, et en notification sur le téléphone.', round:true},
+  {go:'accueil', sel:'#tabs', t:'La barre du bas', d:'Accueil, planning, clients… « Plus » regroupe le reste : votre profil, le thème et « revoir la visite ».'}
+];
+runTour=function(then){
+  if(typeof bgRender==='function') bgRender();
+  if(sessUser() && typeof CRM_LIVE!=='undefined' && !CRM_LIVE.on && !(runTour._w>20)){ runTour._w=(runTour._w||0)+1; return setTimeout(function(){ runTour(then); }, 400); } runTour._w=0;
+  var steps=TOUR2.filter(function(s){ try{ return !s.when || s.when(); }catch(e){ return false; } });
+  var ph=$('phone'), i=0, old=document.querySelector('.tour'); if(old) old.remove();
+  var el=document.createElement('div'); el.className='tour'; el.innerHTML='<div class="tour-hole"></div><div class="tour-tip" role="dialog" aria-live="polite"></div>'; ph.appendChild(el);
+  var hole=el.querySelector('.tour-hole'), tip=el.querySelector('.tour-tip'), busy=false;
+  function goStep(st, done){
+    var want=st.go, cur=S.screen;
+    if(want==='client'){ var id=tourClientId(); if(cur==='client' && S.arg===id) return done(); S.stack=[]; S.screen='clients'; go('client', id); return setTimeout(done, 520); }
+    if(cur===want) return done();
+    S.stack=[]; goTab(want); setTimeout(done, 480);
+  }
+  function end(){ el.classList.add('out'); setTimeout(function(){ el.remove(); }, 250); try{ localStorage.setItem('ar_tour_done','1'); }catch(e){} if(S.screen!=='accueil'){ S.stack=[]; goTab('accueil'); } then && then(); }
+  function place(st){
+    var tg=null; String(st.sel).split(',').some(function(s){ return [].some.call(document.querySelectorAll(s.trim()), function(e){ var r=e.getBoundingClientRect(); if(r.height>0 && r.width>0 && !e.closest('.tour, .pg-ghost')){ tg=e; return true; } return false; }); });
+    var pr=ph.getBoundingClientRect(), sc=pr.width/ph.offsetWidth||1;
+    if(tg && V.contains(tg)){ var vr=V.getBoundingClientRect(), r0=tg.getBoundingClientRect(); if(r0.bottom>vr.bottom-150 || r0.top<vr.top){ V.scrollTop+=(r0.top-vr.top)/sc-80; } }
+    var nav='<div class="row tour-nav">'+(i>0?'<button class="btn soft sm" id="tPrev">Précédent</button>':'')+'<button class="btn primary sm" id="tNext" style="margin-left:auto">'+(i===steps.length-1?'Terminer':'Suivant')+'</button></div>';
+    tip.innerHTML='<div class="row"><span class="tour-dots">'+steps.map(function(_, k){ return '<i'+(k===i?' class="on"':k<i?' class="done"':'')+'></i>'; }).join('')+'</span><span class="muted num" style="font-size:12px;font-weight:800;margin-left:8px">'+(i+1)+' / '+steps.length+'</span><button class="link" id="tSkip" style="margin-left:auto">Passer</button></div><b>'+esc(st.t)+'</b><p>'+esc(st.d)+'</p>'+nav;
+    if(tg){ var r=tg.getBoundingClientRect(), x=(r.left-pr.left)/sc-6, y=(r.top-pr.top)/sc-6, w=r.width/sc+12, hh=r.height/sc+12;
+      hole.style.cssText='left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+hh+'px;border-radius:'+(st.round?'999px':'22px');
+      var below=(y+hh+220)<ph.offsetHeight; tip.style.top=below?(y+hh+12)+'px':'auto'; tip.style.bottom=below?'auto':(ph.offsetHeight-y+12)+'px'; }
+    else { hole.style.cssText='left:50%;top:40%;width:0;height:0'; tip.style.top='auto'; tip.style.bottom='130px'; }
+    tip.querySelector('#tNext').onclick=function(){ if(busy) return; i++; if(i>=steps.length) return finale(); show(); };
+    var pv=tip.querySelector('#tPrev'); if(pv) pv.onclick=function(){ if(busy) return; i--; show(); };
+    tip.querySelector('#tSkip').onclick=end;
+  }
+  function found(st){ return String(st.sel).split(',').some(function(s){ return [].some.call(document.querySelectorAll(s.trim()), function(e){ var r=e.getBoundingClientRect(); return r.height>0 && r.width>0 && !e.closest('.tour, .pg-ghost'); }); }); }
+  function show(){ var st=steps[i], tries=0; busy=true; tip.classList.add('wait'); goStep(st, function(){ (function wait(){ if(found(st) || tries++>=14){ busy=false; tip.classList.remove('wait'); place(st); } else setTimeout(wait, 280); })(); }); }
+  function finale(){ S.stack=[]; if(S.screen!=='accueil') goTab('accueil'); hole.style.cssText='left:50%;top:50%;width:0;height:0'; tip.style.top='auto'; tip.style.bottom='130px';
+    tip.innerHTML='<div class="tour-ok">'+ic('check')+'</div><b style="text-align:center">C\'est parti !</b><p style="text-align:center">Vous pouvez revoir cette visite à tout moment dans Plus › Aide.</p><button class="btn primary block" id="tEnd">Commencer</button>';
+    tip.querySelector('#tEnd').onclick=end; }
+  if(!steps.length) return finale();
+  setTimeout(show, 80);
 };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
