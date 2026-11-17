@@ -1,8 +1,8 @@
 /* Service worker : l'appli s'ouvre et fonctionne sans réseau. */
-var CACHE = 'ar-terrain-v66';
+var CACHE = 'ar-terrain-v68';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.png', 'lib/data.js', 'lib/icons.js', 'lib/pdf.js', 'vendor/jspdf.umd.min.js', 'vendor/three.min.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'];
-self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); })); });
+self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL.map(function (u) { return new Request(u, { cache: 'reload' }); })); }).then(function () { return self.skipWaiting(); })); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); }));
 });
@@ -10,9 +10,13 @@ self.addEventListener('fetch', function (e) {
   var req = e.request; if (req.method !== 'GET') return;
   var url = new URL(req.url);
   // Page : réseau d'abord (pour avoir la dernière version), cache si pas de réseau
+  // Page : ouverture instantanée depuis le téléphone, la version en ligne est récupérée en arrière-plan.
+  // Une nouvelle version publiée change ce fichier (CACHE) : le téléphone l'installe et l'appli se recharge seule.
   if (req.mode === 'navigate') {
     var page = /console\.html$/.test(url.pathname) ? 'console.html' : 'index.html';
-    e.respondWith(fetch(req, { cache: 'no-store' }).then(function (r) { var cp = r.clone(); if (r.ok) caches.open(CACHE).then(function (c) { c.put(page, cp); }); return r; }).catch(function () { return caches.match(page); }));
+    var net = fetch(req, { cache: 'no-store' }).then(function (r) { if (r.ok) { var cp = r.clone(); caches.open(CACHE).then(function (c) { c.put(page, cp); }); } return r; });
+    if (page === 'console.html') { e.respondWith(net.catch(function () { return caches.match(page); })); return; } /* la console reste toujours à jour */
+    e.respondWith(caches.match(page).then(function (hit) { if (hit) { e.waitUntil(net.catch(function () {})); return hit; } return net.catch(function () { return caches.match(page); }); }));
     return;
   }
   // Fichiers de l'appli et polices : cache d'abord, mise à jour en arrière-plan

@@ -429,9 +429,15 @@ function withDefaults(app){ var o=clone(app||{}); Object.keys(DEF).forEach(funct
   if(typeof o.fiche!=='object' || !o.fiche || Array.isArray(o.fiche)) o.fiche=clone(DEF.fiche); Object.keys(DEF.fiche).forEach(function(k){ if(typeof o.fiche[k]!=='boolean') o.fiche[k]=DEF.fiche[k]; });
   if(!Array.isArray(o.bureau)) o.bureau=[]; if(typeof o.perso!=='object' || !o.perso || Array.isArray(o.perso)) o.perso={};
   return o; }
+/* Le CRM n'enregistre que certains réglages : les autres sont aussi rangés dans techAccess._ext (relus ici et par l'appli) */
+var PUB_LABEL={maint:'maintenance', fb:'fiche des retours', pay:'paiement SumUp', avis:'avis Google', fiche:'boutons de la fiche client', bureau:'numéros du bureau', perso:'réglages par personne', tabs:'onglets', quick:'boutons rapides', techAccess:'droits'};
+var EXT_FIELDS=['maint','fb','pay','avis','fiche','bureau','perso'];
+function extUnpack(app){ if(app && app.techAccess && app.techAccess._ext && typeof app.techAccess._ext==='object'){ EXT_FIELDS.forEach(function(k){ if(app[k]===undefined && app.techAccess._ext[k]!==undefined) app[k]=app.techAccess._ext[k]; }); }
+  if(app && app.techAccess && app.techAccess._ext!==undefined){ app.techAccess=Object.assign({}, app.techAccess); delete app.techAccess._ext; } return app; }
+function extPack(out){ var ext={}; EXT_FIELDS.forEach(function(k){ if(out[k]!==undefined) ext[k]=out[k]; }); out.techAccess=Object.assign({}, out.techAccess||{}, {_ext:ext}); return out; }
 function loadSettings(){
   return api('GET','settings').then(function(r){
-    var app=r.ok?((r.json&&(r.json.app||r.json.settings||r.json.config))||{}):null;
+    var app=r.ok?extUnpack((r.json&&(r.json.app||r.json.settings||r.json.config))||{}):null;
     S.setErr=r.ok?null:('Lecture impossible ('+r.status+')'); S.settings=withDefaults(app||{}); S.draft=clone(S.settings); S.setLoaded=true; render();
   }).catch(function(){ S.setErr='Le CRM ne répond pas'; S.settings=withDefaults({}); S.draft=clone(S.settings); S.setLoaded=true; render(); });
 }
@@ -440,14 +446,16 @@ function diffCount(){ if(!draftDirty()) return 0; var n=0; SET_FIELDS.forEach(fu
 function publishSettings(fields){
   S.publishing=true; render();
   return api('GET','settings').then(function(r){
-    var cur=r.ok?((r.json&&(r.json.app||r.json.settings||r.json.config))||{}):{};
+    var cur=r.ok?extUnpack((r.json&&(r.json.app||r.json.settings||r.json.config))||{}):{};
     var out={}; Object.keys(cur).forEach(function(k){ out[k]=cur[k]; });
     (fields||SET_FIELDS).forEach(function(k){ if(S.draft[k]!==undefined) out[k]=S.draft[k]; });
-    out.updated_at=new Date().toISOString();
-    return api('POST','settings',{app:out});
+    out.updated_at=new Date().toISOString(); extPack(out);
+    return api('POST','settings',{app:out}).then(function(r2){ if(!r2 || !r2.ok) return r2;
+      return api('GET','settings').then(function(r3){ var back=extUnpack((r3.json&&(r3.json.app||r3.json.settings||r3.json.config))||{}); r2.lost=(fields||SET_FIELDS).filter(function(k){ return S.draft[k]!==undefined && JSON.stringify(back[k])!==JSON.stringify(S.draft[k]); }); return r2; }); });
   }).then(function(r){
     S.publishing=false;
-    if(r && r.ok){ (fields||SET_FIELDS).forEach(function(k){ S.settings[k]=clone(S.draft[k]); }); S.pubAt=Date.now(); toast('Publié : les téléphones se mettent à jour en 30 secondes'); }
+    if(r && r.ok && r.lost && r.lost.length){ S.lostFields=r.lost; toast('Attention : le CRM n\'a pas enregistré « '+r.lost.map(function(k){ return PUB_LABEL[k]||k; }).join(', ')+' ». Les téléphones ne le recevront pas tant que le CRM ne l\'accepte pas.'); }
+    else if(r && r.ok){ S.lostFields=[]; (fields||SET_FIELDS).forEach(function(k){ S.settings[k]=clone(S.draft[k]); }); S.pubAt=Date.now(); toast('Enregistré dans le CRM et vérifié : les téléphones se mettent à jour en 30 secondes'); }
     else toast('Le CRM a refusé : '+((r&&r.json&&r.json.error)||('erreur '+(r&&r.status))));
     render();
   }).catch(function(){ S.publishing=false; toast('Le CRM ne répond pas : rien n\'a été publié'); render(); });

@@ -17,7 +17,7 @@
 <style>body{margin:0}img{max-width:100%}</style>
 <title>AR Terrain</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout : téléphone central (zone du pouce en bas), panneau de démo à gauche sur grand écran.
    Couleurs et rayons : design system « Entreprise AR ». Boutons arrondis (pilule / rond). */
@@ -1101,6 +1101,7 @@ img{max-width:100%}
 .fb-msg{width:100%;box-sizing:border-box;min-height:92px;border:1.5px solid var(--line-strong);border-radius:16px;padding:12px 14px;font-size:16px;line-height:1.45;background:var(--surface);color:var(--ink);resize:none}
 .fb-msg:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--tint)}
 .fb-foot{display:flex;align-items:center;gap:12px}.fb-foot .btn{flex:none}
+#view.quiet,#view.quiet *{animation:none!important;transition:none!important}
 </style>
 
 </head>
@@ -1147,8 +1148,11 @@ img{max-width:100%}
 </div>
 <div class="vctl" id="vctl"><button id="vExit">Quitter le mode vidéo</button><button data-vbg="ar">Bleu AR</button><button data-vbg="light">Clair</button><button data-vbg="chroma">Fond vert</button><button data-vbg="black">Noir</button><button data-vdev="iphone">iPhone</button><button data-vdev="android">Android</button></div>
 
-<script src="vendor/jspdf.umd.min.js"></script>
-<script src="vendor/three.min.js"></script>
+<script>
+/* Bibliothèques lourdes chargées seulement quand on en a besoin (PDF, intro 3D) : démarrage beaucoup plus rapide */
+var LIB_SRC={pdf:"vendor/jspdf.umd.min.js", three:"vendor/three.min.js"}, LIB_P={};
+function loadLib(k){ if(LIB_P[k]) return LIB_P[k]; LIB_P[k]=new Promise(function(ok, ko){ var s=document.createElement("script"); s.src=LIB_SRC[k]; s.async=true; s.onload=function(){ ok(); }; s.onerror=function(){ LIB_P[k]=null; ko(new Error("chargement "+k)); }; document.head.appendChild(s); }); return LIB_P[k]; }
+</script>
 <script src="lib/data.js"></script>
 <script src="lib/icons.js"></script>
 <script src="lib/pdf.js"></script>
@@ -2274,7 +2278,7 @@ function loadLogo(){
   return new Promise(function(ok){ var img=new Image(); img.onload=function(){ var cv=document.createElement('canvas'); cv.width=img.naturalWidth; cv.height=img.naturalHeight; cv.getContext('2d').drawImage(img,0,0); try{ logoCache={data:cv.toDataURL('image/png'),w:cv.width,h:cv.height}; }catch(e){ logoCache=null; } ok(logoCache); }; img.onerror=function(){ ok(null); }; img.src='logo.png'; });
 }
 function exportPdf(p){
-  if(!window.jspdf){ toast('Le moteur PDF n\'est pas chargé. Réessayez dans un instant.'); return; }
+  if(!window.jspdf){ toast('Préparation du PDF…'); loadLib('pdf').then(function(){ exportPdf(p); }, function(){ toast('Le moteur PDF n\'a pas pu se charger : vérifiez le réseau et réessayez'); }); return; }
   toast('Génération du PDF…');
   loadLogo().then(function(logo){
     var doc=EPDF.build(p,{stripH:14, legend:true, brand:{on:true, name:'ENTREPRISE AR', mail:'contact@entreprise-ar.fr', addr:'', logo:logo}});
@@ -2988,6 +2992,7 @@ function webglOk(){ try{ var c=document.createElement('canvas'); return !!(windo
 function introBest(next){
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(window.THREE && webglOk() && !reduce){ try{ return intro3d(next); }catch(e){ var x=document.querySelector('.i3'); if(x) x.remove(); } }
+  if(next===null && !window.THREE && webglOk() && !reduce){ loadLib('three').then(function(){ introBest(null); }, function(){ intro(null); }); return; }
   intro(next);
 }
 function glowTex(inner, outer){
@@ -3158,7 +3163,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.69 · 17 nov. 2026';
+var APP_VERSION='1.0.71 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -4039,7 +4044,7 @@ function liveLoad(){
         CLIENTS.length=0; clients.forEach(function(c){ CLIENTS.push(c); });
         RDVS.length=0; rdvs.forEach(function(x){ RDVS.push(x); });
         CRM_LIVE.on=true; CRM_LIVE.loadedAt=nowHM(); NOTIFS.length=0; MODULES.appels.badge=0; MODULES.messages.badge=0; MODULES.planning.badge=0; tabKey=''; bellDot();
-        render(); toast(rdvs.length+' RDV et '+clients.length+' fiche'+(clients.length>1?'s':'')+' chargés depuis le CRM');
+        bgRender(); toast(rdvs.length+' RDV et '+clients.length+' fiche'+(clients.length>1?'s':'')+' chargés depuis le CRM');
         return true;
       });
   }).catch(function(e){ CRM_LIVE.error=String(e.message||e); if(CRM_DIAG) CRM_DIAG.error=CRM_LIVE.error; toast('Chargement CRM impossible : '+CRM_LIVE.error); refreshCrm(); return false; });
@@ -4457,7 +4462,7 @@ function liveTechs(){
     t.etat = mine.some(function(r){return r.st==='enroute';}) ? 'road' : mine.some(function(r){return r.st==='surplace';}) ? 'site' : 'ok'; t.lieu=''; });
 }
 var _liveLoad25=liveLoad;
-liveLoad=function(){ return _liveLoad25.apply(this, arguments).then(function(ok){ if(ok){ liveTechs(); render(); } return ok; }); };
+liveLoad=function(){ return _liveLoad25.apply(this, arguments).then(function(ok){ if(ok){ liveTechs(); bgRender(); } return ok; }); };
 /* Planning en mode réel : pas de carte illustrative avec des positions de démonstration */
 var _planning25=SCREENS.planning;
 SCREENS.planning=function(){ if(sessUser() && S.pmode==='carte') S.pmode='liste'; var h=_planning25(); if(!sessUser()) return h; return h.replace('<button data-v="carte" class="','<button data-v="carte" style="display:none" class="'); };
@@ -4786,7 +4791,7 @@ var _arrive34=arrive;
 arrive=function(rid){ var r=_arrive34.apply(this, arguments); siteSave(); return r; };
 /* Après chaque relecture du CRM et au démarrage : statuts et chantier en cours remis en place */
 var _liveLoad34=liveLoad;
-liveLoad=function(){ var keepScreen=S.screen, keepArg=S.arg; return _liveLoad34.apply(this, arguments).then(function(ok){ if(ok){ stApply(); siteRestore(); liveCacheSave(); if(keepScreen==='chantier' && S.site){ S.screen='chantier'; S.arg=S.site.rid; } render(); } return ok; }); };
+liveLoad=function(){ var keepScreen=S.screen, keepArg=S.arg; return _liveLoad34.apply(this, arguments).then(function(ok){ if(ok){ stApply(); siteRestore(); liveCacheSave(); if(keepScreen==='chantier' && S.site){ S.screen='chantier'; S.arg=S.site.rid; } bgRender(); } return ok; }); };
 if(sessUser()){ stApply(); siteRestore(); if(S.site){ S.stack=[]; S.screen='chantier'; S.arg=S.site.rid; } }
 /* =========================================================
    V35 — Vrais rappels (heure exacte du RDV, heure de Paris) et personnalisation en direct, partagée par le CRM
@@ -4846,7 +4851,9 @@ SCREENS.reglages=function(){
 };
 /* Partage des réglages par le CRM : l'admin envoie, tous les téléphones les reçoivent */
 var SET_SYNC='?', SET_TIMER=null, SET_FIELDS=['tabs','quick','techAccess','simple','shape','size','tour','notif'];
-function settingsPayload(){ var o={}; SET_FIELDS.forEach(function(k){ if(CFG[k]!==undefined) o[k]=CFG[k]; }); o.updated_at=new Date().toISOString(); return o; }
+function settingsPayload(){ var o={}; SET_FIELDS.forEach(function(k){ if(CFG[k]!==undefined) o[k]=CFG[k]; });
+  var ext={}; ['maint','fb','pay','avis','fiche','bureau','perso'].forEach(function(k){ if(CFG[k]!==undefined) ext[k]=CFG[k]; }); o.techAccess=Object.assign({}, CFG.techAccess||{}, {_ext:ext});
+  o.updated_at=new Date().toISOString(); return o; }
 var _save35=save;
 save=function(){ var r=_save35.apply(this, arguments); if(sessUser() && sessIsAdmin() && S.screen==='reglages' && !SET_APPLYING){ clearTimeout(SET_TIMER); SET_SYNC='sending'; SET_TIMER=setTimeout(pushSettings, 600); } return r; };
 var SET_APPLYING=false;
@@ -4856,6 +4863,7 @@ function pullSettings(){
   return apiCall('GET','settings').then(function(r){
     if(!r.ok){ if(SET_SYNC==='?') SET_SYNC='local'; return false; }
     var app=(r.json&&(r.json.app||r.json.settings||r.json.config))||null; SET_SYNC='ok'; if(!app) return false;
+    if(app.techAccess && app.techAccess._ext && typeof app.techAccess._ext==='object'){ var X=app.techAccess._ext; Object.keys(X).forEach(function(k){ if(app[k]===undefined) app[k]=X[k]; }); }
     var before=JSON.stringify(settingsPayload()); SET_APPLYING=true;
     SET_FIELDS.forEach(function(k){ if(app[k]!==undefined) CFG[k]=app[k]; }); CFG.liveTabsInit=true; save(); SET_APPLYING=false;
     var after=JSON.stringify(settingsPayload()); if(before.replace(/"updated_at":"[^"]*"/,'')!==after.replace(/"updated_at":"[^"]*"/,'')){ tabKey=''; if(S.screen!=='reglages') rerender(); }
@@ -6173,7 +6181,7 @@ function acFetchRemote(force){
     if(!r.ok || !r.json) return;
     var arr=r.json.clients||r.json.contacts||r.json.data||(Array.isArray(r.json)?r.json:[]);
     AC_REMOTE=arr.map(function(x){ return { crmId:x.id_contact||x.id, nom:x.nom||x.nom_contact||('Fiche '+(x.id_contact||x.id)), tel:x.telephone||x.portable||'', ville:x.ville||'', adresse:x.adresse||'', depuis:x.depuis||x.date_statut||'' }; });
-    acBadge(); if(S.screen==='appels' || S.screen==='accueil') rerender();
+    acBadge(); if(S.screen==='appels' || S.screen==='accueil') bgRender();
   }).catch(function(){});
 }
 function acClientFor(x){ /* fiche déjà chargée, sinon fiche légère créée pour pouvoir appeler et prendre RDV */
@@ -6284,7 +6292,7 @@ function rdvClientsFix(){
 var STUB_ASKED={};
 function stubNames(){ if(!sessUser() || !navigator.onLine) return; CLIENTS.forEach(function(c){ if(!c.stub || c.nom!=='Client' || c.crmId==null || STUB_ASKED[c.crmId]) return; STUB_ASKED[c.crmId]=1;
   apiCall('GET','clients/'+encodeURIComponent(c.crmId)).then(function(r){ var k=r.ok&&r.json&&(r.json.client||r.json.contact||r.json.data); if(!k) return; c.nom=k.nom||k.nom_contact||c.nom; c.tel=k.telephone||k.portable||c.tel; c.adresse=k.adresse||c.adresse; c.ville=[k.cp,k.ville].filter(Boolean).join(' ')||c.ville;
-    var l=prList(), ch=false; l.forEach(function(p){ if(p.cid===c.id && !p.nom){ p.nom=c.nom; ch=true; } }); if(ch) prSave(l); rerender(); }).catch(function(){}); }); }
+    var l=prList(), ch=false; l.forEach(function(p){ if(p.cid===c.id && !p.nom){ p.nom=c.nom; ch=true; } }); if(ch) prSave(l); bgRender(); }).catch(function(){}); }); }
 setInterval(stubNames, 20000); setTimeout(stubNames, 3000);
 var _render66=render;
 render=function(){ rdvClientsFix(); return _render66.apply(this, arguments); };
@@ -6422,6 +6430,31 @@ feedbackSheet=function(){
   };
 };
 
+/* ---------------- v70 · Réglages de la console rangés dans techAccess._ext (le CRM n'enregistre que certains champs) ---------------- */
+var _cfgSanitize70=cfgSanitize;
+cfgSanitize=function(app){ if(app && app.techAccess && app.techAccess._ext && typeof app.techAccess._ext==='object'){ app=Object.assign({}, app); var X=app.techAccess._ext; Object.keys(X).forEach(function(k){ if(app[k]===undefined) app[k]=X[k]; }); } return _cfgSanitize70.call(this, app); };
+/* ---------------- v71 · Synchronisation en douceur : l'écran ne se redessine que si ce qu'il affiche a changé, et sans animation ---------------- */
+function viewSig(){
+  try{
+    var st=settingsPayload(); delete st.updated_at;
+    return [S.screen, S.arg||'', S.pday||0, S.plv||'', S.pmode||'', S.role,
+      JSON.stringify(RDVS.map(function(r){ return [r.id, r.d, r.h, r.dur, r.st, r.cid, r.tech, !!r.pending, r.note||'']; })),
+      JSON.stringify(CLIENTS.map(function(c){ return [c.id, c.nom, c.statutCrm||'', c.tel||'', c.adresse||'', c.ville||'', (c.notes||[]).length, (c.photos||[]).length, (c.hist||[]).length, (c.devis||[]).length]; })),
+      (typeof acItems==='function'?acItems().length:0), JSON.stringify(st), CRM_LIVE.on?1:0, CRM_LIVE.error||''].join('§');
+  }catch(e){ return String(Math.random()); }
+}
+var LAST_SIG=null;
+var _render71=render;
+render=function(){ if(window.__dbgR) console.log('RENDER '+String(new Error().stack).split('\n').slice(2,6).map(function(l){ return l.trim().replace(/\(.*\)/,'').replace(/^at /,''); }).join(' < ')); var r=_render71.apply(this, arguments); LAST_SIG=viewSig(); return r; };
+function bgRender(){
+  if(document.querySelector('#scrim') || document.querySelector('.onb')) return;
+  var ae=document.activeElement; if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName) && V.contains(ae)) return;
+  var ns=viewSig(); if(ns===LAST_SIG) return;
+  if(window.__dbgR && LAST_SIG){ var A=LAST_SIG.split('§'), B=ns.split('§'); console.log('RENDER diff '+A.map(function(x,i){ return x===B[i]?'':i+': '+String(x).slice(0,80)+' → '+String(B[i]).slice(0,80); }).filter(Boolean).join(' | ')); }
+  var y=V.scrollTop; V.classList.add('quiet'); render(); V.scrollTop=y;
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ V.classList.remove('quiet'); }); });
+}
+rerenderSoft=function(){ if(['accueil','planning','clients','appels','client'].indexOf(S.screen)<0) return; bgRender(); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
