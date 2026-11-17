@@ -414,7 +414,7 @@ function loadClient(cid){
 var SET_FIELDS=['tabs','quick','techAccess','simple','shape','size','tour','notif','pay','avis','maint','fb','fiche','bureau','perso'];
 var MODULES={accueil:'Accueil', planning:'Planning', clients:'Clients', devis:'Devis', etiquetage:'Étiquetage', equipe:'Équipe'};
 var MOD_DESC={accueil:'Prochain RDV et actions rapides', planning:'Tournée, frise et carte', clients:'Fiches, photos et commentaires', devis:'Devis rapide par pièce', etiquetage:'Tableaux électriques', equipe:'Suivi des techniciens (admin)'};
-var ACTIONS={enroute:'Je suis en route', arrive:'Je suis arrivé', retard:'Prévenir d\'un retard', appeler:'Appeler le client', itineraire:'Itinéraire', photo:'Photo chantier', devis:'Nouveau devis', etiquetage:'Étiquetage', signature:'Faire signer', whatsapp:'WhatsApp', fin:'Fin d\'intervention', materiel:'Matériel', bureau:'Appeler le bureau'};
+var ACTIONS={position:'Envoyer ma position (partage WhatsApp/SMS)', enroute:'Je suis en route', arrive:'Je suis arrivé', retard:'Prévenir d\'un retard', appeler:'Appeler le client', itineraire:'Itinéraire', photo:'Photo chantier', devis:'Nouveau devis', etiquetage:'Étiquetage', signature:'Faire signer', whatsapp:'WhatsApp', fin:'Fin d\'intervention', materiel:'Matériel', bureau:'Appeler le bureau'};
 var DEF={ fiche:{appel:true, whatsapp:true, itineraire:true, email:false, historique:false}, bureau:[], perso:{}, tabs:{tech:['accueil','planning','clients','etiquetage'], admin:['accueil','planning','equipe','clients']},
   quick:Object.keys(ACTIONS).map(function(k,i){ return {id:k, on:i<9}; }),
   techAccess:{planning:true, clients:true, tousClients:false, devis:true, montants:true, etiquetage:true, prix:true},

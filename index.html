@@ -3203,7 +3203,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.75 · 17 nov. 2026';
+var APP_VERSION='1.0.76 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -5145,7 +5145,9 @@ rerenderSoft=function(){ if(document.querySelector('#scrim') || ['accueil','plan
 function fullAddr(c){ c=c||{}; var a=String(c.adr||'').trim(), v=String(c.ville||'').trim(); if(!a) return v; if(!v) return a; var vn=v.replace(/^\d{5}\s*/,'').toLowerCase(); return a.toLowerCase().indexOf(vn)>=0 ? a : a+', '+v; }
 /* Position envoyée par l'agent en un appui (WhatsApp, SMS… au choix), en attendant le suivi par le CRM */
 ACTIONS.position={label:'Envoyer ma position', icon:'pin', cls:'g'};
-(function(){ try{ if(!CFG.quick.some(function(q){ return q.id==='position'; })){ CFG.quick.splice(2,0,{id:'position',on:true}); save(); } }catch(e){} })();
+/* v76 : plus ajouté d'office (il faisait sauter les actions rapides) : on l'active depuis la console si besoin */
+(function(){ try{ if(localStorage.getItem('ar_pos_mig')!=='1'){ CFG.quick.forEach(function(q){ if(q.id==='position') q.on=false; }); save(); localStorage.setItem('ar_pos_mig','1'); } }catch(e){} })();
+(function(){ try{ if(!CFG.quick.some(function(q){ return q.id==='position'; })){ CFG.quick.push({id:'position',on:false}); save(); } }catch(e){} })();
 function sharePosition(){
   toast('Recherche de votre position…');
   getPos(function(pos, code){
@@ -5409,7 +5411,7 @@ function cfgSanitize(app){
   if(!CFG.notif || typeof CFG.notif!=='object'){ CFG.notif=D.notif; fix=true; }
   if(['pill','soft','square'].indexOf(CFG.shape)<0){ CFG.shape=D.shape; fix=true; }
   if(['normal','gants'].indexOf(CFG.size)<0){ CFG.size=D.size; fix=true; }
-  if(!CFG.quick.some(function(q){ return q.id==='position'; })){ CFG.quick.splice(2,0,{id:'position',on:true}); fix=true; }
+  if(!CFG.quick.some(function(q){ return q.id==='position'; })){ CFG.quick.push({id:'position',on:false}); fix=true; }
   if(fix) save(); })();
 /* Lecture des réglages partagés : seules les valeurs au bon format sont appliquées */
 pullSettings=function(){
