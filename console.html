@@ -393,7 +393,7 @@ function loadClient(cid){
   return api('GET','clients/'+encodeURIComponent(cid)).then(function(r){
     var c=(r.json&&(r.json.client||r.json.contact||r.json.data||r.json))||{};
     S.clients[cid]=r.ok?{ok:true, nom:pick(c,['nom','name','nom_contact']), tel:pick(c,['telephone','tel','phone','mobile']), mail:pick(c,['email','mail']), adr:pick(c,['adresse','address']), cp:pick(c,['cp','code_postal']), ville:pick(c,['ville','city']),
-      statut:pick(c,['name_statuscont','statut','status','statut_prospect']), comments:(Array.isArray(c.comments)?c.comments:[]).slice(0,30)}:{ok:false, err:r.status};
+      statut:pick(c,['name_statuscont','statut','status','statut_prospect']), comments:(Array.isArray(c.comments)?c.comments:Array.isArray(c.commentaires)?c.commentaires:[]).slice(0,30)}:{ok:false, err:r.status};
     render();
   }).catch(function(){ S.clients[cid]={ok:false}; render(); });
 }
@@ -759,7 +759,7 @@ function loadFeedback(){
     if(!cid){ S.fb={src:'none', items:[]}; render(); return; }
     return api('GET','clients/'+encodeURIComponent(cid)).then(function(r2){
       var c=(r2.json&&(r2.json.client||r2.json.contact||r2.json.data||r2.json))||{};
-      var items=(Array.isArray(c.comments)?c.comments:[]).map(fbParse).filter(Boolean);
+      var items=(Array.isArray(c.comments)?c.comments:Array.isArray(c.commentaires)?c.commentaires:[]).map(fbParse).filter(Boolean);
       S.fb={src:'fiche', cid:cid, ok:r2.ok, items:items}; render();
     });
   }).catch(function(){ S.fb={src:'err', items:[]}; render(); });
