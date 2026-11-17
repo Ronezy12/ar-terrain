@@ -162,6 +162,13 @@ select.sel.act{border-color:var(--primary-line);background-color:var(--primary-s
 .bug-pile{margin:8px 0 0;padding:10px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto}
 @keyframes bugPulse{50%{opacity:.45}}
 @media (prefers-reduced-motion: reduce){.bug-i .badge{animation:none!important}}
+.fk-grid{display:flex;flex-wrap:wrap;gap:8px}
+.fk{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:600;font-size:13.5px;color:var(--ink)}
+.fk.on{border-color:var(--primary);background:var(--primary-soft)}
+.pp-b{min-width:96px;height:32px;border-radius:9px;border:1px solid var(--line);font-weight:700;font-size:12px;background:var(--surface);color:var(--muted)}
+.pp-b.pp-y{background:var(--ok-bg,#E6F6EC);color:var(--ok,#1B6B32);border-color:transparent}.pp-b.pp-n{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+.bu-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+@media (max-width:600px){.bu-row{grid-template-columns:1fr auto}.bu-row .inp:first-child{grid-column:1 / -1}}
 .soonbox{border:1px dashed var(--line);border-radius:12px;padding:14px;display:flex;gap:12px;align-items:flex-start;background:var(--surface-2)}
 .soonbox svg{width:18px;height:18px;color:var(--faint);flex:none;margin-top:1px}
 .soonbox b{font-size:13.5px;display:block}.soonbox span{font-size:12.5px;color:var(--muted)}
@@ -404,11 +411,11 @@ function loadClient(cid){
 }
 
 /* ---------- Données : réglages de l'appli ---------- */
-var SET_FIELDS=['tabs','quick','techAccess','simple','shape','size','tour','notif','pay','avis','maint','fb'];
+var SET_FIELDS=['tabs','quick','techAccess','simple','shape','size','tour','notif','pay','avis','maint','fb','fiche','bureau','perso'];
 var MODULES={accueil:'Accueil', planning:'Planning', clients:'Clients', devis:'Devis', etiquetage:'Étiquetage', equipe:'Équipe'};
 var MOD_DESC={accueil:'Prochain RDV et actions rapides', planning:'Tournée, frise et carte', clients:'Fiches, photos et commentaires', devis:'Devis rapide par pièce', etiquetage:'Tableaux électriques', equipe:'Suivi des techniciens (admin)'};
 var ACTIONS={enroute:'Je suis en route', arrive:'Je suis arrivé', retard:'Prévenir d\'un retard', appeler:'Appeler le client', itineraire:'Itinéraire', photo:'Photo chantier', devis:'Nouveau devis', etiquetage:'Étiquetage', signature:'Faire signer', whatsapp:'WhatsApp', fin:'Fin d\'intervention', materiel:'Matériel', bureau:'Appeler le bureau'};
-var DEF={ tabs:{tech:['accueil','planning','clients','etiquetage'], admin:['accueil','planning','equipe','clients']},
+var DEF={ fiche:{appel:true, whatsapp:true, itineraire:true, email:false, historique:false}, bureau:[], perso:{}, tabs:{tech:['accueil','planning','clients','etiquetage'], admin:['accueil','planning','equipe','clients']},
   quick:Object.keys(ACTIONS).map(function(k,i){ return {id:k, on:i<9}; }),
   techAccess:{planning:true, clients:true, tousClients:false, devis:true, montants:true, etiquetage:true, prix:true},
   simple:false, shape:'pill', size:'normal', pay:{key:'', appId:''}, avis:{on:true, delai:'2h', lien:''}, fb:{cid:''}, maint:{on:false, msg:'L\'appli est en maintenance pour quelques minutes. Vos photos et notes sont gardées sur le téléphone.', until:''} };
@@ -419,6 +426,8 @@ function withDefaults(app){ var o=clone(app||{}); Object.keys(DEF).forEach(funct
   Object.keys(ACTIONS).forEach(function(k){ if(!o.quick.some(function(q){ return q.id===k; })) o.quick.push({id:k, on:false}); }); o.quick=o.quick.filter(function(q){ return ACTIONS[q.id]; });
   if(typeof o.techAccess!=='object' || !o.techAccess) o.techAccess=clone(DEF.techAccess);
   if(typeof o.pay!=='object' || !o.pay) o.pay=clone(DEF.pay); if(typeof o.avis!=='object' || !o.avis) o.avis=clone(DEF.avis); if(typeof o.maint!=='object' || !o.maint) o.maint=clone(DEF.maint); if(typeof o.fb!=='object' || !o.fb) o.fb=clone(DEF.fb);
+  if(typeof o.fiche!=='object' || !o.fiche || Array.isArray(o.fiche)) o.fiche=clone(DEF.fiche); Object.keys(DEF.fiche).forEach(function(k){ if(typeof o.fiche[k]!=='boolean') o.fiche[k]=DEF.fiche[k]; });
+  if(!Array.isArray(o.bureau)) o.bureau=[]; if(typeof o.perso!=='object' || !o.perso || Array.isArray(o.perso)) o.perso={};
   return o; }
 function loadSettings(){
   return api('GET','settings').then(function(r){
@@ -723,6 +732,24 @@ VIEWS.equipe=function(){
   var D=S.draft||withDefaults({}), rows=[['PLANNING',[['planning','Accéder au planning']]],['CLIENTS ET DEVIS',[['clients','Accéder aux fiches clients'],['tousClients','Voir tous les clients'],['devis','Créer des devis'],['montants','Voir les montants'],['prix','Voir les prix du catalogue']]],['CHANTIER',[['etiquetage','Étiquetage des tableaux']]]];
   h+='<section class="card"><div class="card-h"><div><h2>Droits par rôle</h2><p>Cochez pour les agents terrain · les admins et commerciaux sédentaires ont tous les droits</p></div>'+(draftDirty()?'<button class="btn pri" data-act="publish">Publier</button>':'')+'</div><div class="tbl-wrap"><table class="table matrix"><thead><tr><th>Droit</th><th>Agent terrain</th><th>Commercial sédentaire</th><th>Admin +</th></tr></thead><tbody>'+
     rows.map(function(g){ return '<tr class="mgrp"><td colspan="4">'+g[0]+'</td></tr>'+g[1].map(function(x){ var on=D.techAccess[x[0]]!==false; return '<tr><td>'+x[1]+'</td><td><button class="cb'+(on?' on':'')+'" data-ta="'+x[0]+'" aria-label="'+esc(x[1])+' (agent terrain)"></button></td><td><span class="cb on" style="opacity:.45"></span></td><td><span class="cb on" style="opacity:.45"></span></td></tr>'; }).join(''); }).join('')+'</tbody></table></div></section></div>';
+  var FK=[['appel','Appeler le client'],['whatsapp','WhatsApp'],['itineraire','Itinéraire'],['email','E-mail'],['historique','Historique de la fiche']];
+  var pub=(draftDirty()?'<button class="btn pri" data-act="publish">Publier</button>':'');
+  h+='<section class="card"><div class="card-h"><div><h2>Fiche client : ce que voient les agents</h2><p>Réglage pour tous les agents terrain · les admins voient tout</p></div>'+pub+'</div><div class="card-b fk-grid">'+
+    FK.map(function(x){ var on=D.fiche[x[0]]!==false; return '<button class="fk'+(on?' on':'')+'" data-fk="'+x[0]+'" aria-pressed="'+on+'"><span class="cb'+(on?' on':'')+'"></span>'+x[1]+'</button>'; }).join('')+'</div></section>';
+  var norm=function(n){ return String(n||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); };
+  var people=list.map(function(m){ return m.n; }).filter(function(n){ return n && !/non attribu|^—$/i.test(n); });
+  Object.keys(D.perso||{}).forEach(function(k){ if(!people.some(function(n){ return norm(n)===k; })) people.push(k); });
+  h+='<section class="card"><div class="card-h"><div><h2>Réglages par personne</h2><p>Touchez une case pour passer de « comme tout le monde » à « oui » puis « non » · le nom doit être celui du compte de la personne dans le CRM</p></div>'+pub+'</div>'+
+    (people.length?'<div class="tbl-wrap"><table class="table pp"><thead><tr><th>Personne</th>'+FK.map(function(x){ return '<th>'+x[1]+'</th>'; }).join('')+'</tr></thead><tbody>'+people.map(function(n){ var k=norm(n), o=(D.perso||{})[k]||{};
+      return '<tr><td><span class="who"><span class="av">'+esc(initials(n))+'</span><b>'+esc(n)+'</b></span></td>'+FK.map(function(x){ var v=o[x[0]], lab=v===true?'Oui':v===false?'Non':'Comme tous', cls=v===true?'pp-y':v===false?'pp-n':'pp-d';
+        return '<td><button class="pp-b '+cls+'" data-pp="'+esc(k)+'" data-pk="'+x[0]+'">'+lab+'</button></td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table></div>'
+     :'<div class="empty">'+ic('users')+'<b>Aucun technicien trouvé</b><span>La liste vient des RDV du CRM.</span></div>')+
+    '<div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;border-top:1px solid var(--line-2)"><label class="lbl" style="flex:1 1 220px"><span>Ajouter une personne (nom du compte CRM)</span><input class="inp" id="ppNew" placeholder="ex. Karim Benali"></label><button class="btn" data-act="ppadd">Ajouter</button></div></section>';
+  var B=D.bureau||[];
+  h+='<section class="card"><div class="card-h"><div><h2>Bouton « Appeler le bureau »</h2><p>Un seul numéro : l\'appel part directement · plusieurs : le technicien choisit le service</p></div>'+pub+'</div><div class="card-b" style="display:flex;flex-direction:column;gap:10px">'+
+    (B.length?B.map(function(x, i){ return '<div class="bu-row"><input class="inp" data-bl="'+i+'" value="'+esc(x.label)+'" placeholder="Service (ex. Planning)" aria-label="Nom du service"><input class="inp num" data-bt="'+i+'" value="'+esc(x.tel)+'" placeholder="01 23 45 67 89" inputmode="tel" aria-label="Numéro"><button class="btn ghost sm" data-bdel="'+i+'" aria-label="Supprimer ce numéro">'+ic('x')+'</button></div>'; }).join('')
+      :'<p class="hint">Aucun numéro choisi : l\'appli utilise le numéro par défaut. Ajoutez le ou les numéros du bureau.</p>')+
+    (B.length<6?'<button class="btn" data-act="badd" style="align-self:flex-start">+ Ajouter un numéro</button>':'')+'</div></section>';
   return h;
 };
 
@@ -872,6 +899,8 @@ function bindAll(){
     if(a==='pubmaint'){ publishSettings(['maint']); return; }
     if(a==='health'){ runHealth(); return; }
     if(a==='fbload'){ loadFeedback(); return; }
+    if(a==='badd'){ setDraft(function(D){ D.bureau=D.bureau||[]; D.bureau.push({label:D.bureau.length?'Service':'Bureau', tel:''}); }); setTimeout(function(){ var l=A.querySelectorAll('[data-bt]'); if(l.length) l[l.length-1].focus(); }, 30); return; }
+    if(a==='ppadd'){ var v=(document.getElementById('ppNew')||{}).value||''; var k=v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); if(!k){ toast('Indiquez le nom'); return; } setDraft(function(D){ D.perso=D.perso||{}; if(!D.perso[k]) D.perso[k]={}; }); return; }
     if(a==='bugpause'){ S.bugPause=!S.bugPause; render(); return; }
     if(a==='pubfb'){ publishSettings(['fb']).then(function(){ loadFeedback(); }); return; }
     doAct(a); }; });
@@ -891,6 +920,11 @@ function bindAll(){
   on('[data-tabmv]', function(el){ el.onclick=function(){ var m=el.dataset.tabmv, d=+el.dataset.d; setDraft(function(D){ var l=D.tabs[S.role], i=l.indexOf(m), j=i+d; if(i<0||j<0||j>=l.length) return; l.splice(j,0,l.splice(i,1)[0]); }); }; });
   on('[data-qtog]', function(el){ el.onclick=function(){ var i=+el.dataset.qtog; setDraft(function(D){ D.quick[i].on=!D.quick[i].on; }); }; });
   on('[data-qmv]', function(el){ el.onclick=function(){ var i=+el.dataset.qmv, j=i+(+el.dataset.d); setDraft(function(D){ if(j<0||j>=D.quick.length) return; D.quick.splice(j,0,D.quick.splice(i,1)[0]); }); }; });
+  on('[data-fk]', function(el){ el.onclick=function(){ var k=el.dataset.fk; setDraft(function(D){ D.fiche[k]=D.fiche[k]===false; }); }; });
+  on('[data-pp]', function(el){ el.onclick=function(){ var n=el.dataset.pp, k=el.dataset.pk; setDraft(function(D){ D.perso=D.perso||{}; var o=D.perso[n]||{}; var v=o[k]; if(v===undefined) o[k]=true; else if(v===true) o[k]=false; else delete o[k]; D.perso[n]=o; }); }; });
+  on('[data-bl]', function(el){ el.onchange=function(){ var i=+el.dataset.bl; setDraft(function(D){ D.bureau[i].label=el.value.trim().slice(0,40)||'Bureau'; }); }; });
+  on('[data-bt]', function(el){ el.onchange=function(){ var i=+el.dataset.bt; setDraft(function(D){ D.bureau[i].tel=el.value.replace(/[^\d+ .]/g,'').slice(0,20); }); }; });
+  on('[data-bdel]', function(el){ el.onclick=function(){ var i=+el.dataset.bdel; setDraft(function(D){ D.bureau.splice(i,1); }); }; });
   on('[data-ta]', function(el){ el.onclick=function(){ var k=el.dataset.ta; setDraft(function(D){ D.techAccess[k]=D.techAccess[k]===false; }); }; });
   on('[data-simple]', function(el){ el.onclick=function(){ setDraft(function(D){ D.simple=!D.simple; }); }; });
   on('[data-shape]', function(el){ el.onclick=function(){ setDraft(function(D){ D.shape=el.dataset.shape; }); }; });
