@@ -1102,6 +1102,10 @@ img{max-width:100%}
 .fb-msg:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--tint)}
 .fb-foot{display:flex;align-items:center;gap:12px}.fb-foot .btn{flex:none}
 #view.quiet,#view.quiet *{animation:none!important;transition:none!important}
+.plmap .maplibregl-ctrl-attrib{font-size:10px}
+.plmap.maplibregl-map{position:absolute!important;inset:0}
+.plpin-w{width:34px;height:34px}
+.plme-w{width:18px;height:18px}
 </style>
 
 </head>
@@ -3163,7 +3167,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.71 · 17 nov. 2026';
+var APP_VERSION='1.0.72 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6455,6 +6459,74 @@ function bgRender(){
   requestAnimationFrame(function(){ requestAnimationFrame(function(){ V.classList.remove('quiet'); }); });
 }
 rerenderSoft=function(){ if(['accueil','planning','clients','appels','client'].indexOf(S.screen)<0) return; bgRender(); };
+/* ---------------- v72 · Carte du planning : MapLibre (npm maplibre-gl) + fond OpenFreeMap, carte vectorielle nette et fluide, vue gardée pendant les synchronisations ---------------- */
+var OFM_STYLE='https://tiles.openfreemap.org/styles/liberty', ML_P=null, PL_CAM={};
+function mlLoad(){
+  if(window.maplibregl) return Promise.resolve(window.maplibregl);
+  if(ML_P) return ML_P;
+  ML_P=new Promise(function(ok, ko){
+    if(!document.getElementById('mlcss')){ var l=document.createElement('link'); l.id='mlcss'; l.rel='stylesheet'; l.href='vendor/maplibre-gl.css'; document.head.appendChild(l); }
+    var s=document.createElement('script'); s.src='vendor/maplibre-gl.js'; s.async=true; s.onload=function(){ window.maplibregl?ok(window.maplibregl):ko(new Error('maplibre')); }; s.onerror=function(){ ML_P=null; ko(new Error('maplibre')); }; document.head.appendChild(s);
+  });
+  return ML_P;
+}
+/* Petite enveloppe : le reste de l'appli (sélection d'un RDV, « ma position ») parle à la carte comme avant */
+function mlShim(map){
+  return { gl:map, markers:[], me:null,
+    remove:function(){ try{ map.remove(); }catch(e){} },
+    getZoom:function(){ return map.getZoom(); },
+    flyTo:function(ll, z, o){ var c=Array.isArray(ll)?{lng:ll[1], lat:ll[0]}:ll; map.flyTo({center:[c.lng, c.lat], zoom:z, duration:Math.round(((o&&o.duration)||.6)*1000), essential:true}); },
+    removeLayer:function(m){ try{ m.remove(); }catch(e){} } };
+}
+function mlMarker(ML, map, lat, lng, html, cls, onClick){
+  var el=document.createElement('div'); el.className=cls; el.innerHTML=html;
+  if(onClick){ el.style.cursor='pointer'; el.addEventListener('click', function(e){ e.stopPropagation(); onClick(); }); }
+  var m=new ML.Marker({element:el, anchor:'center'}).setLngLat([lng, lat]).addTo(map);
+  m.getLatLng=function(){ var p=m.getLngLat(); return {lat:p.lat, lng:p.lng}; };
+  return m;
+}
+var _plInitMap72=plInitMap;
+plInitMap=function(list, day){
+  var el=$('plMap'), msg=$('plMapMsg'); if(!el) return;
+  if(!webglOk()) return _plInitMap72.apply(this, arguments); /* vieux téléphone : ancienne carte */
+  var wrap=el.parentNode; ['touchstart','touchmove','pointerdown','pointermove','wheel'].forEach(function(t){ wrap.addEventListener(t, function(e){ e.stopPropagation(); }, {passive:true}); });
+  if(!navigator.onLine){ msg.textContent='Hors ligne : la carte s\'affichera au retour du réseau.'; return; }
+  var nx=plNext(list, day), camKey=String(day);
+  mlLoad().then(function(ML){
+    if(!document.body.contains(el)) return;
+    if(PL_MAP){ try{ PL_MAP.remove(); }catch(e){} PL_MAP=null; }
+    var cam=PL_CAM[camKey];
+    var map=new ML.Map({ container:el, style:OFM_STYLE, center:cam?cam.c:[2.45, 48.85], zoom:cam?cam.z:10, attributionControl:{compact:true}, dragRotate:false, pitchWithRotate:false, touchPitch:false, cooperativeGestures:false, fadeDuration:0 });
+    map.touchZoomRotate.disableRotation();
+    var shim=mlShim(map); PL_MAP=shim;
+    map.on('moveend', function(){ if(PL_MAP===shim){ var c=map.getCenter(); PL_CAM[camKey]={c:[c.lng, c.lat], z:map.getZoom(), user:true}; } });
+    map.on('error', function(){ if(msg && !shim.ok) msg.textContent='Fond de carte indisponible pour le moment. La liste reste à jour.'; });
+    map.on('load', function(){ shim.ok=true; });
+    return Promise.all(list.map(function(r){ return plGeo(client(r.cid)); })).then(function(pts){
+      if(PL_MAP!==shim) return;
+      var bounds=new ML.LngLatBounds(), route=[], miss=0, n=0;
+      pts.forEach(function(p, i){ var r=list[i];
+        if(!p){ miss++; shim.markers[i]=null; return; }
+        var cls='plpin'+(r.st==='termine'?' st-termine':'')+(r===nx?' next':'')+(PL_SEL===i?' sel':'');
+        shim.markers[i]=mlMarker(ML, map, p.lat, p.lng, '<span class="'+cls+'">'+(i+1)+'</span>', 'plpin-w', function(){ plSelect(i, true); });
+        bounds.extend([p.lng, p.lat]); n++; if(r.st!=='termine') route.push([p.lng, p.lat]);
+      });
+      var drawRoute=function(){ if(route.length<2 || map.getSource('pl-route')) return;
+        map.addSource('pl-route', {type:'geojson', data:{type:'Feature', geometry:{type:'LineString', coordinates:route}}});
+        map.addLayer({id:'pl-route', type:'line', source:'pl-route', layout:{'line-cap':'round', 'line-join':'round'}, paint:{'line-color':'#1D3FBF', 'line-width':4, 'line-opacity':.75, 'line-dasharray':[.1, 2.2]}}); };
+      if(map.loaded()) drawRoute(); else map.once('load', drawRoute);
+      if(n && !(cam && cam.user)) map.fitBounds(bounds, {padding:{top:50, left:50, right:50, bottom:96}, maxZoom:14, duration:0});
+      var km=0; for(var k=1;k<route.length;k++) km+=plKm({lat:route[k-1][1], lng:route[k-1][0]}, {lat:route[k][1], lng:route[k][0]});
+      msg.textContent=!n?'Adresses introuvables sur la carte.':(miss?miss+' adresse'+(miss>1?'s':'')+' introuvable'+(miss>1?'s':'')+' · ':'')+(route.length>1?'≈ '+Math.round(km*1.3)+' km de trajet restant':'Touchez un numéro pour le voir');
+      if(n) setTimeout(function(){ if(msg && msg.parentNode) msg.classList.add('soft'); }, 2600);
+    });
+  }).catch(function(){ _plInitMap72(list, day); });
+  var me=$('plMe'); if(me) me.onclick=function(){ if(!PL_MAP) return; toast('Recherche de votre position…'); getPos(function(pos, code){ if(!pos){ toast(code===9?'Position indisponible dans l\'aperçu':'Position refusée ou indisponible'); return; }
+    if(PL_MAP.gl && window.maplibregl){ if(PL_MAP.me) PL_MAP.me.remove(); PL_MAP.me=mlMarker(window.maplibregl, PL_MAP.gl, pos.lat, pos.lng, '<span class="plme"></span>', 'plme-w', null); PL_MAP.flyTo([pos.lat, pos.lng], 14, {duration:.6}); return; }
+    if(PL_MAP.me) PL_MAP.removeLayer(PL_MAP.me);
+    PL_MAP.me=window.L.marker([pos.lat, pos.lng], {icon:window.L.divIcon({className:'plme-w', html:'<span class="plme"></span>', iconSize:[18,18], iconAnchor:[9,9]}), keyboard:false, interactive:false}).addTo(PL_MAP);
+    PL_MAP.flyTo([pos.lat, pos.lng], 14, {duration:.6}); }, {timeout:12000, maxAge:60000}); };
+};
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
