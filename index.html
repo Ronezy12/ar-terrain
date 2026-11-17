@@ -3130,7 +3130,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.61 · 17 nov. 2026';
+var APP_VERSION='1.0.62 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6083,6 +6083,47 @@ rdvSheet=function(id){ var res=_rdvSheet61.apply(this, arguments); var r=rdv(id)
   if(sh && r && r.pending){ var hd=sh.querySelector('h3'); if(hd && !sh.querySelector('.pr-pend')){ var s=document.createElement('div'); s.className='pill p-warn pr-pend'; s.style.marginTop='6px'; s.textContent='Pris par vous · en attente dans le CRM'; hd.parentNode.insertBefore(s, hd.nextSibling); } }
   return res; };
 document.addEventListener('click', function(e){ var b=e.target.closest('[data-prdv]'); if(!b) return; e.preventDefault(); e.stopPropagation(); prStart(b.getAttribute('data-prdv'), b.getAttribute('data-prid')||null); }, true);
+
+/* =========================================================
+   V62 — RDV pris par le technicien : toujours affiché après une actualisation ;
+   si le message « pas de réponse » a été envoyé, le clic suivant ouvre directement la saisie de la date
+   ========================================================= */
+var PR_MSG_KEY='ar_pr_msg';
+function prMsgGet(){ try{ return JSON.parse(localStorage.getItem(PR_MSG_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function prMsgSet(o){ try{ localStorage.setItem(PR_MSG_KEY, JSON.stringify(o)); }catch(e){} }
+function prMsgSent(cid){ var t=prMsgGet()[cid]; return t && Date.now()-t<14*864e5 ? t : 0; }
+/* 1. Les RDV pris restent visibles quoi qu'il arrive : on les remet avant chaque affichage */
+var _render62=render;
+render=function(){ try{ if(sessUser()) prList().forEach(prInject); }catch(e){} return _render62.apply(this, arguments); };
+/* 2. Après « Pas de réponse » + message envoyé, on mémorise ; après un RDV pris, on oublie */
+prMissed=function(c){
+  prSendSheet('Pas de réponse', 'Message pour '+c.nom, c, prMsgMissed(c), function(how){
+    PR_CALL=null;
+    if(how){ var o=prMsgGet(); o[c.id]=Date.now(); prMsgSet(o); rerender();
+      prNote(c, 'Appel sans réponse : message envoyé par '+how+' pour prendre rendez-vous ('+(sessUser()||{}).nom+').');
+      toast('Message préparé : au prochain appui, vous saisirez directement le RDV'); }
+  });
+};
+var _prCreate62=prCreate;
+prCreate=function(c, rid, f){ var o=prMsgGet(); if(o[c.id]){ delete o[c.id]; prMsgSet(o); } return _prCreate62.apply(this, arguments); };
+var _prStart62=prStart;
+prStart=function(cid, rid){
+  var c=client(cid); if(!c) return _prStart62.apply(this, arguments);
+  if(prMsgSent(c.id)){ closeSheet(); prForm(c, rid); setTimeout(function(){ prFormCallLink(c, rid); }, 30); return; }
+  return _prStart62.apply(this, arguments);
+};
+function prFormCallLink(c, rid){
+  var sh=document.querySelector('.sheet'); if(!sh || sh.querySelector('#prCallAgain')) return;
+  var t=prMsgSent(c.id), d=t?new Date(t):null;
+  var box=document.createElement('div'); box.className='card'; box.style.cssText='padding:10px 12px;display:flex;gap:10px;align-items:center';
+  box.innerHTML='<span class="grow" style="font-size:13px;line-height:1.4">Message envoyé'+(d?' le '+d.toLocaleDateString('fr-FR',{day:'numeric', month:'short'})+' à '+String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0'):'')+'. Le client vous a recontacté ?</span><button class="btn soft sm" id="prCallAgain">'+ic('phone')+'Rappeler</button>';
+  var first=sh.querySelector('.row'); if(first && first.nextSibling) first.parentNode.insertBefore(box, first.nextSibling); else sh.appendChild(box);
+  box.querySelector('#prCallAgain').onclick=function(){ var o=prMsgGet(); delete o[c.id]; prMsgSet(o); _prStart62(c.id, rid); };
+}
+/* 3. Le bouton de la fiche annonce ce qui va se passer */
+var _client62=SCREENS.client;
+SCREENS.client=function(id){ var h=_client62.apply(this, arguments); var c=client(id||S.arg); if(!c || !sessUser() || !prMsgSent(c.id)) return h;
+  return h.replace(ic('cal')+'Prendre RDV avec le client</button>', ic('cal')+'Saisir le RDV (message envoyé)</button>'); };
 
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
