@@ -1131,6 +1131,17 @@ img{max-width:100%}
 .ag-now::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 0 rgba(229,56,59,.5);animation:nowPulse 2s ease-out infinite}
 @keyframes nowPulse{0%{box-shadow:0 0 0 0 rgba(229,56,59,.45)}100%{box-shadow:0 0 0 10px rgba(229,56,59,0)}}
 @media (prefers-reduced-motion: reduce){.me-wave,.ag-now::before,.plmap-me.on svg{animation:none}}
+.tabs .bdg{min-width:22px;padding:0 5px;box-sizing:border-box;box-shadow:0 0 0 2px var(--surface);animation:bdgIn .4s cubic-bezier(.34,1.6,.5,1)}
+@keyframes bdgIn{from{transform:scale(0)}}
+.ld-card{display:flex;flex-direction:column;align-items:center;gap:16px;padding:34px 18px;text-align:center}
+.ld-card b{font-size:16px}
+.ld-orb{position:relative;width:64px;height:64px;display:block}
+.ld-orb b{position:absolute;inset:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#4D6FE0,#1D3FBF);box-shadow:0 6px 18px rgba(29,63,191,.35);animation:ldBreath 1.4s ease-in-out infinite}
+.ld-orb i{position:absolute;inset:18px;border-radius:50%;border:3px solid #FFC93C;opacity:0;animation:ldRing 1.8s cubic-bezier(.2,.6,.3,1) infinite}
+.ld-orb i+i{animation-delay:.9s;border-color:rgba(29,63,191,.45)}
+@keyframes ldBreath{0%,100%{transform:scale(.82)}50%{transform:scale(1.12)}}
+@keyframes ldRing{0%{transform:scale(.9);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+@media (prefers-reduced-motion: reduce){.ld-orb b,.ld-orb i,.tabs .bdg{animation:none}}
 </style>
 
 </head>
@@ -2097,7 +2108,7 @@ function renderTabs(){
   var rebuilt=false;
   if(key!==tabKey){ tabKey=key; rebuilt=true;
     nav.innerHTML='<span class="ind" id="ind" aria-hidden="true"></span>'+t.map(function(m){ var M=MODULES[m];
-      var b = M.badge ? '<span class="bdg">'+M.badge+'</span>' : '';
+      var b = M.badge ? '<span class="bdg">+'+(M.badge>9?'9':M.badge)+'</span>' : '';
       return '<button data-tab="'+m+'" aria-label="'+esc(M.label)+'">'+ic(M.icon)+'<span>'+esc(M.short||M.label)+'</span>'+b+'</button>'; }).join('')+
       '<button data-tab="plus" aria-label="Plus">'+ic('grid')+'<span>Plus</span></button>';
   }
@@ -3192,7 +3203,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.74 · 17 nov. 2026';
+var APP_VERSION='1.0.75 · 17 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6687,6 +6698,35 @@ bind=function(){
     requestAnimationFrame(function(){ V.scrollTop=Math.max(0, goal-420); /* départ environ 2 h plus haut… */
       setTimeout(function(){ smoothScrollTo(V, goal, 1600); }, 140); }); } /* …puis descente douce jusqu'à l'intervention */
   return r; };
+/* ---------------- v75 · Pastilles « +N » sur la barre du bas (nouveaux RDV, nouvelles fiches, clients à appeler) qui s'effacent dès qu'on ouvre l'onglet · nouvel écran de chargement ---------------- */
+var SEEN_KEY='ar_seen_v1';
+function seenGet(){ try{ var o=JSON.parse(localStorage.getItem(SEEN_KEY)||'null'); return o && typeof o==='object' ? o : null; }catch(e){ return null; } }
+function seenSave(o){ try{ localStorage.setItem(SEEN_KEY, JSON.stringify(o)); }catch(e){} }
+function seenIds(){ var me=(typeof ME!=='undefined')?ME:null;
+  return { planning:RDVS.filter(function(r){ return !r.pending && r.d>=0 && (S.role==='admin' || r.tech===me); }).map(function(r){ return String(r.crmId!=null?r.crmId:r.id); }),
+           clients:CLIENTS.filter(function(c){ return !c.stub && c.crmId!=null; }).map(function(c){ return String(c.crmId); }) }; }
+function badgesUpdate(){
+  if(!sessUser() || typeof CRM_LIVE==='undefined' || !CRM_LIVE.on) return;
+  var cur=seenIds(), seen=seenGet();
+  if(!seen || seen.user!==(sessUser()||{}).id){ seen={user:(sessUser()||{}).id, planning:cur.planning, clients:cur.clients}; seenSave(seen); } /* première fois : rien de « nouveau » */
+  ['planning','clients'].forEach(function(k){ if(!MODULES[k]) return;
+    if(S.screen===k || (k==='clients' && S.screen==='client')){ seen[k]=cur[k]; MODULES[k].badge=0; return; } /* on regarde l'onglet : c'est lu */
+    var set={}; (seen[k]||[]).forEach(function(x){ set[x]=1; }); MODULES[k].badge=cur[k].filter(function(x){ return !set[x]; }).length; });
+  seenSave(seen); if(window.__dbgB) console.log('BADGES planning='+MODULES.planning.badge+' clients='+(MODULES.clients&&MODULES.clients.badge)+' rdv='+cur.planning.join('/')+' vus='+(seen.planning||[]).join('/'));
+  if(MODULES.appels){ MODULES.appels.badge=(typeof acItems==='function')?acItems().length:0; }
+}
+function badgeClear(k){ var seen=seenGet(); if(!seen) return; var cur=seenIds(); if(cur[k]){ seen[k]=cur[k]; seenSave(seen); } if(MODULES[k]) MODULES[k].badge=0; }
+var _goTab75=goTab;
+goTab=function(screen){ if(screen==='planning' || screen==='clients'){ var had=MODULES[screen] && MODULES[screen].badge; badgeClear(screen); if(had) tabKey=''; } return _goTab75.apply(this, arguments); };
+var _liveLoad75=liveLoad;
+liveLoad=function(){ return _liveLoad75.apply(this, arguments).then(function(ok){ var before=['planning','clients','appels'].map(function(k){ return MODULES[k]?MODULES[k].badge:0; }).join(); badgesUpdate(); var after=['planning','clients','appels'].map(function(k){ return MODULES[k]?MODULES[k].badge:0; }).join(); if(before!==after){ tabKey=''; try{ renderTabs(); }catch(e){ bgRender(); } } return ok; }); };
+setTimeout(function(){ badgesUpdate(); tabKey=''; try{ renderTabs(); }catch(e){} }, 1500);
+
+/* Écran de chargement : un rond aux couleurs AR qui respire, sans texte technique */
+var _accueil75=SCREENS.accueil;
+SCREENS.accueil=function(){ var h=_accueil75.apply(this, arguments);
+  return h.replace(/<div class="card empty-st"><span class="spin big"><\/span><b>Chargement de vos RDV<\/b><span class="muted">[^<]*<\/span><\/div>/,
+    '<div class="card ld-card"><span class="ld-orb" aria-hidden="true"><i></i><i></i><b></b></span><b>Chargement de vos RDV</b></div>'); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
