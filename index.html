@@ -2331,6 +2331,7 @@ function exportPdf(p){
     if(lastUrl) URL.revokeObjectURL(lastUrl); lastUrl=URL.createObjectURL(blob);
     var s=sheet('<div class="row"><h3 class="grow">PDF prêt</h3><span class="pill p-ok">'+ic('check')+pages+' page'+(pages>1?'s':'')+'</span></div><p class="hint">'+esc(name)+' · A4 paysage, à imprimer à 100 % (taille réelle).</p><div class="pdfbox"><iframe src="'+lastUrl+'#toolbar=0&view=FitH" title="Aperçu du PDF"></iframe></div><a class="btn primary block" href="'+lastUrl+'" target="_blank" rel="noopener">Ouvrir le PDF</a><p class="hint">Dans l\'appli iOS et Android : bouton « Partager » pour l\'envoyer par e-mail ou WhatsApp, ou l\'imprimer.</p><button class="btn soft block" data-close>Fermer</button>');
     var o=$('overlay').querySelector('.toast'); if(o) o.remove();
+    try{ etiqUploadBtn(s, blob, name, p); }catch(e2){}
   }).catch(function(e){ toast('Erreur PDF : '+e.message); });
 }
 function bindEtiq(){
@@ -3208,7 +3209,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.77 · 17 nov. 2026';
+var APP_VERSION='1.0.78 · 18 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6081,17 +6082,20 @@ function prMissed(c){
   });
 }
 
+/* Types de RDV du CRM (valeurs exactes attendues par l'API) */
+var CRM_TYPES=[['POSE','Pose'],['PREVISITE','Prévisite'],['DÉPANNAGE','Dépannage'],['SAV','SAV']];
+function crmTypeLabel(t){ var m=CRM_TYPES.filter(function(x){ return x[0]===t; })[0]; return m?m[1]:(t||'Intervention'); }
 /* 4. Saisir le RDV */
 function prForm(c, rid){
   var r=rid?rdv(rid):null, t=new Date(TODAY); t.setDate(t.getDate()+1);
-  var def={date:t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'), h:'09:00', dur:r?r.dur:90, type:'Intervention'};
+  var def={date:t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'), h:'09:00', dur:r?r.dur:90, type:'POSE'};
   var DUR=[[30,'30 min'],[60,'1 h'],[90,'1 h 30'],[120,'2 h'],[180,'3 h'],[240,'Demi-journée'],[480,'Journée']];
-  var TYP=['Intervention','Visite technique','Devis','Dépannage','SAV'];
+  var TYP=CRM_TYPES; /* types du CRM : Pose, Prévisite, Dépannage, SAV */
   var f={date:def.date, h:def.h, dur:def.dur, type:def.type};
   var sh=sheet('<div class="row" style="align-items:flex-start"><div class="grow"><h3>'+(rid?'Nouvelle date du RDV':'Rendez-vous pris')+'</h3><div class="muted" style="font-size:13.5px">'+esc(c.nom)+'</div></div><button class="ibtn" data-close aria-label="Fermer">'+ic('x')+'</button></div>'+
     '<div class="row" style="gap:10px"><label class="field grow"><span>Date</span><input type="date" id="prD" value="'+f.date+'" min="'+def.date.slice(0,8)+'01"></label><label class="field" style="width:42%"><span>Heure</span><input type="time" id="prH" value="'+f.h+'" step="300"></label></div>'+
     '<div><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:6px">Durée</div><div class="opts" id="prDur">'+DUR.map(function(x){ return '<button class="opt'+(f.dur===x[0]?' on':'')+'" data-v="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div></div>'+
-    (rid?'':'<div><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:6px">Type</div><div class="opts" id="prTyp">'+TYP.map(function(x){ return '<button class="opt'+(f.type===x?' on':'')+'" data-v="'+esc(x)+'">'+esc(x)+'</button>'; }).join('')+'</div></div>')+
+    (rid?'':'<div><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:6px">Type</div><div class="opts" id="prTyp">'+TYP.map(function(x){ return '<button class="opt'+(f.type===x[0]?' on':'')+'" data-v="'+esc(x[0])+'">'+esc(x[1])+'</button>'; }).join('')+'</div></div>')+
     '<label class="field"><span>Note (facultatif)</span><textarea id="prN" rows="2" autocomplete="off" data-form-type="other" placeholder="Ex. : code portail 1234, se garer dans la cour"></textarea></label>'+
     '<p class="hint" id="prSum" style="margin:0"></p>'+
     '<button class="btn primary block" id="prGo">'+ic('check')+'Valider le rendez-vous</button>');
@@ -6114,11 +6118,11 @@ function prInject(p){
   var off=dayOffset(new Date(p.date+'T12:00:00'));
   if(p.rid){ var r=rdv(p.rid); if(r){ r.d=off; r.h=p.h; r.dur=p.dur; r.st='confirme'; r.pending=true; } return; }
   if(RDVS.some(function(x){ return x.id==='p-'+p.pid; })) return;
-  RDVS.push({id:'p-'+p.pid, cid:p.cid, tech:ME, d:off, h:p.h, dur:p.dur, st:'confirme', rap:30, note:p.note||'', type:p.type, pending:true});
+  RDVS.push({id:'p-'+p.pid, cid:p.cid, tech:ME, d:off, h:p.h, dur:p.dur, st:'confirme', rap:30, note:p.note||'', type:crmTypeLabel(p.type), pending:true});
 }
 function prCreate(c, rid, f){
   var r=rid?rdv(rid):null;
-  var p={pid:uuid(), cid:c.id, nom:c.nom||'', tel:c.tel||'', adresse:c.adresse||'', ville:c.ville||'', crmCid:c.crmId!=null?c.crmId:null, rid:rid||null, crmRid:r&&r.crmId!=null?r.crmId:(rid&&/^crm-r-/.test(rid)?rid.replace('crm-r-',''):null), date:f.date, h:f.h, dur:f.dur, type:f.type||'Intervention', note:f.note||'', created:isoNow(), sent:false, noted:false};
+  var p={pid:uuid(), cid:c.id, nom:c.nom||'', tel:c.tel||'', adresse:c.adresse||'', ville:c.ville||'', crmCid:c.crmId!=null?c.crmId:null, rid:rid||null, crmRid:r&&r.crmId!=null?r.crmId:(rid&&/^crm-r-/.test(rid)?rid.replace('crm-r-',''):null), date:f.date, h:f.h, dur:f.dur, type:rid?null:(f.type||'POSE'), note:f.note||'', created:isoNow(), sent:false, noted:false};
   var l=prList(); l.push(p); prSave(l);
   prInject(p); PR_CALL=null; S.pday=dayOffset(new Date(p.date+'T12:00:00'));
   try{ liveCacheSave(); }catch(e){} rerender();
@@ -6137,12 +6141,12 @@ function prSync(){
   if(PR_SYNCING || !sessUser() || !navigator.onLine) return; var l=prList().filter(function(p){ return !p.sent; }); if(!l.length) return;
   PR_SYNCING=true;
   l.reduce(function(pr, p){ return pr.then(function(){
-    var body={event_id:p.pid, client_id:p.crmCid, debut:prIso(p.date, p.h), duree:p.dur, type:p.type, note:p.note, source:'technicien'};
+    var body={event_id:p.pid, client_id:p.crmCid, debut:prIso(p.date, p.h), duree:p.dur, note:p.note, source:'technicien'}; if(p.type && p.type!=='Intervention') body.type=p.type; /* déplacement : le CRM garde le type du RDV */
     var call=p.crmRid?apiCall('POST','appointments/'+encodeURIComponent(p.crmRid), body):apiCall('POST','appointments', body);
     return call.then(function(r){
       if(r.ok && r.json && (r.json.id||r.json.id_rdv||r.json.appointment||r.json.created||(r.json.rdv && !Array.isArray(r.json.rdv)))){ p.sent=true; return; }
       if(!p.noted){ var c=client(p.cid)||{crmId:p.crmCid};
-        return prNote(c, '[RDV pris par le technicien] '+((sessUser()||{}).nom||'')+' a '+(p.rid?'déplacé':'pris')+' un rendez-vous ('+p.type+') le '+prDayLabel(p.date)+' de '+p.h+' à '+min2hm(hm2min(p.h)+p.dur)+(p.note?' · note : '+p.note:'')+'. À reporter dans le planning du CRM.').then(function(ok){ if(ok) p.noted=true; }); }
+        return prNote(c, '[RDV pris par le technicien] '+((sessUser()||{}).nom||'')+' a '+(p.rid?'déplacé':'pris')+' un rendez-vous'+(p.type?' ('+crmTypeLabel(p.type)+')':'')+' le '+prDayLabel(p.date)+' de '+p.h+' à '+min2hm(hm2min(p.h)+p.dur)+(p.note?' · note : '+p.note:'')+'. À reporter dans le planning du CRM.').then(function(ok){ if(ok) p.noted=true; }); }
     }).catch(function(){});
   }); }, Promise.resolve()).then(function(){
     var all=prList(); l.forEach(function(p){ all.forEach(function(q, i){ if(q.pid===p.pid) all[i]=p; }); }); prSave(all); PR_SYNCING=false;
@@ -6759,6 +6763,29 @@ var _doAct77=doAct;
 doAct=function(id){ if(sessUser() && id==='photo') return quickPhoto(); if(sessUser() && id==='materiel'){ toast('Bientôt disponible'); return; } return _doAct77.apply(this, arguments); };
 var _rb77=rb;
 rb=function(id){ if(sessUser() && id==='materiel') return ''; return _rb77.apply(this, arguments); };
+/* ---------------- v78 · Étiquetage : envoi du PDF sur la fiche du client (POST /api/v1/documents) ---------------- */
+var ETQ_SENT_KEY='ar_etq_sent';
+function etqSent(){ try{ return JSON.parse(localStorage.getItem(ETQ_SENT_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function etiqUploadBtn(sh, blob, name, p){
+  if(!sessUser() || !sh) return; var c=client(p && p.id); if(!c || c.crmId==null) return;
+  var b=document.createElement('button'); b.className='btn primary block'; b.id='etqSend'; b.innerHTML=ic('send')+'Envoyer sur la fiche de '+esc(c.nom);
+  var sent=etqSent()[c.crmId]; var hint=document.createElement('p'); hint.className='hint'; hint.style.margin='0'; hint.textContent=sent?('Déjà envoyé le '+new Date(sent).toLocaleDateString('fr-FR')+' · vous pouvez renvoyer la version à jour.'):'Le PDF sera rangé dans les documents de la fiche du CRM.';
+  var first=sh.querySelector('.btn'); if(first){ first.parentNode.insertBefore(hint, first); first.parentNode.insertBefore(b, hint); } else { sh.appendChild(b); sh.appendChild(hint); }
+  b.onclick=function(){
+    if(!navigator.onLine){ toast('Hors ligne : réessayez quand le réseau revient'); return; }
+    b.disabled=true; b.textContent='Envoi…';
+    var fd=new FormData(); fd.append('client_id', String(c.crmId)); fd.append('type','etiquetage'); fd.append('event_id', uuid());
+    var nx=RDVS.filter(function(r){ return r.cid===c.id && r.crmId!=null; })[0]; if(nx) fd.append('id_rdv', String(nx.crmId));
+    fd.append('fichier', blob, name||('etiquetage-'+c.crmId+'.pdf'));
+    fetch(apiBase()+'/api/v1/documents', {method:'POST', headers:{'Authorization':'Bearer '+crmKey()}, body:fd}).then(function(r){
+      if(!r.ok) throw new Error('erreur '+r.status);
+      var o=etqSent(); o[c.crmId]=Date.now(); try{ localStorage.setItem(ETQ_SENT_KEY, JSON.stringify(o)); }catch(e){}
+      b.innerHTML=ic('check')+'Envoyé sur la fiche'; b.className='btn soft block'; hint.textContent='Rangé dans les documents de la fiche du CRM.'; toast('Étiquetage envoyé sur la fiche de '+c.nom);
+    }).catch(function(e){ b.disabled=false; b.innerHTML=ic('send')+'Réessayer l\'envoi'; toast('Envoi impossible ('+e.message+'). Réessayez.'); });
+  };
+}
+var _demoBanner78=demoBanner;
+demoBanner=function(){ if(sessUser() && (S.screen==='etiquetage' || S.screen==='tableau' || S.screen==='apercu')) return ''; return _demoBanner78.apply(this, arguments); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
