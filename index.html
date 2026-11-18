@@ -1149,6 +1149,14 @@ img{max-width:100%}
 .holding{filter:brightness(.97)}
 .cf-ic{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:4px auto 0}.cf-ic svg{width:26px;height:26px}
 .svmap-w{position:relative;height:260px;border-radius:18px;overflow:hidden}.svmap{position:absolute;inset:0}.svmap.maplibregl-map{position:absolute!important;inset:0}
+.tmap-c{display:flex;flex-direction:column;gap:10px;padding:14px;margin-bottom:12px}
+.tmap-w{position:relative;height:240px;border-radius:16px;overflow:hidden}.tmap{position:absolute;inset:0}.tmap.maplibregl-map{position:absolute!important;inset:0}
+.tm-w{width:34px;height:34px}
+.tm-pin{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--c);color:#fff;font:800 12px var(--sans);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.25);box-sizing:border-box;cursor:pointer}
+.tm-pin.road{animation:tmPulse 2s ease-out infinite}
+.tm-pin.old{filter:grayscale(1);opacity:.6;animation:none}
+@keyframes tmPulse{0%{box-shadow:0 0 0 0 rgba(26,115,232,.45),0 3px 10px rgba(0,0,0,.25)}100%{box-shadow:0 0 0 14px rgba(26,115,232,0),0 3px 10px rgba(0,0,0,.25)}}
+@media (prefers-reduced-motion: reduce){.tm-pin.road{animation:none}}
 </style>
 
 </head>
@@ -3211,7 +3219,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.81 · 18 nov. 2026';
+var APP_VERSION='1.0.82 · 19 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -3872,7 +3880,7 @@ function crmPost(entry){
   entry.mode='sending'; refreshCrm();
   var t0=Date.now(), ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ if(ctl) ctl.abort(); },10000);
   fetch(crmUrl()+'/api/v1/events',{method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+crmKey(),'Idempotency-Key':entry.id}, body:JSON.stringify(entry.req), signal:ctl?ctl.signal:undefined})
-    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if(!r.ok && entry.code==='location.update'){ LOC_OFF=true; return; } if(!r.ok){ if(sessUser()) setTimeout(function(){ LAST_LIVE=0; if(typeof liveLoad==='function') liveLoad().then(function(){ LIVE_SEEN=liveIds(); }); }, 1200); var em=''; try{ em=(JSON.parse(tx)||{}).error||''; }catch(e){} if(/action inconnue/i.test(em)) em='le CRM ne gère pas encore cette action (à ajouter côté CRM). Rien n\'a été enregistré dans le CRM'; toast('CRM a refusé « '+(CRM_LABEL[entry.code]||entry.code)+' »'+(em?' : '+em:' (erreur '+r.status+')')); } }); })
+    .then(function(r){ clearTimeout(to); entry.ms=Date.now()-t0; entry.status=r.status; return r.text().then(function(tx){ entry.res=tx.slice(0,4000); entry.mode=r.ok?'ok':'error'; refreshCrm(); if((r.status===404 || r.status===405) && entry.code==='location.update'){ LOC_OFF=true; return; } if(!r.ok){ if(sessUser()) setTimeout(function(){ LAST_LIVE=0; if(typeof liveLoad==='function') liveLoad().then(function(){ LIVE_SEEN=liveIds(); }); }, 1200); var em=''; try{ em=(JSON.parse(tx)||{}).error||''; }catch(e){} if(/action inconnue/i.test(em)) em='le CRM ne gère pas encore cette action (à ajouter côté CRM). Rien n\'a été enregistré dans le CRM'; toast('CRM a refusé « '+(CRM_LABEL[entry.code]||entry.code)+' »'+(em?' : '+em:' (erreur '+r.status+')')); } }); })
     .catch(function(e){ clearTimeout(to); entry.ms=Date.now()-t0; entry.mode='error'; entry.res=(IN_PREVIEW?'Envoi bloqué par l\'aperçu claude.ai : testez sur l\'appli installée. ':'')+(e&&e.name==='AbortError'?'Pas de réponse en 10 s':String(e&&e.message||e)); refreshCrm(); });
 }
 window.addEventListener('online',function(){ setTimeout(function(){ var q=CRMQ.splice(0); q.forEach(crmPost); },1500); });
@@ -4244,11 +4252,11 @@ crmSend=function(code, fields){
   return _crmSendPos(code, fields);
 };
 function startTripTracking(rid){
-  stopTripTracking(); if(IN_PREVIEW || !navigator.geolocation) return;
+  stopTripTracking(); LOC_OFF=false; LAST_SENT=0; if(IN_PREVIEW || !navigator.geolocation) return;
   WATCH_ID=navigator.geolocation.watchPosition(function(p){
     LAST_POS={lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), accuracy_m:Math.round(p.coords.accuracy), at:new Date().toISOString()};
     if(Date.now()-LAST_SENT<30000) return; LAST_SENT=Date.now();
-    if(LOC_OFF) return; _crmSendPos('location.update', {appointment_id:rid||nextRid(), data:{lat:LAST_POS.lat, lng:LAST_POS.lng, accuracy_m:LAST_POS.accuracy_m, speed_kmh:p.coords.speed!=null?Math.round(p.coords.speed*3.6):null}});
+    if(LOC_OFF) return; var sp=p.coords.speed!=null?Math.round(p.coords.speed*3.6):null; _crmSendPos('location.update', {appointment_id:rid||nextRid(), data:{lat:LAST_POS.lat, lng:LAST_POS.lng, accuracy_m:LAST_POS.accuracy_m, speed_kmh:sp, position:{lat:LAST_POS.lat, lng:LAST_POS.lng, accuracy_m:LAST_POS.accuracy_m, speed_kmh:sp}}});
   }, function(){}, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
 }
 function stopTripTracking(){ if(WATCH_ID!=null && navigator.geolocation){ navigator.geolocation.clearWatch(WATCH_ID); } WATCH_ID=null; }
@@ -6582,7 +6590,7 @@ plInitMap=function(list, day){
       var drawRoute=function(){ if(route.length<2 || map.getSource('pl-route')) return;
         map.addSource('pl-route', {type:'geojson', data:{type:'Feature', geometry:{type:'LineString', coordinates:route}}});
         map.addLayer({id:'pl-route', type:'line', source:'pl-route', layout:{'line-cap':'round', 'line-join':'round'}, paint:{'line-color':'#1D3FBF', 'line-width':4, 'line-opacity':.75, 'line-dasharray':[.1, 2.2]}}); };
-      if(map.loaded()) drawRoute(); else map.once('load', drawRoute);
+      if(map.isStyleLoaded()) drawRoute(); else map.once('idle', drawRoute);
       if(n && !(cam && cam.user)) map.fitBounds(bounds, {padding:{top:50, left:50, right:50, bottom:96}, maxZoom:14, duration:0});
       var km=0; for(var k=1;k<route.length;k++) km+=plKm({lat:route[k-1][1], lng:route[k-1][0]}, {lat:route[k][1], lng:route[k][0]});
       msg.textContent=!n?'Adresses introuvables sur la carte.':(miss?miss+' adresse'+(miss>1?'s':'')+' introuvable'+(miss>1?'s':'')+' · ':'')+(route.length>1?'≈ '+Math.round(km*1.3)+' km de trajet restant':'Touchez un numéro pour le voir');
@@ -6838,12 +6846,79 @@ function svInit(){
     var line=function(){ var data={type:'Feature', geometry:{type:'LineString', coordinates:(p&&d)?[[p.lng,p.lat],[d.lng,d.lat]]:[]}};
       if(map.getSource('sv-line')) map.getSource('sv-line').setData(data);
       else { map.addSource('sv-line', {type:'geojson', data:data}); map.addLayer({id:'sv-line', type:'line', source:'sv-line', layout:{'line-cap':'round'}, paint:{'line-color':'#1D3FBF', 'line-width':4, 'line-opacity':.7, 'line-dasharray':[.1, 2.2]}}); } };
-    if(map.loaded()) line(); else map.once('load', line);
+    if(map.isStyleLoaded()) line(); else map.once('idle', line);
     if(!map._fitted){ map._fitted=true; if(p && d){ var b=new ML.LngLatBounds([p.lng,p.lat],[p.lng,p.lat]); b.extend([d.lng,d.lat]); map.fitBounds(b, {padding:60, maxZoom:15, duration:0}); } }
   }).catch(function(){});
 }
 var _bind80=bind; bind=function(){ var r=_bind80.apply(this, arguments); setTimeout(svInit, 30); return r; };
 setInterval(function(){ if(S.screen==='suivi' && sessUser()){ try{ liveRefresh(true); }catch(e){} setTimeout(svInit, 2500); } }, 30000);
+/* ---------------- v81 · Admin : positions de toute l'équipe (GET /api/v1/positions) · carte de l'équipe · vrai trajet du jour dans le suivi ---------------- */
+var POS_LIVE={}, POS_OFF=false, POS_AT=0, TRAJ={};
+function posLoad(force){
+  if(POS_OFF || !sessUser() || !sessIsAdmin() || !navigator.onLine) return Promise.resolve(false);
+  if(!force && Date.now()-POS_AT<25000) return Promise.resolve(false); POS_AT=Date.now();
+  return apiCall('GET','positions').then(function(r){
+    if(r.status===404 || r.status===405){ POS_OFF=true; return false; }
+    if(!r.ok || !r.json) return false;
+    var L=r.json.positions||[], m={}; L.forEach(function(x){ if(x && isFinite(+x.lat) && isFinite(+x.lng)) m[normNom(x.nom)]=x; });
+    var ch=JSON.stringify(m)!==JSON.stringify(POS_LIVE); POS_LIVE=m; if(ch) bgRender(); return ch;
+  }).catch(function(){ return false; });
+}
+function posOf(t){ return t ? POS_LIVE[normNom(t.nom)]||null : null; }
+function posMin(x){ var t=new Date(String(x.recorded_at||'').replace(' ','T')).getTime(); return isFinite(t)?Math.round((Date.now()-t)/60000):null; }
+var _techNow81=techNow;
+techNow=function(t){ var st=_techNow81.apply(this, arguments), lv=posOf(t);
+  if(!lv || (lv.etat!=='en_route' && lv.etat!=='sur_place')) { if(st && st.r && lv){ st.r.pos={lat:+lv.lat, lng:+lv.lng, acc:lv.accuracy_m||null, at:lv.recorded_at||null, speed:lv.speed_kmh!=null?+lv.speed_kmh:null, src:lv.source}; } return st; }
+  var r=lv.id_rdv!=null ? RDVS.filter(function(x){ return String(x.crmId)===String(lv.id_rdv); })[0] : null;
+  if(!r){ var cid='live-c-'+(lv.id_rdv||normNom(lv.nom)); if(!client(cid)) CLIENTS.push({id:cid, crmId:null, nom:lv.client||'Client', tel:'', email:'', adresse:(lv.destination&&lv.destination.adresse)||'', ville:'', type:'Intervention', statut:'interv', statutCrm:'', tech:t.id, ref:'', devis:[], hist:[], stub:true});
+    r={id:'live-r-'+(lv.id_rdv||normNom(lv.nom)), crmId:lv.id_rdv||null, cid:cid, tech:t.id, d:0, h:'—', dur:60, st:lv.etat==='sur_place'?'surplace':'enroute'}; }
+  r.pos={lat:+lv.lat, lng:+lv.lng, acc:lv.accuracy_m||null, at:lv.recorded_at||null, speed:lv.speed_kmh!=null?+lv.speed_kmh:null, src:lv.source};
+  if(lv.destination && isFinite(+lv.destination.lat)) r.dest={lat:+lv.destination.lat, lng:+lv.destination.lng};
+  var c=client(r.cid)||{};
+  return lv.etat==='sur_place' ? {k:'site', lbl:'Sur chantier', cls:'p-blue', dot:'#3D6BFF', txt:'Chez '+(c.nom||lv.client||'client'), r:r} : {k:'road', lbl:'En route', cls:'p-warn', dot:'#F2B33D', txt:'En route vers '+(lv.client||c.nom||'le client'), r:r};
+};
+/* Trajet du jour d'un technicien (route du CRM) */
+function trajLoad(lv){ if(!lv || lv.id_crmuser==null) return Promise.resolve(null); var d=new Date(), day=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return apiCall('GET','positions/'+encodeURIComponent(lv.id_crmuser)+'/trajet?date='+day).then(function(r){ var pts=(r.ok && r.json && r.json.points)||[]; TRAJ[lv.id_crmuser]=pts.filter(function(p){ return isFinite(+p.lat) && isFinite(+p.lng); }).map(function(p){ return [+p.lng, +p.lat]; }); return TRAJ[lv.id_crmuser]; }).catch(function(){ return null; }); }
+var _svInit81=svInit;
+svInit=function(){ _svInit81.apply(this, arguments);
+  var t=tech(S.arg), lv=posOf(t); if(!lv) return; var tries=0;
+  (function wait(){ if(!SV_MAP){ if(tries++<20) setTimeout(wait, 150); return; }
+  trajLoad(lv).then(function(pts){ if(!pts || pts.length<2 || !SV_MAP) return; var map=SV_MAP;
+    var draw=function(){ var data={type:'Feature', geometry:{type:'LineString', coordinates:pts}};
+      if(map.getSource('sv-traj')) map.getSource('sv-traj').setData(data);
+      else { map.addSource('sv-traj', {type:'geojson', data:data}); map.addLayer({id:'sv-traj', type:'line', source:'sv-traj', layout:{'line-cap':'round','line-join':'round'}, paint:{'line-color':'#1A73E8', 'line-width':5, 'line-opacity':.85}}, map.getLayer('sv-line')?'sv-line':undefined); } };
+    if(map.isStyleLoaded()) draw(); else map.once('idle', draw);
+    if(!map._trajFit && window.maplibregl){ map._trajFit=true; var bb=new maplibregl.LngLatBounds(pts[0], pts[0]); pts.forEach(function(q){ bb.extend(q); }); var r2=(techNow(t)||{}).r; if(r2 && r2.dest) bb.extend([r2.dest.lng, r2.dest.lat]); map.fitBounds(bb, {padding:50, maxZoom:15, duration:500}); } }); })(); };
+/* Carte de l'équipe en haut de l'écran Équipe */
+var TEAM_MAP=null;
+var _equipe81=SCREENS.equipe;
+SCREENS.equipe=function(){ var h=_equipe81.apply(this, arguments); if(!sessUser() || !sessIsAdmin()) return h; posLoad(false);
+  var n=Object.keys(POS_LIVE).length; if(!n) return h;
+  var road=Object.keys(POS_LIVE).filter(function(k){ return POS_LIVE[k].etat==='en_route'; }).length, site=Object.keys(POS_LIVE).filter(function(k){ return POS_LIVE[k].etat==='sur_place'; }).length;
+  var card='<div class="card tmap-c"><div class="row" style="justify-content:space-between;align-items:center"><b>Équipe en direct</b><span class="muted" style="font-size:12.5px">'+road+' en route · '+site+' sur place</span></div><div class="tmap-w"><div id="teamMap" class="tmap"></div></div><p class="hint" style="margin:0">Touchez un technicien pour le suivre. Grisé : position de plus de 15 min.</p></div>';
+  return h.replace('<div class="pad">','<div class="pad">'+card); };
+function teamMapInit(){
+  var el=document.getElementById('teamMap'); if(!el){ if(TEAM_MAP){ try{ TEAM_MAP.remove(); }catch(e){} TEAM_MAP=null; } return; }
+  if(!webglOk()) return;
+  mlLoad().then(function(ML){ if(!document.body.contains(el)) return;
+    if(TEAM_MAP && TEAM_MAP.getContainer()!==el){ try{ TEAM_MAP.remove(); }catch(e){} TEAM_MAP=null; }
+    var keys=Object.keys(POS_LIVE); if(!keys.length) return;
+    if(!TEAM_MAP){ TEAM_MAP=new ML.Map({container:el, style:OFM_STYLE, center:[+POS_LIVE[keys[0]].lng, +POS_LIVE[keys[0]].lat], zoom:11, attributionControl:{compact:true}, fadeDuration:0}); TEAM_MAP.mk={}; TEAM_MAP._fit=false; }
+    var map=TEAM_MAP, b=new ML.LngLatBounds();
+    Object.keys(map.mk).forEach(function(k){ if(!POS_LIVE[k]){ map.mk[k].remove(); delete map.mk[k]; } });
+    keys.forEach(function(k){ var x=POS_LIVE[k], t=TECHS.filter(function(tt){ return normNom(tt.nom)===k; })[0], col=(t&&(t.color||t.col||t.couleur))||'#1D3FBF', old=(posMin(x)||0)>15;
+      if(typeof col!=='string') col=(col&&col[0])||'#1D3FBF';
+      var html='<span class="tm-pin'+(old?' old':'')+(x.etat==='en_route'?' road':'')+'" style="--c:'+col+'">'+esc(initials(x.nom))+'</span>';
+      if(map.mk[k]){ map.mk[k].setLngLat([+x.lng, +x.lat]); var e=map.mk[k].getElement(); e.innerHTML=html; }
+      else map.mk[k]=mlMarker(ML, map, +x.lat, +x.lng, html, 'tm-w', function(){ if(t) go('suivi', t.id); else toast(x.nom+' : '+(x.etat==='en_route'?'en route':x.etat==='sur_place'?'sur place':'libre')); });
+      b.extend([+x.lng, +x.lat]); });
+    if(!map._fit){ map._fit=true; if(keys.length>1) map.fitBounds(b, {padding:50, maxZoom:13, duration:0}); }
+  }).catch(function(){});
+}
+var _bind81=bind; bind=function(){ var r=_bind81.apply(this, arguments); setTimeout(teamMapInit, 40); return r; };
+setInterval(function(){ if(sessUser() && sessIsAdmin() && ['equipe','techdetail','suivi','accueil'].indexOf(S.screen)>=0) posLoad(false).then(function(){ teamMapInit(); if(S.screen==='suivi') svInit(); }); }, 30000);
+setTimeout(function(){ posLoad(true); }, 2500);
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
