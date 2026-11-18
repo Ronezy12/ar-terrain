@@ -1147,6 +1147,7 @@ img{max-width:100%}
 .hold-bar{animation-name:none}
 @keyframes holdFill{to{transform:scaleX(1)}}
 .holding{filter:brightness(.97)}
+.cf-ic{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:4px auto 0}.cf-ic svg{width:26px;height:26px}
 </style>
 
 </head>
@@ -2540,7 +2541,7 @@ SCREENS.chantier = function(rid){
   var h='<div class="pad"><div class="site-hero"><div class="row"><span class="pill" style="background:rgba(255,255,255,.18);color:#fff">'+ic('pin')+'Sur place</span><b class="num site-t" data-timer>'+elapsed()+'</b></div><h3>'+esc(c.nom)+'</h3><div class="meta">'+ic('pin')+'<span>'+esc(c.adr)+', '+esc(c.ville)+'</span></div><div class="meta">'+ic('wrench')+'<span>'+esc(r.type||c.type)+' · '+esc(c.ref)+'</span></div>'+(r.note?'<div class="note-in" style="color:var(--ink)">'+ic('pen')+'<span>'+esc(r.note)+'</span></div>':'')+'</div>';
   h+='<div class="tiles">'+
     tile('cam','Photos',c.photos.length+' photo'+(c.photos.length>1?'s':''),'data-sp')+
-    tile('tag','Tableau',p?k.rows+' rangées · '+k.n+' app.':'À créer','data-st')+
+    tile('tag','Étiquetage tableau',p?k.rows+' rangées · '+k.n+' app.':'À créer','data-st')+
     tile('doc','Devis',c.devis.length?c.devis.length+' devis':'Nouveau','data-sd')+
     tile('pen','Commentaire',c.notes.length+' note'+(c.notes.length>1?'s':''),'data-sc')+
     tile('card','Encaisser','SumUp','data-spay','y')+
@@ -3209,7 +3210,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.78 · 18 nov. 2026';
+var APP_VERSION='1.0.79 · 18 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6786,6 +6787,27 @@ function etiqUploadBtn(sh, blob, name, p){
 }
 var _demoBanner78=demoBanner;
 demoBanner=function(){ if(sessUser() && (S.screen==='etiquetage' || S.screen==='tableau' || S.screen==='apercu')) return ''; return _demoBanner78.apply(this, arguments); };
+/* ---------------- v79 · Actions validées avant d'être envoyées (« Je suis en route », « Je suis arrivé ») · « Autre numéro » dans Appeler le bureau ---------------- */
+function confirmAct(o){
+  var sh=sheet('<div class="cf-ic" style="background:'+(o.bg||'var(--tint)')+';color:'+(o.fg||'var(--primary)')+'">'+ic(o.icon||'check')+'</div><h3 style="text-align:center;margin:0">'+esc(o.title)+'</h3><p class="hint" style="text-align:center;margin:0;line-height:1.5">'+esc(o.text)+'</p>'+
+    '<button class="btn primary block" id="cfOk">'+esc(o.ok)+'</button><button class="btn soft block" id="cfNo">'+esc(o.no||'Pas encore')+'</button>');
+  sh.querySelector('#cfOk').onclick=function(){ closeSheet(); setTimeout(o.go, 60); };
+  sh.querySelector('#cfNo').onclick=closeSheet;
+}
+var _doAct79=doAct;
+doAct=function(id){ var self=this, args=arguments;
+  if(sessUser() && id==='enroute') return confirmAct({icon:'nav', bg:'#FFF4D1', fg:'#8A5A00', title:'Vous partez maintenant ?', text:'Appuyez seulement quand vous prenez vraiment la route : le client est prévenu et le bureau suit votre trajet sur la carte.', ok:'Oui, je pars', go:function(){ _doAct79.apply(self, args); }});
+  return _doAct79.apply(this, arguments); };
+var _arrive79=arrive;
+arrive=function(rid){ var self=this, args=arguments; if(!sessUser() || arrive._ok){ arrive._ok=false; return _arrive79.apply(this, arguments); }
+  return confirmAct({icon:'pin', bg:'var(--success-bg)', fg:'var(--success)', title:'Vous êtes chez le client ?', text:'Validez une fois arrivé sur place : l\'heure d\'arrivée est envoyée au CRM.', ok:'Oui, je suis arrivé', go:function(){ arrive._ok=true; arrive.apply(self, args); }}); };
+var _bureauCall79=bureauCall;
+bureauCall=function(){ var l=bureauList();
+  if(l.length<2) return _bureauCall79.apply(this, arguments);
+  _bureauCall79.apply(this, arguments);
+  var list=document.querySelector('.sheet .list'); if(!list) return;
+  var b=document.createElement('button'); b.className='card tap li'; b.style.cssText='width:100%;text-align:left'; b.innerHTML='<span class="av">'+ic('phone')+'</span><div class="grow"><b style="display:block">Autre</b><span class="muted" style="font-size:13px">Composer un autre numéro</span></div>'+ic('chev');
+  b.onclick=function(){ closeSheet(); location.href='tel:'; }; list.appendChild(b); };
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
