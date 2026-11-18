@@ -1802,7 +1802,7 @@ function durTxt(m){ var h=Math.floor(m/60), mm=m%60; return (h?h+' h':'')+(mm?(h
 function rdvsFor(day, techId){ return RDVS.filter(function(r){ return r.d===day && (!techId || r.tech===techId); }).sort(function(a,b){return hm2min(a.h)-hm2min(b.h);}); }
 /* Le technicien ne voit que ses RDV ; l'admin voit tout */
 function visibleRdvs(day){ return S.role==='admin' ? rdvsFor(day) : rdvsFor(day, ME); }
-function techRdv(){ return rdvsFor(0, ME).map(function(r){ var c=client(r.cid); return {id:c.id, rid:r.id, rdv:r.h, duree:durTxt(r.dur), nom:c.nom, type:c.type, ville:c.ville, adr:c.adr, ref:c.ref, st:r.st}; }); }
+function techRdv(){ if(typeof rdvClientsFix==='function') rdvClientsFix(); return rdvsFor(0, ME).filter(function(r){ return !!client(r.cid); }).map(function(r){ var c=client(r.cid); return {id:c.id, rid:r.id, rdv:r.h, duree:durTxt(r.dur), nom:c.nom, type:c.type, ville:c.ville, adr:c.adr, ref:c.ref, st:r.st}; }); }
 function onlyMine(){ return S.role!=='admin' && CFG.techAccess.tousClients!==true; }
 function myClientIds(){ var ids={}; RDVS.forEach(function(r){ if(r.tech===ME) ids[r.cid]=1; }); CLIENTS.forEach(function(c){ if(c.tech===ME) ids[c.id]=1; }); return ids; }
 function canSeeMoney(){ return S.role==='admin' || CFG.techAccess.montants!==false; }
@@ -3211,7 +3211,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.80 · 18 nov. 2026';
+var APP_VERSION='1.0.81 · 18 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
