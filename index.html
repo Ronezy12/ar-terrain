@@ -1157,6 +1157,7 @@ img{max-width:100%}
 .tm-pin.old{filter:grayscale(1);opacity:.6;animation:none}
 @keyframes tmPulse{0%{box-shadow:0 0 0 0 rgba(26,115,232,.45),0 3px 10px rgba(0,0,0,.25)}100%{box-shadow:0 0 0 14px rgba(26,115,232,0),0 3px 10px rgba(0,0,0,.25)}}
 @media (prefers-reduced-motion: reduce){.tm-pin.road{animation:none}}
+.pw-eye{position:absolute;right:8px;bottom:6px;width:42px;height:42px;border:0;border-radius:12px;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center}.pw-eye svg{width:20px;height:20px}
 </style>
 
 </head>
@@ -3219,7 +3220,7 @@ function intro3d(next){
 /* =========================================================
    V11 — Itinéraire : ouverture directe après 10 choix · Suivi en direct façon livraison
    ========================================================= */
-var APP_VERSION='1.0.82 · 19 nov. 2026';
+var APP_VERSION='1.0.83 · 19 nov. 2026';
 /* ---------- Vrais appels : ouvre le clavier du téléphone ---------- */
 var BUREAU_TEL='01 99 00 00 10';
 function telHref(t){ var d=String(t||'').replace(/[^\d+]/g,''); if(/^0\d{9}$/.test(d)) d='+33'+d.slice(1); return 'tel:'+d; }
@@ -6919,6 +6920,15 @@ function teamMapInit(){
 var _bind81=bind; bind=function(){ var r=_bind81.apply(this, arguments); setTimeout(teamMapInit, 40); return r; };
 setInterval(function(){ if(sessUser() && sessIsAdmin() && ['equipe','techdetail','suivi','accueil'].indexOf(S.screen)>=0) posLoad(false).then(function(){ teamMapInit(); if(S.screen==='suivi') svInit(); }); }, 30000);
 setTimeout(function(){ posLoad(true); }, 2500);
+/* ---------------- v82 · Écran de connexion : bouton pour afficher le mot de passe (évite les fautes de frappe) ---------------- */
+(function(){
+  function addEye(){ [].forEach.call(document.querySelectorAll('input#rlP, input#lgPsw'), function(inp){
+    if(inp.dataset.eye) return; inp.dataset.eye='1'; var w=inp.parentNode; if(getComputedStyle(w).position==='static') w.style.position='relative';
+    var b=document.createElement('button'); b.type='button'; b.className='pw-eye'; b.setAttribute('aria-label','Afficher le mot de passe'); b.innerHTML=ic('eye');
+    b.onclick=function(e){ e.preventDefault(); var show=inp.type==='password'; inp.type=show?'text':'password'; b.innerHTML=ic(show?'eyeoff':'eye'); b.setAttribute('aria-label', show?'Masquer le mot de passe':'Afficher le mot de passe'); inp.focus(); };
+    inp.style.paddingRight='52px'; inp.insertAdjacentElement('afterend', b); }); }
+  new MutationObserver(addEye).observe(document.body, {childList:true, subtree:true}); addEye();
+})();
 SCREENS.soon = function(){
   var M=MODULES[S.screen]||{label:S.screen,icon:'spark'};
   return '<div class="pad"><div class="card" style="text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px"><span class="av lg">'+ic(M.icon).replace('<svg','<svg style="width:28px;height:28px"')+'</span><h3>'+esc(M.label)+'</h3><p class="hint">Écran en cours de construction dans le prototype. Il arrive dans la prochaine version.</p></div></div>';
